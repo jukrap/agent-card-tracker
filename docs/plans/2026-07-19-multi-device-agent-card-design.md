@@ -17,11 +17,11 @@ Build a GitHub profile card system that combines Codex and Claude Code usage fro
 The system has four stages:
 
 1. A local collector invokes a pinned ccusage version for focused Claude Code and Codex daily reports.
-2. Each computer overwrites one anonymous device snapshot under `data/devices/`.
+2. Each computer overwrites one anonymous device snapshot under `data/devices/` and may publish one sanitized profile candidate under `data/profiles/`.
 3. A merger selects the Codex source, combines daily usage, and derives period statistics.
 4. A deterministic renderer writes self-contained SVG cards under `cards/`.
 
-The local sync command performs all four stages and pushes changed files. GitHub Actions repeats validation and rendering on data pushes and on a daily schedule.
+The local sync command collects, validates, and pushes only the current device's data paths. GitHub Actions validates the merged dataset and exclusively publishes generated cards on data pushes and on a daily schedule, which removes card-file conflicts between devices. Local rendering remains available for inspection; an explicit recovery command can publish cards when Actions is unavailable.
 
 ## Source selection
 
@@ -29,12 +29,12 @@ Claude Code always uses the sum of all valid device snapshots.
 
 Codex uses exactly one of these sources:
 
-1. A fresh, valid account profile snapshot from `data/codex-profile.json`.
+1. The newest fresh, valid account profile candidate from `data/profiles/`.
 2. The sum of Codex entries in all device snapshots.
 
 Profile and local Codex values are never added together. A profile snapshot is fresh for a configurable interval. Missing, stale, malformed, or failed profile data automatically selects the local fallback.
 
-The experimental profile adapter accepts a bearer token only through an environment variable, sends it directly to the configured endpoint, validates the expected statistics, and persists only sanitized daily token totals. It never logs the token or an API response body.
+The experimental profile adapter accepts a bearer token only through an environment variable, sends it only to the fixed ChatGPT profile endpoint, validates the expected statistics, and persists only sanitized daily token totals. Its network dependency is injected in tests rather than exposing an endpoint override that could exfiltrate the bearer. It never logs the token, an error cause, or an API response body.
 
 ## Public data contract
 
@@ -42,6 +42,7 @@ Each device has a user-generated opaque identifier that is unrelated to its host
 
 - schema version
 - opaque device ID
+- one-way hash of a local random writer key for accidental ID-collision detection
 - generation timestamp and configured timezone
 - collector version
 - per-source collection status
@@ -49,13 +50,13 @@ Each device has a user-generated opaque identifier that is unrelated to its host
 
 The snapshot does not contain model names, project names, paths, message/request/session IDs, prompt or response text, account IDs, email addresses, or credentials.
 
-The profile snapshot contains only schema version, sanitized update time, daily total tokens, lifetime total when available, and coverage metadata.
+Each profile candidate contains only schema version, sanitized collection time, provider calendar-date basis, daily total tokens, lifetime total when available, and coverage metadata. If several devices publish candidates, the merger selects the newest valid and fresh candidate and never sums them.
 
-All files are validated before merging. Unknown fields are ignored, invalid dates and non-finite or negative counts are rejected, and a schema-version mismatch fails closed.
+All files are validated before merging. Exact field allowlists reject unknown fields, invalid dates and non-finite or negative counts are rejected, and a schema-version mismatch fails closed.
 
 ## Multi-device behavior
 
-Every computer writes only its own snapshot. Re-running a collector replaces that snapshot rather than appending usage. The sync command operates in a dedicated clone, pulls before collection, stages explicit paths, and retries a non-fast-forward push after rebasing a bounded number of times.
+Every computer writes only its own device snapshot and optional profile candidate. Re-running a collector replaces those files rather than appending usage. The sync command operates in a dedicated clone, pulls before collection, stages only that device's explicit data paths, and retries a non-fast-forward push after rebasing a bounded number of times. A public hash of the ignored local writer key catches accidental reconstruction of an existing device ID; copying the entire local config remains unsupported because no local-only design can distinguish the copies.
 
 Snapshots remain part of historical aggregation when a computer is offline. A stale flag is exposed to validation and diagnostics but past usage is not removed. Copying the same Codex or Claude log directory between computers can create duplicates and is documented as unsupported.
 
@@ -125,4 +126,3 @@ Manual verification renders representative empty, single-source, multi-source, a
 ## Delivery boundary
 
 Only product source, tests, workflows, public documentation, sanitized aggregate data, and generated cards are eligible for Git staging. Local agent instructions, playbooks, reference archives, local configuration, credentials, raw logs, and temporary output are excluded.
-
