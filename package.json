@@ -1,0 +1,32 @@
+{
+  "name": "agent-card-tracker",
+  "version": "0.1.0",
+  "description": "Serverless multi-device Codex and Claude Code usage cards for GitHub profiles",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "agent-card": "./src/cli.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check:syntax": "node scripts/check-syntax.mjs",
+    "check:determinism": "node scripts/check-render-determinism.mjs",
+    "check": "npm run check:syntax && npm test && npm run validate",
+    "setup": "node src/cli.mjs setup",
+    "collect": "node src/cli.mjs collect",
+    "profile": "node src/cli.mjs profile",
+    "render": "node src/cli.mjs render",
+    "validate": "node src/cli.mjs validate",
+    "sync": "node src/cli.mjs sync",
+    "publish-cards": "node src/cli.mjs publish-cards"
+  },
+  "dependencies": {
+    "ccusage": "20.0.17"
+  },
+  "devDependencies": {
+    "saxes": "6.0.0"
+  }
+}
