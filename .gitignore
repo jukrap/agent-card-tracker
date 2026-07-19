@@ -1,0 +1,15 @@
+.ai-agent-playbook/
+AGENTS.md
+.agents/
+.codex/
+
+node_modules/
+.agent-card.local.json
+.env
+.env.*
+!.env.example
+
+coverage/
+dist/
+*.log
+
