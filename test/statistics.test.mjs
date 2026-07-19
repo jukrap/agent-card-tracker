@@ -66,6 +66,10 @@ function unknownMetric() {
   return { value: null, coverage: 'unknown', lowerBound: false };
 }
 
+function mixedMetric(value) {
+  return { value, coverage: 'mixed', lowerBound: false };
+}
+
 test('coverage 내부 누락 row는 관측된 0이고 coverage 밖은 unknown이다', () => {
   const observed = range('2026-03-05', '2026-03-07');
   const stats = computeStatistics(merged({
@@ -142,10 +146,10 @@ test('profile total-only 토큰은 전부 unknownTokens이며 local breakdown만
 
   assert.deepEqual(stats.sourceShare, {
     range: rolling,
-    totalTokens: completeMetric(400),
+    totalTokens: mixedMetric(400),
     sources: {
       claude: { totalTokens: completeMetric(100), percentage: 25 },
-      codex: { totalTokens: completeMetric(300), percentage: 75 },
+      codex: { totalTokens: mixedMetric(300), percentage: 75 },
     },
   });
   assert.deepEqual(stats.tokenMix, {
@@ -155,17 +159,174 @@ test('profile total-only 토큰은 전부 unknownTokens이며 local breakdown만
     cacheRead: 30,
     cacheWrite: 40,
     unknownTokens: 300,
-    totalTokens: completeMetric(400),
-    coverage: 'partial',
+    totalTokens: mixedMetric(400),
+    coverage: 'mixed',
   });
-  assert.deepEqual(stats.lifetime.trackedTotalTokens, completeMetric(400));
+  assert.deepEqual(stats.lifetime.trackedTotalTokens, mixedMetric(400));
   assert.deepEqual(stats.lifetime.totalTokens, completeMetric(1_100));
   assert.deepEqual(stats.lifetime.provenance, {
     claude: 'tracked-daily',
     codex: 'provider-reported',
   });
   assert.deepEqual(stats.lifetime.sources.codex.totalTokens, completeMetric(1_000));
-  assert.deepEqual(stats.lifetime.sessions, partialMetric(2));
+  assert.deepEqual(stats.periods.today.current.sessions, mixedMetric(2));
+  assert.deepEqual(stats.lifetime.sessions, mixedMetric(2));
+});
+
+test('provider calendar와 설정 timezone의 일별 합계는 mixed이며 비교와 streak를 만들지 않는다', () => {
+  const observed = range('2026-06-20', '2026-07-19');
+  const stats = computeStatistics(merged({
+    timezone: 'Asia/Seoul',
+    codexSource: 'profile',
+    days: [
+      day(
+        '2026-07-18',
+        metric({ input: 25, total: 25, sessions: 1 }),
+        metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 75, sessions: 1 }),
+      ),
+      day(
+        '2026-07-19',
+        metric({ input: 100, total: 100, sessions: 1 }),
+        metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 300, sessions: 1 }),
+      ),
+    ],
+    coverage: {
+      claude: {
+        dateBasis: 'Asia/Seoul',
+        totals: observed,
+        breakdown: observed,
+        sessions: observed,
+      },
+      codex: {
+        dateBasis: 'provider-calendar-date',
+        totals: observed,
+        breakdown: null,
+        sessions: observed,
+      },
+    },
+  }), { asOf: '2026-07-19' });
+
+  assert.deepEqual(stats.periods.today.current.totalTokens, mixedMetric(400));
+  assert.deepEqual(stats.periods.today.comparison, { kind: 'mixed', percentage: null });
+  assert.deepEqual(stats.trends.daily.at(-1).totalTokens, mixedMetric(400));
+  assert.deepEqual(stats.sourceShare.totalTokens, mixedMetric(500));
+  assert.deepEqual(stats.sourceShare.sources.claude, {
+    totalTokens: completeMetric(125),
+    percentage: 25,
+  });
+  assert.deepEqual(stats.sourceShare.sources.codex, {
+    totalTokens: mixedMetric(375),
+    percentage: 75,
+  });
+  assert.equal(stats.tokenMix.coverage, 'mixed');
+  assert.deepEqual(stats.tokenMix.totalTokens, mixedMetric(500));
+  assert.equal(stats.tokenMix.unknownTokens, 375);
+
+  const today = stats.heatmap.cells.find((cell) => cell.date === '2026-07-19');
+  assert.deepEqual(today, {
+    date: '2026-07-19',
+    state: 'active',
+    totalTokens: 400,
+    coverage: 'mixed',
+    level: today.level,
+  });
+  assert.deepEqual(stats.activity.activeDays, mixedMetric(2));
+  assert.deepEqual(stats.activity.currentStreak, mixedMetric(null));
+  assert.deepEqual(stats.activity.longestStreak, mixedMetric(null));
+  assert.deepEqual(stats.activity.peak, {
+    date: '2026-07-19',
+    totalTokens: 400,
+    coverage: 'mixed',
+    lowerBound: false,
+  });
+});
+
+test('provider-reported lifetime은 calendar bucket 불일치와 무관하게 exact 의미를 유지한다', () => {
+  const observed = range('2026-07-19', '2026-07-19');
+  const stats = computeStatistics(merged({
+    timezone: 'Asia/Seoul',
+    codexSource: 'profile',
+    codexLifetimeTotalTokens: 1_000,
+    days: [day(
+      '2026-07-19',
+      metric({ input: 100, total: 100 }),
+      metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 300, sessions: null }),
+    )],
+    coverage: {
+      claude: {
+        dateBasis: 'Asia/Seoul',
+        totals: observed,
+        breakdown: observed,
+        sessions: observed,
+      },
+      codex: {
+        dateBasis: 'provider-calendar-date',
+        totals: observed,
+        breakdown: null,
+        sessions: null,
+      },
+    },
+  }), { asOf: '2026-07-19' });
+
+  assert.deepEqual(stats.lifetime.trackedTotalTokens, mixedMetric(400));
+  assert.deepEqual(stats.lifetime.sources.codex.trackedTotalTokens, mixedMetric(300));
+  assert.deepEqual(stats.lifetime.sources.codex.totalTokens, completeMetric(1_000));
+  assert.deepEqual(stats.lifetime.totalTokens, completeMetric(1_100));
+});
+
+test('calendar-misaligned 관측값은 누락 source가 있어도 lower bound로 표시하지 않는다', () => {
+  const observed = range('2026-07-19', '2026-07-19');
+  const stats = computeStatistics(merged({
+    timezone: 'Asia/Seoul',
+    codexSource: 'profile',
+    days: [day(
+      '2026-07-19',
+      null,
+      metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 300, sessions: null }),
+    )],
+    coverage: {
+      claude: { dateBasis: 'Asia/Seoul' },
+      codex: {
+        dateBasis: 'provider-calendar-date',
+        totals: observed,
+        breakdown: null,
+        sessions: null,
+      },
+    },
+  }), { asOf: '2026-07-19' });
+
+  assert.deepEqual(stats.periods.today.current.totalTokens, mixedMetric(300));
+  assert.equal(stats.periods.today.current.totalTokens.lowerBound, false);
+  assert.equal(stats.tokenMix.coverage, 'mixed');
+});
+
+test('값 없는 provider source도 mixed marker를 source share까지 보존한다', () => {
+  const observed = range('2026-06-20', '2026-07-19');
+  const stats = computeStatistics(merged({
+    timezone: 'Asia/Seoul',
+    codexSource: 'profile',
+    days: [day('2026-07-19', metric({ total: 100 }), null)],
+    coverage: {
+      claude: {
+        dateBasis: 'Asia/Seoul',
+        totals: observed,
+        breakdown: observed,
+        sessions: observed,
+      },
+      codex: {
+        dateBasis: 'provider-calendar-date',
+        totals: null,
+        breakdown: null,
+        sessions: null,
+      },
+    },
+  }), { asOf: '2026-07-19' });
+
+  assert.deepEqual(stats.periods.today.current.totalTokens, mixedMetric(100));
+  assert.deepEqual(stats.sourceShare.totalTokens, mixedMetric(100));
+  assert.deepEqual(stats.sourceShare.sources.codex.totalTokens, mixedMetric(null));
+  assert.equal(stats.sourceShare.sources.claude.percentage, null);
+  assert.equal(stats.sourceShare.sources.codex.percentage, null);
 });
 
 test('unknown 날짜는 서로 떨어진 active 날짜의 streak를 연결하지 않는다', () => {

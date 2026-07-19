@@ -11,10 +11,14 @@ function metricState(metric) {
   if (metric.coverage === 'partial') {
     return 'partial';
   }
+  if (metric.coverage === 'mixed') {
+    return 'mixed';
+  }
   return metric.value === 0 ? 'zero' : 'active';
 }
 function chart(statistics, name, label, y) {
   const buckets = statistics.trends[name];
+  const hasMixedCalendars = buckets.some((bucket) => bucket.totalTokens.coverage === 'mixed');
   const knownValues = buckets
     .map((bucket) => bucket.totalTokens.value)
     .filter((value) => value !== null);
@@ -38,7 +42,7 @@ function chart(statistics, name, label, y) {
   });
   return [
     `<text class="label" x="24" y="${y + 12}">${escapeXml(label)}</text>`,
-    `<text class="meta" x="476" y="${y + 12}" text-anchor="end">Peak ${escapeXml(formatCompactNumber(maximum))}</text>`,
+    `<text class="meta" x="476" y="${y + 12}" text-anchor="end">Peak ${hasMixedCalendars ? '≈' : ''}${escapeXml(formatCompactNumber(maximum))}</text>`,
     `<line class="axis" x1="24" y1="${baseline}" x2="476" y2="${baseline}"/>`,
     ...bars,
     `<text class="meta" x="24" y="${baseline + 15}">${escapeXml(buckets[0]?.range.startDate ?? '—')}</text>`,
@@ -55,7 +59,7 @@ export function renderTrends(statistics) {
   const empty = allBuckets.every((bucket) => bucket.totalTokens.value === null);
   const body = [
     '<text class="heading" x="24" y="31">Usage trends</text>',
-    `<text class="subheading" x="24" y="51">As of ${escapeXml(statistics.asOf)} · observed values only</text>`,
+    `<text class="subheading" x="24" y="51">As of ${escapeXml(statistics.asOf)} · ≈ marks mixed calendar dates</text>`,
     chart(statistics, 'daily', 'Daily · 30 days', 68),
     chart(statistics, 'weekly', 'Weekly · 12 Monday-based weeks', 194),
     chart(statistics, 'monthly', 'Monthly · 12 months', 320),
@@ -67,7 +71,7 @@ export function renderTrends(statistics) {
     width: 500,
     height: 460,
     title: 'AI usage trends',
-    description: `Daily, weekly, and monthly token trends as of ${statistics.asOf}. Dashed bars indicate partial or unknown observations.`,
+    description: `Daily, weekly, and monthly token trends as of ${statistics.asOf}. Mixed calendar bars use approximate values; dashed bars distinguish mixed, partial, and unknown observations.`,
     body,
   });
 }

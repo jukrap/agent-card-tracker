@@ -217,8 +217,18 @@ function partialMetric(value) {
   return observedMetric(value, 'partial');
 }
 
+function mixedMetric(value) {
+  return observedMetric(value, 'mixed');
+}
+
 function unknownMetric() {
   return observedMetric(null, 'unknown');
+}
+
+function unobservedSourceMetric(input, source) {
+  return input.coverage[source].dateBasis === input.timezone
+    ? unknownMetric()
+    : mixedMetric(null);
 }
 
 function hasKnownSignal(metric) {
@@ -234,27 +244,36 @@ function hasKnownSignal(metric) {
 function sourceTotalForDate(input, date, source) {
   const raw = input.days.get(date)?.[source] ?? null;
   if (inRange(date, input.coverage[source].totals)) {
-    return completeMetric(raw?.total ?? 0);
+    const value = raw?.total ?? 0;
+    return input.coverage[source].dateBasis === input.timezone
+      ? completeMetric(value)
+      : mixedMetric(value);
   }
   if (raw !== null && raw.total > 0) {
-    return partialMetric(raw.total);
+    return input.coverage[source].dateBasis === input.timezone
+      ? partialMetric(raw.total)
+      : mixedMetric(raw.total);
   }
-  return unknownMetric();
+  return unobservedSourceMetric(input, source);
 }
 
 function sourceSessionsForDate(input, date, source) {
   const raw = input.days.get(date)?.[source] ?? null;
   if (inRange(date, input.coverage[source].sessions)) {
-    return raw === null || raw.sessions === undefined
-      ? completeMetric(0)
-      : raw.sessions === null
-        ? unknownMetric()
-        : completeMetric(raw.sessions);
+    if (raw?.sessions === null) {
+      return unobservedSourceMetric(input, source);
+    }
+    const value = raw === null || raw.sessions === undefined ? 0 : raw.sessions;
+    return input.coverage[source].dateBasis === input.timezone
+      ? completeMetric(value)
+      : mixedMetric(value);
   }
   if (raw?.sessions !== null && raw?.sessions !== undefined && hasKnownSignal(raw)) {
-    return partialMetric(raw.sessions);
+    return input.coverage[source].dateBasis === input.timezone
+      ? partialMetric(raw.sessions)
+      : mixedMetric(raw.sessions);
   }
-  return unknownMetric();
+  return unobservedSourceMetric(input, source);
 }
 
 function combineMetrics(metrics, path) {
@@ -266,6 +285,9 @@ function combineMetrics(metrics, path) {
     (sum, metric) => safeAdd(sum, metric.value, path),
     0,
   );
+  if (metrics.some((metric) => metric.coverage === 'mixed')) {
+    return mixedMetric(value);
+  }
   return metrics.every((metric) => metric.coverage === 'complete')
     ? completeMetric(value)
     : partialMetric(value);
@@ -288,12 +310,17 @@ function sessionsForDate(input, date) {
 function aggregateMetrics(metrics, path) {
   const known = metrics.filter((metric) => metric.value !== null);
   if (known.length === 0) {
-    return unknownMetric();
+    return metrics.some((metric) => metric.coverage === 'mixed')
+      ? mixedMetric(null)
+      : unknownMetric();
   }
   const value = known.reduce(
     (sum, metric) => safeAdd(sum, metric.value, path),
     0,
   );
+  if (metrics.some((metric) => metric.coverage === 'mixed')) {
+    return mixedMetric(value);
+  }
   return metrics.every((metric) => metric.coverage === 'complete')
     ? completeMetric(value)
     : partialMetric(value);
@@ -327,6 +354,9 @@ function sourceRangeTotal(input, range, source) {
 }
 
 function comparison(current, previous) {
+  if (current.coverage === 'mixed' || previous.coverage === 'mixed') {
+    return { kind: 'mixed', percentage: null };
+  }
   if (current.coverage !== 'complete' || previous.coverage !== 'complete') {
     return { kind: 'unknown', percentage: null };
   }
@@ -421,8 +451,10 @@ function sourceShare(input, range) {
     [claude, codex],
     '$.statistics.sourceShare.totalTokens',
   );
-  const canComputeShare = claude.coverage === 'complete'
-    && codex.coverage === 'complete'
+  const canComputeShare = ['complete', 'mixed'].includes(claude.coverage)
+    && ['complete', 'mixed'].includes(codex.coverage)
+    && claude.value !== null
+    && codex.value !== null
     && totalTokens.value > 0;
 
   return {
@@ -451,16 +483,20 @@ function tokenMix(input, range) {
   };
   let sawKnown = false;
   let allComplete = true;
+  let sawMixed = false;
 
   for (const date of eachDay(range.startDate, range.endDate)) {
     for (const source of SOURCES) {
       const total = sourceTotalForDate(input, date, source);
+      if (total.coverage === 'mixed') {
+        sawMixed = true;
+      }
       if (total.value === null) {
         allComplete = false;
         continue;
       }
       sawKnown = true;
-      if (total.coverage !== 'complete') {
+      if (total.coverage !== 'complete' && total.coverage !== 'mixed') {
         allComplete = false;
       }
 
@@ -501,7 +537,13 @@ function tokenMix(input, range) {
       eachDay(range.startDate, range.endDate).map((date) => totalForDate(input, date)),
       '$.statistics.tokenMix.totalTokens',
     ),
-    coverage: !sawKnown ? 'unknown' : allComplete ? 'complete' : 'partial',
+    coverage: !sawKnown
+      ? 'unknown'
+      : sawMixed
+        ? 'mixed'
+        : allComplete
+          ? 'complete'
+          : 'partial',
   };
 }
 
@@ -528,13 +570,18 @@ function activityStatistics(input, asOf, lifetimeRange) {
   let longestRun = 0;
   let sawKnown = false;
   let sawUnknown = false;
+  let sawMixed = false;
   let leftBoundaryActive = false;
   let peak = null;
   let peakIncomplete = false;
+  let peakMixed = false;
 
   for (const [index, date] of dates.entries()) {
     const totalTokens = totalForDate(input, date);
     const state = stateForMetric(totalTokens);
+    if (totalTokens.coverage === 'mixed') {
+      sawMixed = true;
+    }
     if (state === 'unknown') {
       sawUnknown = true;
       currentRun = 0;
@@ -557,7 +604,9 @@ function activityStatistics(input, asOf, lifetimeRange) {
       ) {
         peak = { date, totalTokens: totalTokens.value };
       }
-      if (totalTokens.coverage !== 'complete') {
+      if (totalTokens.coverage === 'mixed') {
+        peakMixed = true;
+      } else if (totalTokens.coverage !== 'complete') {
         peakIncomplete = true;
       }
     } else {
@@ -567,18 +616,22 @@ function activityStatistics(input, asOf, lifetimeRange) {
 
   const binaryCoverage = !sawKnown
     ? 'unknown'
-    : sawUnknown
-      ? 'partial'
-      : 'complete';
+    : sawMixed
+      ? 'mixed'
+      : sawUnknown
+        ? 'partial'
+        : 'complete';
   const activeDaysMetric = binaryCoverage === 'unknown'
     ? unknownMetric()
     : observedMetric(activeDays, binaryCoverage);
   const longestCoverage = binaryCoverage === 'complete' && leftBoundaryActive
     ? 'partial'
     : binaryCoverage;
-  const longestStreakMetric = longestCoverage === 'unknown'
-    ? unknownMetric()
-    : observedMetric(longestRun, longestCoverage);
+  const longestStreakMetric = sawMixed
+    ? mixedMetric(null)
+    : longestCoverage === 'unknown'
+      ? unknownMetric()
+      : observedMetric(longestRun, longestCoverage);
 
   let currentStreak = 0;
   let currentCoverage = 'partial';
@@ -595,13 +648,15 @@ function activityStatistics(input, asOf, lifetimeRange) {
     }
     break;
   }
-  const currentStreakMetric = currentCoverage === 'unknown'
-    ? unknownMetric()
-    : observedMetric(currentStreak, currentCoverage);
+  const currentStreakMetric = sawMixed
+    ? mixedMetric(null)
+    : currentCoverage === 'unknown'
+      ? unknownMetric()
+      : observedMetric(currentStreak, currentCoverage);
 
   const peakCoverage = peak === null
-    ? (sawUnknown ? 'unknown' : 'complete')
-    : (peakIncomplete ? 'partial' : 'complete');
+    ? (sawMixed ? 'mixed' : sawUnknown ? 'unknown' : 'complete')
+    : (peakMixed ? 'mixed' : peakIncomplete ? 'partial' : 'complete');
   return {
     activeDays: activeDaysMetric,
     currentStreak: currentStreakMetric,

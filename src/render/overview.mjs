@@ -2,6 +2,7 @@ import {
   badge,
   cardDocument,
   comparisonText,
+  coverageLabel,
   escapeXml,
   formatCompactNumber,
   metricText,
@@ -36,6 +37,8 @@ function sourceShare(statistics) {
       ? 'No tokens observed'
       : share.totalTokens.coverage === 'partial'
         ? 'Partial total · source share unavailable'
+        : share.totalTokens.coverage === 'mixed'
+          ? 'Mixed calendars · source share unavailable'
         : 'Source share unavailable';
     return [
       '<rect class="surface" x="24" y="314" width="452" height="12" rx="6"/>',
@@ -43,11 +46,12 @@ function sourceShare(statistics) {
     ].join('\n');
   }
   const widths = proportionalWidths([claudePercentage, codexPercentage], 452);
+  const prefix = share.totalTokens.coverage === 'mixed' ? '≈' : '';
   return [
     `<rect class="source-claude" x="24" y="314" width="${widths[0]}" height="12" rx="6"/>`,
     `<rect class="source-codex" x="${24 + widths[0]}" y="314" width="${widths[1]}" height="12" rx="6"/>`,
-    `<text class="meta" x="24" y="341">Claude ${Math.round(claudePercentage)}%</text>`,
-    `<text class="meta" x="476" y="341" text-anchor="end">Codex ${Math.round(codexPercentage)}%</text>`,
+    `<text class="meta" x="24" y="341">Claude ${prefix}${Math.round(claudePercentage)}%</text>`,
+    `<text class="meta" x="476" y="341" text-anchor="end">Codex ${prefix}${Math.round(codexPercentage)}%</text>`,
   ].join('\n');
 }
 
@@ -56,6 +60,10 @@ function tokenMix(statistics) {
   const values = [mix.input, mix.output, mix.cacheRead, mix.cacheWrite, mix.unknownTokens];
   const classes = ['mix-input', 'mix-output', 'mix-cache-read', 'mix-cache-write', 'mix-unknown'];
   const widths = proportionalWidths(values, 452);
+  const formatMixValue = (value) => {
+    const formatted = formatCompactNumber(value);
+    return mix.coverage === 'mixed' ? `≈${formatted}` : formatted;
+  };
   let x = 24;
   const segments = widths.map((width, index) => {
     const segment = width === 0
@@ -66,10 +74,10 @@ function tokenMix(statistics) {
   }).filter(Boolean);
   return [
     ...segments,
-    `<text class="meta" x="24" y="401">Input ${escapeXml(formatCompactNumber(mix.input))}</text>`,
-    `<text class="meta" x="112" y="401">Output ${escapeXml(formatCompactNumber(mix.output))}</text>`,
-    `<text class="meta" x="205" y="401">Cache ${escapeXml(formatCompactNumber(mix.cacheRead + mix.cacheWrite))}</text>`,
-    `<text class="meta" x="476" y="401" text-anchor="end">Unknown mix ${escapeXml(formatCompactNumber(mix.unknownTokens))}</text>`,
+    `<text class="meta" x="24" y="401">Input ${escapeXml(formatMixValue(mix.input))}</text>`,
+    `<text class="meta" x="112" y="401">Output ${escapeXml(formatMixValue(mix.output))}</text>`,
+    `<text class="meta" x="205" y="401">Cache ${escapeXml(formatMixValue(mix.cacheRead + mix.cacheWrite))}</text>`,
+    `<text class="meta" x="476" y="401" text-anchor="end">Unknown mix ${escapeXml(formatMixValue(mix.unknownTokens))}</text>`,
   ].join('\n');
 }
 
@@ -101,7 +109,7 @@ export function renderOverview(statistics, {
     ...(empty ? ['<text class="small-value" x="250" y="205" text-anchor="middle">No observed usage yet</text>'] : []),
     '<text class="label" x="24" y="305">Source share · rolling 30 days</text>',
     sourceShare(statistics),
-    `<text class="label" x="24" y="361">Token mix · ${escapeXml(statistics.tokenMix.coverage === 'partial' ? 'Partial' : statistics.tokenMix.coverage === 'complete' ? 'Complete' : 'Unknown')}</text>`,
+    `<text class="label" x="24" y="361">Token mix · ${escapeXml(coverageLabel(statistics.tokenMix.coverage))}</text>`,
     tokenMix(statistics),
   ].join('\n');
 
@@ -110,7 +118,7 @@ export function renderOverview(statistics, {
     width: 500,
     height: 420,
     title: 'AI usage overview',
-    description: `Usage totals and token mix as of ${statistics.asOf}. Unknown and partial observations are marked explicitly.`,
+    description: `Usage totals and token mix as of ${statistics.asOf}. Unknown and partial observations are marked explicitly. Mixed calendar observations use ≈ and do not claim configured-timezone alignment.`,
     body,
   });
 }

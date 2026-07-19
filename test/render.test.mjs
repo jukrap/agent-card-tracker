@@ -419,3 +419,62 @@ test('determinism 검사는 --as-of flag를 요구하고 두 출력의 bytes를 
   assert.equal(valid.status, 0, valid.stderr);
   assert.match(valid.stdout, /Deterministic SVG OK \(3 cards, as-of 2026-07-19\)/);
 });
+
+test('mixed calendar 관측은 ≈와 비색상 상태로 표시하고 비교와 streak를 숨긴다', () => {
+  const statistics = sampleStatistics();
+  statistics.periods.today.current.totalTokens = observed(400, 'mixed');
+  statistics.periods.today.comparison = { kind: 'mixed', percentage: null };
+  statistics.sourceShare.totalTokens = observed(400, 'mixed');
+  statistics.sourceShare.sources.codex.totalTokens = observed(300, 'mixed');
+  statistics.tokenMix.totalTokens = observed(400, 'mixed');
+  statistics.tokenMix.coverage = 'mixed';
+  statistics.trends.daily[0].totalTokens = observed(1_000, 'mixed');
+  statistics.heatmap.cells[0] = {
+    ...statistics.heatmap.cells[0],
+    state: 'active',
+    totalTokens: 1_000,
+    coverage: 'mixed',
+    level: 1,
+  };
+  statistics.activity.activeDays = observed(84, 'mixed');
+  statistics.activity.currentStreak = observed(null, 'mixed');
+  statistics.activity.longestStreak = observed(null, 'mixed');
+  statistics.activity.peak = {
+    date: '2026-07-11',
+    totalTokens: 88_000,
+    coverage: 'mixed',
+    lowerBound: false,
+  };
+
+  const overview = renderOverview(statistics, { codexSource: 'profile' });
+  const trends = renderTrends(statistics);
+  const activity = renderActivity(statistics);
+
+  assert.match(overview, />≈400</);
+  assert.match(overview, /class="badge-mixed"/);
+  assert.match(overview, />Mixed</);
+  assert.match(overview, />Mixed calendars · no comparison</);
+  assert.match(overview, />Claude ≈25%</);
+  assert.match(overview, />Codex ≈75%</);
+  assert.match(overview, />Token mix · Mixed</);
+  assert.match(overview, />Input ≈10</);
+  assert.match(overview, /Mixed calendar observations use ≈/);
+
+  assert.match(trends, /class="trend-bar state-mixed"/);
+  assert.match(trends, /≈ marks mixed calendar dates/);
+  assert.match(trends, /Mixed calendar bars use approximate values/);
+
+  assert.match(activity, /coverage-mixed/);
+  assert.match(activity, />≈84</);
+  assert.match(activity, /<text class="value" x="184" y="232">—<\/text>/);
+  assert.match(activity, />≈2026-07-11</);
+  assert.match(activity, />≈88K</);
+  assert.match(activity, /Mixed calendar cells are approximate; streaks are unavailable/);
+
+  const themes = Array.from(CARD_STYLE.matchAll(/:root\{([^}]+)\}/gu), (match) => (
+    cssVariables(match[1])
+  ));
+  for (const theme of themes) {
+    assert.ok(contrastRatio(theme['--mixed'], theme['--on-mixed']) >= 4.5);
+  }
+});

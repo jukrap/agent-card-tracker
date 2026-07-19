@@ -21,9 +21,14 @@ function peakBlock(peak) {
     coverage: peak.coverage,
     lowerBound: peak.lowerBound,
   };
+  const date = peak.date === null
+    ? 'Unknown date'
+    : peak.coverage === 'mixed'
+      ? `≈${peak.date}`
+      : peak.date;
   return [
     '<text class="label" x="24" y="292">Peak day</text>',
-    `<text class="small-value" x="24" y="315">${escapeXml(peak.date ?? 'Unknown date')}</text>`,
+    `<text class="small-value" x="24" y="315">${escapeXml(date)}</text>`,
     `<text class="value" x="476" y="315" text-anchor="end">${escapeXml(metricText(metric))}</text>`,
   ].join('\n');
 }
@@ -47,16 +52,25 @@ export function renderActivity(statistics) {
     const level = Number.isInteger(cell.level) && cell.level >= 0 && cell.level <= 4
       ? cell.level
       : 0;
-    const coverage = cell.coverage === 'partial' ? 'partial' : cell.coverage === 'complete' ? 'complete' : 'unknown';
+    const coverage = ['complete', 'partial', 'mixed'].includes(cell.coverage)
+      ? cell.coverage
+      : 'unknown';
     return `<rect class="heat-cell state-${state} level-${level} coverage-${coverage}" x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="1"/>`;
   });
   const weekdayLabels = WEEKDAY_LABELS.map((label, index) => (
     `<text class="meta" x="43" y="${originY + index * (cellSize + gap) + 6}" text-anchor="end">${label}</text>`
   ));
   const empty = statistics.heatmap.cells.every((cell) => cell.state !== 'active');
+  const hasMixedCalendars = statistics.heatmap.cells.some((cell) => cell.coverage === 'mixed')
+    || [
+      statistics.activity.activeDays,
+      statistics.activity.currentStreak,
+      statistics.activity.longestStreak,
+    ].some((metric) => metric.coverage === 'mixed')
+    || statistics.activity.peak.coverage === 'mixed';
   const body = [
     '<text class="heading" x="24" y="31">AI activity</text>',
-    `<text class="subheading" x="24" y="51">53 weeks · Monday start · through ${escapeXml(statistics.asOf)}</text>`,
+    `<text class="subheading" x="24" y="51">53 weeks · through ${escapeXml(statistics.asOf)}${hasMixedCalendars ? ' · ≈ mixed calendar dates' : ' · Monday start'}</text>`,
     ...weekdayLabels,
     ...cells,
     `<text class="meta" x="54" y="151">${escapeXml(statistics.heatmap.startDate)}</text>`,
@@ -75,7 +89,7 @@ export function renderActivity(statistics) {
     width: 500,
     height: 340,
     title: 'AI usage activity',
-    description: `A 53-week activity heatmap with streak and peak statistics through ${statistics.asOf}. Empty, unknown, and future days are distinct.`,
+    description: `A 53-week activity heatmap with streak and peak statistics through ${statistics.asOf}. Empty, unknown, and future days are distinct. Mixed calendar cells are approximate; streaks are unavailable when calendars do not align.`,
     body,
   });
 }

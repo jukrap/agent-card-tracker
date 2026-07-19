@@ -15,8 +15,8 @@ const NUMBER_UNITS = Object.freeze([
 ]);
 
 export const CARD_STYLE = `
-:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--accent:#8250df;--accent-soft:#d8c7ff;--claude:#d97706;--codex:#2563eb;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#1f2328;--on-unknown:#ffffff;--heat-1:#d8c7ff;--heat-2:#b083f0;--heat-3:#8250df;--heat-4:#5a2ca0}
-@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#a371f7;--accent-soft:#4c2889;--claude:#f59e0b;--codex:#58a6ff;--unknown:#8b949e;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-unknown:#0d1117;--heat-1:#2b1d45;--heat-2:#4c2889;--heat-3:#8250df;--heat-4:#a371f7}}
+:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--accent:#8250df;--accent-soft:#d8c7ff;--claude:#d97706;--codex:#2563eb;--mixed:#0969da;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#1f2328;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#d8c7ff;--heat-2:#b083f0;--heat-3:#8250df;--heat-4:#5a2ca0}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#a371f7;--accent-soft:#4c2889;--claude:#f59e0b;--codex:#58a6ff;--mixed:#58a6ff;--unknown:#8b949e;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#2b1d45;--heat-2:#4c2889;--heat-3:#8250df;--heat-4:#a371f7}}
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
 .surface{fill:var(--surface);stroke:var(--border);stroke-width:1}
 .heading{fill:var(--text);font-family:sans-serif;font-size:18px;font-weight:700}
@@ -27,10 +27,12 @@ export const CARD_STYLE = `
 .meta{fill:var(--muted);font-family:sans-serif;font-size:9px}
 .badge-complete{fill:var(--accent)}
 .badge-partial{fill:var(--claude)}
+.badge-mixed{fill:var(--mixed)}
 .badge-unknown{fill:var(--unknown)}
 .badge-text{font-family:sans-serif;font-size:8px;font-weight:700}
 .badge-text-complete{fill:var(--on-accent)}
 .badge-text-partial{fill:var(--on-partial)}
+.badge-text-mixed{fill:var(--on-mixed)}
 .badge-text-unknown{fill:var(--on-unknown)}
 .axis{stroke:var(--border);stroke-width:1}
 .source-claude{fill:var(--claude)}
@@ -43,6 +45,7 @@ export const CARD_STYLE = `
 .trend-bar{fill:var(--accent)}
 .state-zero{fill:var(--zero)}
 .state-partial{fill:var(--accent);stroke:var(--claude);stroke-width:1;stroke-dasharray:2 2}
+.state-mixed{fill:var(--accent);stroke:var(--mixed);stroke-width:1;stroke-dasharray:4 2}
 .state-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
 .heat-cell{stroke:var(--border);stroke-width:0.5}
 .state-future{fill:none;stroke:var(--border)}
@@ -51,6 +54,7 @@ export const CARD_STYLE = `
 .level-3{fill:var(--heat-3)}
 .level-4{fill:var(--heat-4)}
 .coverage-partial{stroke:var(--claude);stroke-width:1;stroke-dasharray:1 1}
+.coverage-mixed{stroke:var(--mixed);stroke-width:1;stroke-dasharray:3 1}
 `.trim();
 
 export function escapeXml(value) {
@@ -83,7 +87,10 @@ export function metricText(metric) {
     return '—';
   }
   const formatted = formatCompactNumber(metric.value);
-  return metric.coverage === 'partial' ? `≥${formatted}` : formatted;
+  if (metric.coverage === 'partial') {
+    return `≥${formatted}`;
+  }
+  return metric.coverage === 'mixed' ? `≈${formatted}` : formatted;
 }
 
 export function coverageLabel(coverage) {
@@ -93,19 +100,25 @@ export function coverageLabel(coverage) {
   if (coverage === 'partial') {
     return 'Partial';
   }
+  if (coverage === 'mixed') {
+    return 'Mixed';
+  }
   return 'Unknown';
 }
 
 export function badge(x, y, coverage) {
   const label = coverageLabel(coverage);
-  const width = label === 'Complete' ? 47 : label === 'Partial' ? 38 : 43;
+  const width = label === 'Complete' ? 47 : label === 'Partial' ? 38 : label === 'Mixed' ? 36 : 43;
   const safeCoverage = escapeXml(
-    coverage === 'complete' || coverage === 'partial' ? coverage : 'unknown',
+    ['complete', 'partial', 'mixed'].includes(coverage) ? coverage : 'unknown',
   );
   return `<g><rect class="badge-${safeCoverage}" x="${x}" y="${y}" width="${width}" height="14" rx="7"/><text class="badge-text badge-text-${safeCoverage}" x="${x + width / 2}" y="${y + 10}" text-anchor="middle">${label}</text></g>`;
 }
 
 export function comparisonText(comparison) {
+  if (comparison?.kind === 'mixed') {
+    return 'Mixed calendars · no comparison';
+  }
   if (comparison?.kind === 'flat') {
     return 'No change';
   }
