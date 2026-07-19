@@ -396,7 +396,14 @@ test('render CLI는 명시적 --as-of 날짜를 요구하고 안전한 결과만
   assert.equal(await runRenderCommand([], { stdout, stderr }, { cwd }), 2);
   assert.match(stderr.text(), /--as-of YYYY-MM-DD/);
   assert.equal(
-    await runRenderCommand(['--as-of', AS_OF], { stdout, stderr }, { cwd }),
+    await runRenderCommand(
+      ['--as-of', AS_OF],
+      { stdout, stderr },
+      {
+        cwd,
+        withRepositoryLockImpl: (_options, operation) => operation(),
+      },
+    ),
     0,
   );
   assert.match(stdout.text(), /Rendered 3 cards as of 2026-07-19/);

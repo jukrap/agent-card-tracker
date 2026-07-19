@@ -85,7 +85,10 @@ test('render CLI and determinism checker accept the same explicit instant', asyn
     await runRenderCommand(
       ['--as-of', AS_OF, '--as-of-instant', AS_OF_INSTANT],
       { stdout, stderr },
-      { cwd },
+      {
+        cwd,
+        withRepositoryLockImpl: (_options, operation) => operation(),
+      },
     ),
     0,
   );

@@ -14,6 +14,7 @@ import {
   validateProfileCandidate,
 } from '../domain/schema.mjs';
 import { computeStatistics } from '../domain/statistics.mjs';
+import { withRepositoryLock as defaultWithRepositoryLock } from '../git/repository.mjs';
 import { renderActivity } from '../render/activity.mjs';
 import { renderOverview } from '../render/overview.mjs';
 import { validateSvgDocument } from '../render/svg-validator.mjs';
@@ -297,15 +298,31 @@ export async function run(
   }
 
   try {
-    const result = await renderCards({
-      ...dependencies,
-      asOf: options.asOf,
-      asOfInstant: options.asOfInstant,
-    });
+    const {
+      renderCardsImpl = renderCards,
+      repositoryLockOptions = {},
+      withRepositoryLockImpl = defaultWithRepositoryLock,
+      ...renderOptions
+    } = dependencies;
+    const cwd = renderOptions.cwd ?? process.cwd();
+    const fileSystem = renderOptions.fileSystem ?? defaultFileSystem;
+    const result = await withRepositoryLockImpl(
+      { ...repositoryLockOptions, cwd, fileSystem },
+      () => renderCardsImpl({
+        ...renderOptions,
+        cwd,
+        fileSystem,
+        asOf: options.asOf,
+        asOfInstant: options.asOfInstant,
+      }),
+    );
     write(io.stdout, `Rendered 3 cards as of ${result.asOf}.`);
     return 0;
   } catch (error) {
-    const code = error instanceof RenderCommandError ? error.code : 'RENDER_FAILED';
+    const code = error instanceof RenderCommandError
+      || (typeof error?.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/u.test(error.code))
+      ? error.code
+      : 'RENDER_FAILED';
     write(io.stderr, `Render failed: ${code}`);
     return 1;
   }
