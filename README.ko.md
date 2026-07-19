@@ -146,9 +146,9 @@ npm run publish-cards -- --as-of YYYY-MM-DD
 
 ### 기기 교체 또는 폐기
 
-먼저 해당 scheduler를 중단합니다. 기기 JSON을 유지하면 과거 사용량도 유지되고 시간이 지나 stale로 표시됩니다. device/profile JSON을 제거하면 그 기기의 과거 기여분도 합계에서 사라집니다.
+local config를 교체하거나 기기를 대체하기 전에 먼저 해당 scheduler를 중단합니다. 기기 JSON을 유지하면 과거 사용량도 유지되고 시간이 지나 stale로 표시됩니다. device/profile JSON을 제거하면 그 기기의 과거 기여분도 합계에서 사라집니다.
 
-교체 컴퓨터에 같은 raw log 이력을 옮겼다면 이전 snapshot과 새 snapshot을 함께 두지 마세요. 겹치는 날짜가 두 번 합산됩니다. 새 컴퓨터가 새 로그로만 시작한다면 이전 snapshot은 과거 이력용으로 유지하고 새 config를 만듭니다. config를 잃었지만 같은 로그를 유지하는 경우에도 같은 중복 기준으로 판단해야 하며, 기존 config를 임의로 재구성하거나 복사하면 안 됩니다.
+교체 컴퓨터나 새 config가 같은 raw log 이력을 사용한다면 이전 snapshot과 새 snapshot을 함께 두지 마세요. 겹치는 날짜가 두 번 합산됩니다. 새 identity를 sync하기 전에 이전 device/profile snapshot과 겹치는 이력을 명시적으로 정리합니다. 새 컴퓨터가 새 로그로만 시작한다면 이전 snapshot은 과거 이력용으로 유지하고 새 config를 만듭니다. config를 잃었지만 같은 로그를 유지하는 경우에도 같은 중복 기준으로 판단해야 합니다. `setup`은 기존 config를 덮어쓰지 않으며, 이를 임의로 재구성하거나 복사하면 안 됩니다.
 
 ### Push 또는 ownership 충돌
 

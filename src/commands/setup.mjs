@@ -8,9 +8,9 @@ import {
   createLocalConfig,
   validateLocalConfig,
 } from '../config.mjs';
-import { stableStringify, writeJsonAtomic } from '../lib/atomic-file.mjs';
+import { stableStringify } from '../lib/atomic-file.mjs';
 
-const HELP = `Usage: agent-card setup [--timezone IANA_TIMEZONE] [--force]
+const HELP = `Usage: agent-card setup [--timezone IANA_TIMEZONE]
 
 Create an ignored, private local configuration for this device.
 Copying this configuration to another computer is unsupported.
@@ -46,11 +46,10 @@ function resolvedTimezone(timezone) {
 export async function setupLocalConfig({
   configPath = path.join(process.cwd(), LOCAL_CONFIG_FILENAME),
   timezone,
-  force = false,
   randomBytesImpl,
   fileSystem = defaultFileSystem,
 } = {}) {
-  if (!force && await pathExists(configPath, fileSystem)) {
+  if (await pathExists(configPath, fileSystem)) {
     throw commandError('CONFIG_EXISTS');
   }
 
@@ -60,20 +59,12 @@ export async function setupLocalConfig({
   });
 
   try {
-    if (force) {
-      await writeJsonAtomic(configPath, config, {
-        validate: validateLocalConfig,
-        fileSystem,
-        mode: 0o600,
-      });
-    } else {
-      await fileSystem.mkdir(path.dirname(configPath), { recursive: true });
-      await fileSystem.writeFile(configPath, stableStringify(config), {
-        encoding: 'utf8',
-        flag: 'wx',
-        mode: 0o600,
-      });
-    }
+    await fileSystem.mkdir(path.dirname(configPath), { recursive: true });
+    await fileSystem.writeFile(configPath, stableStringify(config), {
+      encoding: 'utf8',
+      flag: 'wx',
+      mode: 0o600,
+    });
   } catch (error) {
     if (error?.code === 'EEXIST') {
       throw commandError('CONFIG_EXISTS');
@@ -84,12 +75,10 @@ export async function setupLocalConfig({
 }
 
 function parseArgs(args) {
-  const options = { force: false };
+  const options = {};
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
-    if (argument === '--force') {
-      options.force = true;
-    } else if (argument === '--timezone' && args[index + 1]) {
+    if (argument === '--timezone' && args[index + 1]) {
       options.timezone = args[index + 1];
       index += 1;
     } else if (argument === '--help' || argument === '-h') {
@@ -124,7 +113,6 @@ export async function run(
     const config = await setupLocalConfig({
       configPath: path.join(cwd, LOCAL_CONFIG_FILENAME),
       timezone: options.timezone,
-      force: options.force,
       fileSystem,
       randomBytesImpl,
     });

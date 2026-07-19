@@ -84,7 +84,7 @@ test('local config requires exact fields, a 128-bit device id, a distinct writer
   }
 });
 
-test('setup refuses to overwrite existing local config unless force is explicit', async (t) => {
+test('setup always refuses to overwrite an existing local config', async (t) => {
   const directory = await temporaryDirectory(t);
   const configPath = path.join(directory, '.agent-card.local.json');
   const firstRandom = deterministicRandom(
@@ -113,14 +113,37 @@ test('setup refuses to overwrite existing local config unless force is explicit'
   );
   assert.equal(await readFile(configPath, 'utf8'), originalBytes);
 
-  const replacement = await setupLocalConfig({
-    configPath,
-    timezone: 'UTC',
-    force: true,
-    randomBytesImpl: secondRandom,
-  });
-  assert.notEqual(replacement.deviceId, first.deviceId);
-  assert.equal((await loadLocalConfig(configPath)).timezone, 'UTC');
+  await assert.rejects(
+    setupLocalConfig({
+      configPath,
+      timezone: 'UTC',
+      force: true,
+      randomBytesImpl: secondRandom,
+    }),
+    (error) => error instanceof LocalConfigError && error.code === 'CONFIG_EXISTS',
+  );
+  assert.equal(await readFile(configPath, 'utf8'), originalBytes);
+  assert.deepEqual(await loadLocalConfig(configPath), first);
+});
+
+test('setup help omits force and the CLI rejects the removed flag', async (t) => {
+  const directory = await temporaryDirectory(t);
+  const helpOutput = captureIo();
+  const invalidOutput = captureIo();
+
+  assert.equal(await runSetup(['--help'], helpOutput.io, { cwd: directory }), 0);
+  assert.doesNotMatch(helpOutput.stdout(), /--force/);
+
+  assert.equal(
+    await runSetup(
+      ['--timezone', 'Asia/Seoul', '--force'],
+      invalidOutput.io,
+      { cwd: directory },
+    ),
+    2,
+  );
+  assert.equal(invalidOutput.stdout(), '');
+  assert.equal(invalidOutput.stderr(), 'Setup failed: INVALID_ARGUMENT\n');
 });
 
 test('loadLocalConfig fails closed without echoing malformed local contents', async (t) => {

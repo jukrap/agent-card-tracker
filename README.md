@@ -146,9 +146,9 @@ Create a fresh dedicated clone, run `npm ci`, run `setup` with the shared timezo
 
 ### Replace or retire a device
 
-Stop its scheduler first. Keeping its device JSON preserves historical usage and eventually marks it stale. Removing its device and profile JSON removes that device's historical contribution too.
+Stop its scheduler before rotating or replacing its local config. Keeping its device JSON preserves historical usage and eventually marks it stale. Removing its device and profile JSON removes that device's historical contribution too.
 
-If a replacement computer receives the same raw log history, do not keep both the old and new snapshots: their overlapping days will be counted twice. If the replacement starts with new logs only, keep the old snapshot for history and create a new config for the new computer. Losing a config while retaining the same logs requires the same overlap decision; do not reconstruct or copy the old config casually.
+If a replacement computer or new config receives the same raw log history, do not keep both the old and new snapshots: their overlapping days will be counted twice. Resolve the old device/profile snapshot and overlapping history explicitly before syncing the new identity. If the replacement starts with new logs only, keep the old snapshot for history and create a new config for the new computer. Losing a config while retaining the same logs requires the same overlap decision; `setup` will not overwrite an existing config, and you must not reconstruct or copy it casually.
 
 ### Push or ownership conflict
 

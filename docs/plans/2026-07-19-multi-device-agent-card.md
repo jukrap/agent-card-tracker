@@ -171,7 +171,7 @@ git commit -m "feat(collect): ccusage 일별 통계 정규화 추가"
 **Step 1: 실패하는 setup/collect 테스트 작성**
 
 - setup은 hostname과 무관한 `device-` 접두사의 128-bit random ID, 별도 random writer key, IANA timezone을 `.agent-card.local.json`에 만든다.
-- 이미 있는 설정은 명시적 `--force` 없이 덮어쓰지 않는다.
+- 이미 있는 설정은 항상 덮어쓰지 않는다. 새 identity가 기존 공개 snapshot과 같은 로컬 이력을 중복 집계할 수 있으므로 강제 overwrite 경로를 제공하지 않는다.
 - collect는 공개 snapshot의 `writerKeyHash`가 로컬 writer key와 일치할 때만 `data/devices/<deviceId>.json` 하나를 덮어쓴다.
 - 한 source가 실패하면 해당 source의 직전 유효 days를 보존하고 sanitized `errorCode`와 상태만 갱신한다.
 - 두 source 모두 처음부터 실패해도 유효한 빈 스냅샷을 만든다.
