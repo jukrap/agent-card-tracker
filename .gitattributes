@@ -4,4 +4,5 @@
 *.svg text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+.env.example text eol=lf
 *.ps1 text eol=crlf
