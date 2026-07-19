@@ -2,6 +2,7 @@
 AGENTS.md
 .agents/
 .codex/
+.worktrees/
 
 node_modules/
 .agent-card.local.json
@@ -12,4 +13,3 @@ node_modules/
 coverage/
 dist/
 *.log
-
