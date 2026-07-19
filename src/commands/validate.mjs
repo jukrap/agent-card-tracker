@@ -13,11 +13,12 @@ import {
 import { stableStringify } from '../lib/atomic-file.mjs';
 import { validateSvgDocument } from '../render/svg-validator.mjs';
 
-const execFile = promisify(execFileCallback);
+const defaultExecFile = promisify(execFileCallback);
 const MAX_JSON_BYTES = 1024 * 1024;
 const MAX_SVG_BYTES = 200 * 1024;
 const MAX_PUBLIC_FILES = 4096;
 const MAX_GIT_OUTPUT_BYTES = 8 * 1024 * 1024;
+const GIT_TIMEOUT_MS = 30_000;
 const SAFE_RULE_CODE = /^[A-Z][A-Z0-9_]{0,63}$/;
 const SAFE_RELATIVE_PATH = /^[A-Za-z0-9._/-]+$/;
 const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
@@ -97,6 +98,67 @@ function lexicalCompare(left, right) {
   if (left < right) return -1;
   if (left > right) return 1;
   return 0;
+}
+
+function environmentValue(environment, canonicalName) {
+  if (Object.hasOwn(environment, canonicalName)
+    && typeof environment[canonicalName] === 'string') {
+    return environment[canonicalName];
+  }
+  const lowerName = canonicalName.toLowerCase();
+  for (const [key, value] of Object.entries(environment)) {
+    if (key.toLowerCase() === lowerName && typeof value === 'string') {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function safeGitChildEnvironment(environment = process.env) {
+  const source = environment !== null && typeof environment === 'object'
+    ? environment
+    : {};
+  const result = {};
+  for (const name of [
+    'PATH',
+    'SystemRoot',
+    'WINDIR',
+    'ComSpec',
+    'PATHEXT',
+    'TEMP',
+    'TMP',
+  ]) {
+    const value = environmentValue(source, name);
+    if (value !== undefined) {
+      result[name] = value;
+    }
+  }
+  return {
+    ...result,
+    LANG: 'C',
+    LC_ALL: 'C',
+    GCM_INTERACTIVE: 'Never',
+    GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null',
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_OPTIONAL_LOCKS: '0',
+    GIT_TERMINAL_PROMPT: '0',
+  };
+}
+
+function gitChildOptions({ cwd, encoding, maxBuffer, env }) {
+  return {
+    cwd,
+    encoding,
+    env,
+    maxBuffer,
+    shell: false,
+    timeout: GIT_TIMEOUT_MS,
+    windowsHide: true,
+  };
+}
+
+function gitArguments(rootPath, args) {
+  return ['-c', `safe.directory=${rootPath}`, ...args];
 }
 
 function normalizeFieldName(fieldName) {
@@ -459,7 +521,12 @@ function parseNulList(stdout) {
   return stdout.split('\0').filter((entry) => entry.length > 0);
 }
 
-async function defaultListGitEntries(rootPath, fileSystem) {
+async function defaultListGitEntries(
+  rootPath,
+  fileSystem,
+  execFileImpl,
+  childEnvironment,
+) {
   if (!(await hasGitMetadata(rootPath, fileSystem))) {
     return [];
   }
@@ -468,15 +535,28 @@ async function defaultListGitEntries(rootPath, fileSystem) {
   let staged;
   try {
     [listed, staged] = await Promise.all([
-      execFile(
+      execFileImpl(
         'git',
-        ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
-        { cwd: rootPath, encoding: 'utf8', maxBuffer: MAX_GIT_OUTPUT_BYTES },
+        gitArguments(
+          rootPath,
+          ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+        ),
+        gitChildOptions({
+          cwd: rootPath,
+          encoding: 'utf8',
+          env: childEnvironment,
+          maxBuffer: MAX_GIT_OUTPUT_BYTES,
+        }),
       ),
-      execFile(
+      execFileImpl(
         'git',
-        ['ls-files', '-z', '--stage'],
-        { cwd: rootPath, encoding: 'utf8', maxBuffer: MAX_GIT_OUTPUT_BYTES },
+        gitArguments(rootPath, ['ls-files', '-z', '--stage']),
+        gitChildOptions({
+          cwd: rootPath,
+          encoding: 'utf8',
+          env: childEnvironment,
+          maxBuffer: MAX_GIT_OUTPUT_BYTES,
+        }),
       ),
     ]);
   } catch {
@@ -533,17 +613,29 @@ function decodeUtf8(value, filePath) {
   }
 }
 
-async function defaultReadGitBlob({ rootPath, objectId, maxBytes, filePath }) {
+async function defaultReadGitBlob({
+  rootPath,
+  objectId,
+  maxBytes,
+  filePath,
+  execFileImpl,
+  childEnvironment,
+}) {
   if (typeof objectId !== 'string' || !/^[0-9a-f]{40,64}$/.test(objectId)) {
     fail('GIT_INDEX_FORMAT', filePath);
   }
 
   let sizeOutput;
   try {
-    ({ stdout: sizeOutput } = await execFile(
+    ({ stdout: sizeOutput } = await execFileImpl(
       'git',
-      ['cat-file', '-s', objectId],
-      { cwd: rootPath, encoding: 'utf8', maxBuffer: 128 },
+      gitArguments(rootPath, ['cat-file', '-s', objectId]),
+      gitChildOptions({
+        cwd: rootPath,
+        encoding: 'utf8',
+        env: childEnvironment,
+        maxBuffer: 128,
+      }),
     ));
   } catch {
     fail('GIT_BLOB_READ', filePath);
@@ -562,10 +654,15 @@ async function defaultReadGitBlob({ rootPath, objectId, maxBytes, filePath }) {
 
   let contents;
   try {
-    ({ stdout: contents } = await execFile(
+    ({ stdout: contents } = await execFileImpl(
       'git',
-      ['cat-file', 'blob', objectId],
-      { cwd: rootPath, encoding: null, maxBuffer: maxBytes + 1 },
+      gitArguments(rootPath, ['cat-file', 'blob', objectId]),
+      gitChildOptions({
+        cwd: rootPath,
+        encoding: null,
+        env: childEnvironment,
+        maxBuffer: maxBytes + 1,
+      }),
     ));
   } catch {
     fail('GIT_BLOB_READ', filePath);
@@ -700,6 +797,8 @@ function validatePublicContents(contents, file) {
 
 export async function validateRepository({
   cwd = process.cwd(),
+  env = process.env,
+  execFileImpl = defaultExecFile,
   fileSystem = defaultFileSystem,
   listGitEntries,
   readGitBlob,
@@ -717,12 +816,18 @@ export async function validateRepository({
   if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) {
     fail('INVALID_ROOT', '<repository>');
   }
+  const childEnvironment = safeGitChildEnvironment(env);
 
   let entries;
   try {
     entries = listGitEntries
       ? await listGitEntries({ cwd: rootPath })
-      : await defaultListGitEntries(rootPath, fileSystem);
+      : await defaultListGitEntries(
+        rootPath,
+        fileSystem,
+        execFileImpl,
+        childEnvironment,
+      );
   } catch (error) {
     if (error instanceof RepositoryValidationError) {
       throw error;
@@ -749,6 +854,8 @@ export async function validateRepository({
           objectId: entry.objectId,
           maxBytes: definition.maxBytes,
           filePath: entry.path,
+          execFileImpl,
+          childEnvironment,
         });
     } catch (error) {
       if (error instanceof RepositoryValidationError) {
@@ -812,6 +919,8 @@ export async function run(
   io = { stdout: process.stdout, stderr: process.stderr },
   {
     cwd = process.cwd(),
+    env = process.env,
+    execFileImpl = defaultExecFile,
     fileSystem = defaultFileSystem,
     listGitEntries,
     readGitBlob,
@@ -828,7 +937,14 @@ export async function run(
   }
 
   try {
-    const result = await validateRepository({ cwd, fileSystem, listGitEntries, readGitBlob });
+    const result = await validateRepository({
+      cwd,
+      env,
+      execFileImpl,
+      fileSystem,
+      listGitEntries,
+      readGitBlob,
+    });
     write(
       io.stdout,
       `Validated devices=${result.deviceSnapshots} profiles=${result.profileCandidates} cards=${result.cards}`,

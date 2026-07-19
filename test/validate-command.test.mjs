@@ -322,6 +322,82 @@ test('staged public blob과 working tree를 모두 검증한다', async (t) => {
   });
 });
 
+test('ls-files와 cat-file은 profile bearer가 제거된 최소 child env만 받는다', async (t) => {
+  const cwd = await createTempDirectory(t, 'agent-card-validate-env-');
+  await mkdir(path.join(cwd, '.git'));
+  const svg = validSvg();
+  await writePublicFile(cwd, 'cards/overview.svg', svg);
+  const objectId = 'ab'.repeat(20);
+  const observed = [];
+  const sourceEnvironment = {
+    Path: 'safe-path',
+    systemroot: 'C:\\Windows',
+    windir: 'C:\\Windows',
+    ComSpec: 'C:\\Windows\\System32\\cmd.exe',
+    pathext: '.COM;.EXE;.BAT;.CMD',
+    TEMP: 'C:\\safe-temp',
+    tmp: 'C:\\safe-tmp',
+    HOME: 'C:\\private-home',
+    USERPROFILE: 'C:\\Users\\private-user',
+    CODEX_BEARER_TOKEN: 'private-upper',
+    codex_bearer_token: 'private-lower',
+    CoDeX_BeArEr_ToKeN: 'private-mixed',
+    ANTHROPIC_API_KEY: 'private-adjacent-secret',
+    GIT_DIR: 'C:\\attacker-controlled-git-dir',
+  };
+
+  async function execFileImpl(command, args, options) {
+    observed.push({ command, args, options });
+    const gitCommand = args.find((argument) => ['ls-files', 'cat-file'].includes(argument));
+    if (gitCommand === 'ls-files' && args.includes('--stage')) {
+      return {
+        stdout: `100644 ${objectId} 0\tcards/overview.svg\0`,
+        stderr: '',
+      };
+    }
+    if (gitCommand === 'ls-files') {
+      return { stdout: 'cards/overview.svg\0', stderr: '' };
+    }
+    if (gitCommand === 'cat-file' && args.includes('-s')) {
+      return { stdout: `${Buffer.byteLength(svg, 'utf8')}\n`, stderr: '' };
+    }
+    if (gitCommand === 'cat-file' && args.includes('blob')) {
+      return { stdout: Buffer.from(svg, 'utf8'), stderr: Buffer.alloc(0) };
+    }
+    throw new Error('unexpected git command');
+  }
+
+  assert.deepEqual(
+    await validateRepository({ cwd, env: sourceEnvironment, execFileImpl }),
+    { deviceSnapshots: 0, profileCandidates: 0, cards: 1 },
+  );
+  assert.equal(observed.length, 4);
+  for (const call of observed) {
+    assert.equal(call.command, 'git');
+    assert.deepEqual(
+      call.args.slice(0, 2),
+      ['-c', `safe.directory=${path.resolve(cwd)}`],
+    );
+    assert.equal(call.options.shell, false);
+    assert.equal(call.options.windowsHide, true);
+    assert.equal(call.options.env.PATH, 'safe-path');
+    assert.equal(call.options.env.SystemRoot, 'C:\\Windows');
+    assert.equal(call.options.env.LC_ALL, 'C');
+    assert.equal(call.options.env.GIT_TERMINAL_PROMPT, '0');
+    assert.equal(call.options.env.GIT_CONFIG_NOSYSTEM, '1');
+    assert.ok(['NUL', '/dev/null'].includes(call.options.env.GIT_CONFIG_GLOBAL));
+    assert.equal(
+      Object.keys(call.options.env)
+        .some((key) => key.toLowerCase() === 'codex_bearer_token'),
+      false,
+    );
+    assert.equal(Object.hasOwn(call.options.env, 'HOME'), false);
+    assert.equal(Object.hasOwn(call.options.env, 'USERPROFILE'), false);
+    assert.equal(Object.hasOwn(call.options.env, 'ANTHROPIC_API_KEY'), false);
+    assert.equal(Object.hasOwn(call.options.env, 'GIT_DIR'), false);
+  }
+});
+
 test('tracked raw JSONL과 injected path traversal 후보를 fail closed 처리한다', async (t) => {
   const cwd = await createTempDirectory(t, 'agent-card-validate-raw-');
   await execFile('git', ['init', '--quiet'], { cwd });
