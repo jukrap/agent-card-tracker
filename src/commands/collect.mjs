@@ -82,7 +82,19 @@ function previousSource(existing, agent) {
   return existing?.sources?.[agent] ?? {
     lastSuccessfulAt: null,
     days: [],
+    coverage: { totals: null, sessions: null },
   };
+}
+
+function dateInTimezone(instant, timezone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(instant));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 async function collectSource({
@@ -102,10 +114,19 @@ async function collectSource({
       runner,
       runnerOptions: { cwd },
     });
+    const collectionDate = dateInTimezone(collectedAt, timezone);
+    const totals = {
+      startDate: result.days[0]?.date ?? collectionDate,
+      endDate: collectionDate,
+    };
     return {
       status: 'ok',
       lastSuccessfulAt: collectedAt,
       days: result.days,
+      coverage: {
+        totals,
+        sessions: result.sessionStatus === 'ok' ? { ...totals } : null,
+      },
     };
   } catch (error) {
     const previous = previousSource(existing, agent);
@@ -114,6 +135,7 @@ async function collectSource({
       errorCode: safeErrorCode(error),
       lastSuccessfulAt: previous.lastSuccessfulAt,
       days: previous.days,
+      coverage: previous.coverage,
     };
   }
 }

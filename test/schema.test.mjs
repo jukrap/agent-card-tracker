@@ -31,6 +31,10 @@ function makeSource(overrides = {}) {
     status: 'ok',
     lastSuccessfulAt: '2026-07-19T12:34:56.000Z',
     days: [makeDay()],
+    coverage: {
+      totals: { startDate: '2026-07-19', endDate: '2026-07-19' },
+      sessions: { startDate: '2026-07-19', endDate: '2026-07-19' },
+    },
     ...overrides,
   };
 }
@@ -50,6 +54,7 @@ function makeDeviceSnapshot(overrides = {}) {
         errorCode: 'NO_LOCAL_DATA',
         lastSuccessfulAt: null,
         days: [],
+        coverage: { totals: null, sessions: null },
       }),
     },
     ...overrides,
@@ -104,11 +109,44 @@ test('profile candidate accepts provider calendar dates and sanitized coverage',
   assert.deepEqual(JSON.parse(serialized), candidate);
 });
 
-test('sessions may be null only when the collector could not observe them', () => {
+test('sessions may be null only when session coverage is unavailable', () => {
   const snapshot = makeDeviceSnapshot();
   snapshot.sources.claude.days[0].sessions = null;
+  snapshot.sources.claude.coverage.sessions = null;
 
   assert.doesNotThrow(() => validateDeviceSnapshot(snapshot));
+});
+
+test('device source coverage is strict, inclusive, and consistent with every daily record', () => {
+  const missing = makeDeviceSnapshot();
+  delete missing.sources.claude.coverage;
+  expectSchemaError(() => validateDeviceSnapshot(missing), 'MISSING_FIELD');
+
+  const unknown = makeDeviceSnapshot();
+  unknown.sources.claude.coverage.note = 'public';
+  expectSchemaError(() => validateDeviceSnapshot(unknown), 'UNKNOWN_FIELD');
+
+  const reversed = makeDeviceSnapshot();
+  reversed.sources.claude.coverage.totals = {
+    startDate: '2026-07-20',
+    endDate: '2026-07-19',
+  };
+  expectSchemaError(() => validateDeviceSnapshot(reversed), 'COVERAGE');
+
+  const outsideTotals = makeDeviceSnapshot();
+  outsideTotals.sources.claude.coverage.totals = {
+    startDate: '2026-07-18',
+    endDate: '2026-07-18',
+  };
+  expectSchemaError(() => validateDeviceSnapshot(outsideTotals), 'COVERAGE');
+
+  const unknownSessionsWithCount = makeDeviceSnapshot();
+  unknownSessionsWithCount.sources.claude.coverage.sessions = null;
+  expectSchemaError(() => validateDeviceSnapshot(unknownSessionsWithCount), 'COVERAGE');
+
+  const coveredSessionsWithoutCount = makeDeviceSnapshot();
+  coveredSessionsWithoutCount.sources.claude.days[0].sessions = null;
+  expectSchemaError(() => validateDeviceSnapshot(coveredSessionsWithoutCount), 'COVERAGE');
 });
 
 test('schema version, device id, writer hash, timestamp, and collector version fail closed', () => {
@@ -239,6 +277,22 @@ test('source status and lastSuccessfulAt preserve safe failure state', () => {
   const healthyWithError = makeDeviceSnapshot();
   healthyWithError.sources.claude.errorCode = 'TIMEOUT';
   expectSchemaError(() => validateDeviceSnapshot(healthyWithError), 'SOURCE_STATE');
+
+  const healthyWithoutTotals = makeDeviceSnapshot();
+  healthyWithoutTotals.sources.claude.coverage.totals = null;
+  healthyWithoutTotals.sources.claude.coverage.sessions = null;
+  healthyWithoutTotals.sources.claude.days = [];
+  expectSchemaError(() => validateDeviceSnapshot(healthyWithoutTotals), 'SOURCE_STATE');
+
+  const failedWithoutCode = makeDeviceSnapshot();
+  failedWithoutCode.sources.codex.errorCode = undefined;
+  delete failedWithoutCode.sources.codex.errorCode;
+  expectSchemaError(() => validateDeviceSnapshot(failedWithoutCode), 'SOURCE_STATE');
+
+  const preservedFailure = makeDeviceSnapshot();
+  preservedFailure.sources.claude.status = 'error';
+  preservedFailure.sources.claude.errorCode = 'CCUSAGE_COMMAND_FAILED';
+  assert.doesNotThrow(() => validateDeviceSnapshot(preservedFailure));
 });
 
 test('profile coverage and daily contract are internally consistent', () => {

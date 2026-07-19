@@ -151,6 +151,19 @@ function assertDate(value, path) {
   }
 }
 
+function validateCoverageRange(value, path, { nullable = false } = {}) {
+  if (nullable && value === null) {
+    return null;
+  }
+  assertExactKeys(value, ['startDate', 'endDate'], [], path);
+  assertDate(value.startDate, `${path}.startDate`);
+  assertDate(value.endDate, `${path}.endDate`);
+  if (value.startDate > value.endDate) {
+    fail('COVERAGE', path);
+  }
+  return value;
+}
+
 function assertInstant(value, path, { nullable = false } = {}) {
   if (nullable && value === null) {
     return;
@@ -221,25 +234,64 @@ function validateUsageDay(day, path) {
 }
 
 function validateSource(source, path) {
-  assertExactKeys(source, ['status', 'lastSuccessfulAt', 'days'], ['errorCode'], path);
+  assertExactKeys(source, ['status', 'lastSuccessfulAt', 'days', 'coverage'], ['errorCode'], path);
   if (!SOURCE_STATUSES.has(source.status)) {
     fail('SOURCE_STATUS', `${path}.status`);
   }
   assertInstant(source.lastSuccessfulAt, `${path}.lastSuccessfulAt`, { nullable: true });
   assertSortedUniqueDays(source.days, `${path}.days`, validateUsageDay);
 
-  if (source.status === 'ok') {
-    if (source.lastSuccessfulAt === null || Object.hasOwn(source, 'errorCode')) {
+  assertExactKeys(source.coverage, ['totals', 'sessions'], [], `${path}.coverage`);
+  const totalsCoverage = validateCoverageRange(
+    source.coverage.totals,
+    `${path}.coverage.totals`,
+    { nullable: true },
+  );
+  const sessionsCoverage = validateCoverageRange(
+    source.coverage.sessions,
+    `${path}.coverage.sessions`,
+    { nullable: true },
+  );
+
+  if (totalsCoverage === null) {
+    if (source.days.length > 0 || source.lastSuccessfulAt !== null || sessionsCoverage !== null) {
       fail('SOURCE_STATE', path);
     }
-  } else if (Object.hasOwn(source, 'errorCode')) {
-    if (typeof source.errorCode !== 'string' || !ERROR_CODE_PATTERN.test(source.errorCode)) {
-      fail('ERROR_CODE', `${path}.errorCode`);
+  } else if (source.lastSuccessfulAt === null) {
+    fail('SOURCE_STATE', path);
+  }
+
+  for (const day of source.days) {
+    if (
+      totalsCoverage === null
+      || day.date < totalsCoverage.startDate
+      || day.date > totalsCoverage.endDate
+    ) {
+      fail('COVERAGE', `${path}.coverage.totals`);
+    }
+    if (
+      (sessionsCoverage === null && day.sessions !== null)
+      || (sessionsCoverage !== null && day.sessions === null)
+    ) {
+      fail('COVERAGE', `${path}.coverage.sessions`);
     }
   }
 
-  if (source.days.length > 0 && source.lastSuccessfulAt === null) {
-    fail('SOURCE_STATE', path);
+  if (source.status === 'ok') {
+    if (
+      source.lastSuccessfulAt === null
+      || totalsCoverage === null
+      || Object.hasOwn(source, 'errorCode')
+    ) {
+      fail('SOURCE_STATE', path);
+    }
+  } else {
+    if (!Object.hasOwn(source, 'errorCode')) {
+      fail('SOURCE_STATE', path);
+    }
+    if (typeof source.errorCode !== 'string' || !ERROR_CODE_PATTERN.test(source.errorCode)) {
+      fail('ERROR_CODE', `${path}.errorCode`);
+    }
   }
 }
 

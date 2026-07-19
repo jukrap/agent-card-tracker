@@ -26,7 +26,7 @@ function localConfig() {
   };
 }
 
-function usageDay(date, seed) {
+function usageDay(date, seed, overrides = {}) {
   return {
     date,
     inputTokens: seed,
@@ -35,6 +35,7 @@ function usageDay(date, seed) {
     cacheWriteTokens: seed + 3,
     totalTokens: seed + 10,
     sessions: 1,
+    ...overrides,
   };
 }
 
@@ -92,11 +93,19 @@ function existingSnapshot(overrides = {}) {
         status: 'ok',
         lastSuccessfulAt: '2026-07-18T01:02:03.000Z',
         days: [usageDay('2026-07-18', 10)],
+        coverage: {
+          totals: { startDate: '2026-07-18', endDate: '2026-07-18' },
+          sessions: { startDate: '2026-07-18', endDate: '2026-07-18' },
+        },
       },
       codex: {
         status: 'ok',
         lastSuccessfulAt: '2026-07-18T01:02:03.000Z',
         days: [usageDay('2026-07-18', 20)],
+        coverage: {
+          totals: { startDate: '2026-07-18', endDate: '2026-07-18' },
+          sessions: { startDate: '2026-07-18', endDate: '2026-07-18' },
+        },
       },
     },
     ...overrides,
@@ -163,6 +172,11 @@ test('collect writes one exact, public-safe device snapshot with sha256 writer o
   ]);
   assert.deepEqual(snapshot.sources.claude.days, [usageDay('2026-07-19', 100)]);
   assert.deepEqual(snapshot.sources.codex.days, [usageDay('2026-07-19', 200)]);
+  assert.deepEqual(snapshot.sources.claude.coverage, {
+    totals: { startDate: '2026-07-19', endDate: '2026-07-19' },
+    sessions: { startDate: '2026-07-19', endDate: '2026-07-19' },
+  });
+  assert.deepEqual(snapshot.sources.codex.coverage, snapshot.sources.claude.coverage);
   assert.deepEqual(calls.map(({ args }) => args.slice(0, 2)), [
     ['claude', 'daily'],
     ['claude', 'session'],
@@ -247,6 +261,7 @@ test('a failed source preserves its previous valid days and timestamp with a san
     errorCode: 'CCUSAGE_COMMAND_FAILED',
     lastSuccessfulAt: previous.sources.claude.lastSuccessfulAt,
     days: previous.sources.claude.days,
+    coverage: previous.sources.claude.coverage,
   });
   assert.equal(snapshot.sources.codex.status, 'ok');
   assert.equal(snapshot.sources.codex.lastSuccessfulAt, COLLECTED_AT);
@@ -272,8 +287,54 @@ test('daily success with session failure remains ok and marks session counts unk
   assert.equal(snapshot.sources.codex.status, 'ok');
   assert.equal(snapshot.sources.claude.days[0].sessions, null);
   assert.equal(snapshot.sources.codex.days[0].sessions, null);
+  assert.deepEqual(snapshot.sources.claude.coverage, {
+    totals: { startDate: '2026-07-19', endDate: '2026-07-19' },
+    sessions: null,
+  });
+  assert.deepEqual(snapshot.sources.codex.coverage, snapshot.sources.claude.coverage);
   assert.equal('errorCode' in snapshot.sources.claude, false);
   assert.equal('errorCode' in snapshot.sources.codex, false);
+});
+
+test('empty successful collection covers the local collection date and preserves session observability', async (t) => {
+  const root = await fixtureDirectory(t);
+
+  const snapshot = await collectDeviceUsage({
+    cwd: root,
+    now: () => new Date('2026-07-19T16:00:00.000Z'),
+    collectUsage: async () => ({ days: [], sessionStatus: 'ok' }),
+  });
+
+  for (const source of Object.values(snapshot.sources)) {
+    assert.deepEqual(source.coverage, {
+      totals: { startDate: '2026-07-20', endDate: '2026-07-20' },
+      sessions: { startDate: '2026-07-20', endDate: '2026-07-20' },
+    });
+  }
+});
+
+test('successful collection starts totals coverage at the first active date', async (t) => {
+  const root = await fixtureDirectory(t);
+
+  const snapshot = await collectDeviceUsage({
+    cwd: root,
+    now: () => new Date('2026-07-19T16:00:00.000Z'),
+    collectUsage: async ({ agent }) => ({
+      days: agent === 'claude'
+        ? [usageDay('2026-07-18', 50, { sessions: null })]
+        : [],
+      sessionStatus: 'unavailable',
+    }),
+  });
+
+  assert.deepEqual(snapshot.sources.claude.coverage, {
+    totals: { startDate: '2026-07-18', endDate: '2026-07-20' },
+    sessions: null,
+  });
+  assert.deepEqual(snapshot.sources.codex.coverage, {
+    totals: { startDate: '2026-07-20', endDate: '2026-07-20' },
+    sessions: null,
+  });
 });
 
 test('first-run failure of both sources still atomically writes a valid empty snapshot', async (t) => {
@@ -306,6 +367,7 @@ test('first-run failure of both sources still atomically writes a valid empty sn
       errorCode: 'CCUSAGE_COMMAND_FAILED',
       lastSuccessfulAt: null,
       days: [],
+      coverage: { totals: null, sessions: null },
     });
   }
   assert.equal(renames.length, 1);

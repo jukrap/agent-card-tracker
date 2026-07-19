@@ -25,10 +25,18 @@ function usageDay(date, overrides = {}) {
 }
 
 function source(days = [], overrides = {}) {
+  const totals = {
+    startDate: days[0]?.date ?? '2026-07-19',
+    endDate: '2026-07-19',
+  };
   return {
     status: 'ok',
     lastSuccessfulAt: '2026-07-19T11:00:00.000Z',
     days,
+    coverage: {
+      totals,
+      sessions: days.some((day) => day.sessions === null) ? null : { ...totals },
+    },
     ...overrides,
   };
 }
@@ -395,22 +403,48 @@ test('uses an explicit timezone for an empty device set and otherwise defaults t
 
 test('reports local and provider calendar coverage without converting profile dates', () => {
   const first = deviceSnapshot('1', {
-    generatedAt: '2026-07-20T00:00:00.000Z',
     sources: {
       claude: source(
-        [usageDay('2026-07-17', { sessions: null })],
-        { lastSuccessfulAt: '2026-07-19T16:30:00.000Z' },
+        [usageDay('2026-03-01', { sessions: null })],
+        {
+          coverage: {
+            totals: { startDate: '2026-03-01', endDate: '2026-03-07' },
+            sessions: null,
+          },
+        },
       ),
-      codex: source([], { lastSuccessfulAt: '2026-07-18T16:30:00.000Z' }),
+      codex: source([], {
+        coverage: {
+          totals: { startDate: '2026-03-01', endDate: '2026-03-07' },
+          sessions: { startDate: '2026-03-01', endDate: '2026-03-07' },
+        },
+      }),
     },
   });
   const second = deviceSnapshot('2', {
     sources: {
       claude: source(
-        [usageDay('2026-07-19', { sessions: 2 })],
-        { lastSuccessfulAt: '2026-07-19T14:00:00.000Z' },
+        [usageDay('2026-03-03', {
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          totalTokens: 0,
+          sessions: 0,
+        })],
+        {
+          coverage: {
+            totals: { startDate: '2026-03-03', endDate: '2026-03-07' },
+            sessions: { startDate: '2026-03-03', endDate: '2026-03-07' },
+          },
+        },
       ),
-      codex: source([], { lastSuccessfulAt: '2026-07-19T16:30:00.000Z' }),
+      codex: source([], {
+        coverage: {
+          totals: { startDate: '2026-03-03', endDate: '2026-03-07' },
+          sessions: { startDate: '2026-03-03', endDate: '2026-03-07' },
+        },
+      }),
     },
   });
 
@@ -419,17 +453,15 @@ test('reports local and provider calendar coverage without converting profile da
   assert.deepEqual(local.coverage, {
     claude: {
       dateBasis: 'Asia/Seoul',
-      startDate: '2026-07-17',
-      endDate: '2026-07-20',
-      breakdown: 'full',
-      sessions: 'partial',
+      totals: { startDate: '2026-03-03', endDate: '2026-03-07' },
+      breakdown: { startDate: '2026-03-03', endDate: '2026-03-07' },
+      sessions: null,
     },
     codex: {
       dateBasis: 'Asia/Seoul',
-      startDate: null,
-      endDate: '2026-07-20',
-      breakdown: 'full',
-      sessions: 'unknown',
+      totals: { startDate: '2026-03-03', endDate: '2026-03-07' },
+      breakdown: { startDate: '2026-03-03', endDate: '2026-03-07' },
+      sessions: { startDate: '2026-03-03', endDate: '2026-03-07' },
     },
   });
   assert.deepEqual(local.diagnostics.dateBasis, {
@@ -452,14 +484,88 @@ test('reports local and provider calendar coverage without converting profile da
 
   assert.deepEqual(profile.coverage.codex, {
     dateBasis: 'provider-calendar-date',
-    startDate: '2026-07-18',
-    endDate: '2026-07-19',
-    breakdown: 'total-only',
-    sessions: 'unknown',
+    totals: { startDate: '2026-07-18', endDate: '2026-07-19' },
+    breakdown: null,
+    sessions: null,
   });
   assert.deepEqual(profile.diagnostics.dateBasis, {
     claude: 'Asia/Seoul',
     codex: 'provider-calendar-date',
     profileDatesPreserved: true,
   });
+});
+
+test('shrinks complete local coverage when one device stops updating', () => {
+  const current = deviceSnapshot('1', {
+    sources: {
+      claude: source([], {
+        coverage: {
+          totals: { startDate: '2026-03-01', endDate: '2026-03-07' },
+          sessions: { startDate: '2026-03-01', endDate: '2026-03-07' },
+        },
+      }),
+    },
+  });
+  const stale = deviceSnapshot('2', {
+    sources: {
+      claude: source([], {
+        coverage: {
+          totals: { startDate: '2026-03-03', endDate: '2026-03-05' },
+          sessions: { startDate: '2026-03-03', endDate: '2026-03-05' },
+        },
+      }),
+    },
+  });
+
+  const result = mergeUsage({ deviceSnapshots: [current, stale], asOf: NOW });
+
+  assert.deepEqual(result.coverage.claude, {
+    dateBasis: 'Asia/Seoul',
+    totals: { startDate: '2026-03-03', endDate: '2026-03-05' },
+    breakdown: { startDate: '2026-03-03', endDate: '2026-03-05' },
+    sessions: { startDate: '2026-03-03', endDate: '2026-03-05' },
+  });
+  assert.equal('2026-03-06' > result.coverage.claude.totals.endDate, true);
+});
+
+test('reports unknown local coverage when any device is unknown or ranges do not overlap', () => {
+  const known = deviceSnapshot('1', {
+    sources: {
+      claude: source([], {
+        coverage: {
+          totals: { startDate: '2026-03-01', endDate: '2026-03-02' },
+          sessions: { startDate: '2026-03-01', endDate: '2026-03-02' },
+        },
+      }),
+    },
+  });
+  const unknown = deviceSnapshot('2', {
+    sources: {
+      claude: source([], {
+        status: 'error',
+        errorCode: 'CCUSAGE_COMMAND_FAILED',
+        lastSuccessfulAt: null,
+        coverage: { totals: null, sessions: null },
+      }),
+    },
+  });
+  const disjoint = deviceSnapshot('3', {
+    sources: {
+      claude: source([], {
+        coverage: {
+          totals: { startDate: '2026-03-03', endDate: '2026-03-04' },
+          sessions: { startDate: '2026-03-03', endDate: '2026-03-04' },
+        },
+      }),
+    },
+  });
+
+  assert.deepEqual(
+    mergeUsage({ deviceSnapshots: [known, unknown], asOf: NOW }).coverage.claude,
+    { dateBasis: 'Asia/Seoul', totals: null, breakdown: null, sessions: null },
+  );
+  assert.deepEqual(
+    mergeUsage({ deviceSnapshots: [known, disjoint], asOf: NOW }).coverage.claude,
+    { dateBasis: 'Asia/Seoul', totals: null, breakdown: null, sessions: null },
+  );
 });

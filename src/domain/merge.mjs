@@ -164,55 +164,45 @@ function sessionCoverage(aggregate) {
   return 'partial';
 }
 
-function publicSessionCoverage(aggregate) {
-  const coverage = sessionCoverage(aggregate);
-  if (coverage === 'complete') {
-    return 'full';
+function intersectCoverage(devices, sourceName, field) {
+  const ranges = devices.map((snapshot) => snapshot.sources[sourceName].coverage[field]);
+  if (ranges.length === 0 || ranges.some((range) => range === null)) {
+    return null;
   }
-  if (coverage === 'partial') {
-    return 'partial';
-  }
-  return 'unknown';
+
+  const startDate = ranges.reduce(
+    (latest, range) => (range.startDate > latest ? range.startDate : latest),
+    ranges[0].startDate,
+  );
+  const endDate = ranges.reduce(
+    (earliest, range) => (range.endDate < earliest ? range.endDate : earliest),
+    ranges[0].endDate,
+  );
+  return startDate <= endDate ? { startDate, endDate } : null;
 }
 
-function instantDateInTimezone(instant, timezone) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(new Date(instant));
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function localSourceCoverage(devices, sourceName, timezone, aggregate) {
-  const dayDates = devices.flatMap((snapshot) =>
-    snapshot.sources[sourceName].days.map((day) => day.date));
-  const successfulDates = devices.flatMap((snapshot) => {
-    const lastSuccessfulAt = snapshot.sources[sourceName].lastSuccessfulAt;
-    return lastSuccessfulAt === null
-      ? []
-      : [instantDateInTimezone(lastSuccessfulAt, timezone)];
-  });
-  const endDates = [...dayDates, ...successfulDates];
-
+function localSourceCoverage(devices, sourceName, timezone) {
+  const totals = intersectCoverage(devices, sourceName, 'totals');
   return {
     dateBasis: timezone,
-    startDate: dayDates.length === 0 ? null : dayDates.toSorted()[0],
-    endDate: endDates.length === 0 ? null : endDates.toSorted().at(-1),
-    breakdown: 'full',
-    sessions: publicSessionCoverage(aggregate),
+    totals,
+    breakdown: totals === null ? null : { ...totals },
+    sessions: intersectCoverage(devices, sourceName, 'sessions'),
   };
 }
 
 function profileCoverage(candidate) {
+  const totals = candidate.coverage.startDate === null
+    ? null
+    : {
+        startDate: candidate.coverage.startDate,
+        endDate: candidate.coverage.endDate,
+      };
   return {
     dateBasis: candidate.dateBasis,
-    startDate: candidate.coverage.startDate,
-    endDate: candidate.coverage.endDate,
-    breakdown: 'total-only',
-    sessions: 'unknown',
+    totals,
+    breakdown: null,
+    sessions: null,
   };
 }
 
@@ -405,10 +395,9 @@ export function mergeUsage({
     devices,
     'claude',
     mergedTimezone,
-    claudeAggregate,
   );
   const codexCoverage = selectedProfile === null
-    ? localSourceCoverage(devices, 'codex', mergedTimezone, localCodexAggregate)
+    ? localSourceCoverage(devices, 'codex', mergedTimezone)
     : profileCoverage(selectedProfile);
 
   const result = {
