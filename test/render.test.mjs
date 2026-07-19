@@ -11,10 +11,31 @@ import { renderCards, run as runRenderCommand } from '../src/commands/render.mjs
 import { renderActivity } from '../src/render/activity.mjs';
 import { renderOverview } from '../src/render/overview.mjs';
 import { renderTrends } from '../src/render/trends.mjs';
-import { formatCompactNumber } from '../src/render/svg.mjs';
+import { CARD_STYLE, formatCompactNumber } from '../src/render/svg.mjs';
 
 const AS_OF = '2026-07-19';
 const FIXTURE_PATH = new URL('./fixtures/public/multi-device.json', import.meta.url);
+
+function relativeLuminance(hex) {
+  const channels = hex.match(/[0-9a-f]{2}/giu).map((value) => Number.parseInt(value, 16) / 255);
+  const [red, green, blue] = channels.map((value) => (
+    value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  ));
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+function contrastRatio(left, right) {
+  const luminances = [relativeLuminance(left), relativeLuminance(right)]
+    .toSorted((first, second) => second - first);
+  return (luminances[0] + 0.05) / (luminances[1] + 0.05);
+}
+
+function cssVariables(declarations) {
+  return Object.fromEntries(declarations.split(';').filter(Boolean).map((declaration) => {
+    const separator = declaration.indexOf(':');
+    return [declaration.slice(0, separator), declaration.slice(separator + 1)];
+  }));
+}
 
 function observed(value, coverage = 'complete') {
   return {
@@ -177,6 +198,24 @@ test('세 카드가 접근 가능한 고정 viewBox의 self-contained XML을 생
   assertSafeCard(activity, '0 0 500 340');
   assert.match(overview, /UTC &amp; &lt;safe&gt;/);
   assert.match(overview, /2 stale sources/);
+});
+
+test('light와 dark theme의 badge 텍스트 대비가 WCAG AA 기준을 충족한다', () => {
+  const themes = Array.from(CARD_STYLE.matchAll(/:root\{([^}]+)\}/gu), (match) => (
+    cssVariables(match[1])
+  ));
+
+  assert.equal(themes.length, 2);
+  for (const theme of themes) {
+    assert.ok(contrastRatio(theme['--accent'], theme['--on-accent']) >= 4.5);
+    assert.ok(contrastRatio(theme['--claude'], theme['--on-partial']) >= 4.5);
+    assert.ok(contrastRatio(theme['--unknown'], theme['--on-unknown']) >= 4.5);
+  }
+
+  const overview = renderOverview(sampleStatistics(), { codexSource: 'profile' });
+  assert.match(overview, /class="badge-text badge-text-complete"/);
+  assert.match(overview, /class="badge-text badge-text-partial"/);
+  assert.match(overview, /class="badge-text badge-text-unknown"/);
 });
 
 test('관측 0, unknown, partial과 profile total-only unknown token mix를 구분한다', () => {

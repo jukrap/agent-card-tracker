@@ -15,8 +15,8 @@ const NUMBER_UNITS = Object.freeze([
 ]);
 
 export const CARD_STYLE = `
-:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--accent:#8250df;--accent-soft:#d8c7ff;--claude:#d97706;--codex:#2563eb;--unknown:#8c959f;--zero:#eaeef2;--heat-1:#d8c7ff;--heat-2:#b083f0;--heat-3:#8250df;--heat-4:#5a2ca0}
-@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#a371f7;--accent-soft:#4c2889;--claude:#f59e0b;--codex:#58a6ff;--unknown:#6e7681;--zero:#21262d;--heat-1:#2b1d45;--heat-2:#4c2889;--heat-3:#8250df;--heat-4:#a371f7}}
+:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--accent:#8250df;--accent-soft:#d8c7ff;--claude:#d97706;--codex:#2563eb;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#1f2328;--on-unknown:#ffffff;--heat-1:#d8c7ff;--heat-2:#b083f0;--heat-3:#8250df;--heat-4:#5a2ca0}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#a371f7;--accent-soft:#4c2889;--claude:#f59e0b;--codex:#58a6ff;--unknown:#8b949e;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-unknown:#0d1117;--heat-1:#2b1d45;--heat-2:#4c2889;--heat-3:#8250df;--heat-4:#a371f7}}
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
 .surface{fill:var(--surface);stroke:var(--border);stroke-width:1}
 .heading{fill:var(--text);font-family:sans-serif;font-size:18px;font-weight:700}
@@ -28,7 +28,10 @@ export const CARD_STYLE = `
 .badge-complete{fill:var(--accent)}
 .badge-partial{fill:var(--claude)}
 .badge-unknown{fill:var(--unknown)}
-.badge-text{fill:var(--bg);font-family:sans-serif;font-size:8px;font-weight:700}
+.badge-text{font-family:sans-serif;font-size:8px;font-weight:700}
+.badge-text-complete{fill:var(--on-accent)}
+.badge-text-partial{fill:var(--on-partial)}
+.badge-text-unknown{fill:var(--on-unknown)}
 .axis{stroke:var(--border);stroke-width:1}
 .source-claude{fill:var(--claude)}
 .source-codex{fill:var(--codex)}
@@ -96,7 +99,10 @@ export function coverageLabel(coverage) {
 export function badge(x, y, coverage) {
   const label = coverageLabel(coverage);
   const width = label === 'Complete' ? 47 : label === 'Partial' ? 38 : 43;
-  return `<g><rect class="badge-${escapeXml(coverage === 'complete' || coverage === 'partial' ? coverage : 'unknown')}" x="${x}" y="${y}" width="${width}" height="14" rx="7"/><text class="badge-text" x="${x + width / 2}" y="${y + 10}" text-anchor="middle">${label}</text></g>`;
+  const safeCoverage = escapeXml(
+    coverage === 'complete' || coverage === 'partial' ? coverage : 'unknown',
+  );
+  return `<g><rect class="badge-${safeCoverage}" x="${x}" y="${y}" width="${width}" height="14" rx="7"/><text class="badge-text badge-text-${safeCoverage}" x="${x + width / 2}" y="${y + 10}" text-anchor="middle">${label}</text></g>`;
 }
 
 export function comparisonText(comparison) {
