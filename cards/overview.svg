@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 420" role="img" aria-labelledby="usage-overview-title usage-overview-desc">
+<title id="usage-overview-title">AI usage overview</title>
+<desc id="usage-overview-desc">Usage totals and token mix as of 2026-07-20. Unknown and partial observations are marked explicitly. Mixed calendar observations use ≈ and do not claim configured-timezone alignment.</desc>
+<style>:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--accent:#8250df;--accent-soft:#d8c7ff;--claude:#d97706;--codex:#2563eb;--mixed:#0969da;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#1f2328;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#d8c7ff;--heat-2:#b083f0;--heat-3:#8250df;--heat-4:#5a2ca0}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#a371f7;--accent-soft:#4c2889;--claude:#f59e0b;--codex:#58a6ff;--mixed:#58a6ff;--unknown:#8b949e;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#2b1d45;--heat-2:#4c2889;--heat-3:#8250df;--heat-4:#a371f7}}
+.card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
+.surface{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.heading{fill:var(--text);font-family:sans-serif;font-size:18px;font-weight:700}
+.subheading{fill:var(--muted);font-family:sans-serif;font-size:11px}
+.label{fill:var(--muted);font-family:sans-serif;font-size:10px;font-weight:600}
+.value{fill:var(--text);font-family:sans-serif;font-size:20px;font-weight:700}
+.small-value{fill:var(--text);font-family:sans-serif;font-size:12px;font-weight:600}
+.meta{fill:var(--muted);font-family:sans-serif;font-size:9px}
+.badge-complete{fill:var(--accent)}
+.badge-partial{fill:var(--claude)}
+.badge-mixed{fill:var(--mixed)}
+.badge-unknown{fill:var(--unknown)}
+.badge-text{font-family:sans-serif;font-size:8px;font-weight:700}
+.badge-text-complete{fill:var(--on-accent)}
+.badge-text-partial{fill:var(--on-partial)}
+.badge-text-mixed{fill:var(--on-mixed)}
+.badge-text-unknown{fill:var(--on-unknown)}
+.axis{stroke:var(--border);stroke-width:1}
+.source-claude{fill:var(--claude)}
+.source-codex{fill:var(--codex)}
+.mix-input{fill:#2da44e}
+.mix-output{fill:#cf222e}
+.mix-cache-read{fill:#bf8700}
+.mix-cache-write{fill:#8250df}
+.mix-unknown{fill:var(--unknown)}
+.trend-bar{fill:var(--accent)}
+.state-zero{fill:var(--zero)}
+.state-partial{fill:var(--accent);stroke:var(--claude);stroke-width:1;stroke-dasharray:2 2}
+.state-mixed{fill:var(--accent);stroke:var(--mixed);stroke-width:1;stroke-dasharray:4 2}
+.state-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.heat-cell{stroke:var(--border);stroke-width:0.5}
+.state-future{fill:none;stroke:var(--border)}
+.level-1{fill:var(--heat-1)}
+.level-2{fill:var(--heat-2)}
+.level-3{fill:var(--heat-3)}
+.level-4{fill:var(--heat-4)}
+.coverage-partial{stroke:var(--claude);stroke-width:1;stroke-dasharray:1 1}
+.coverage-mixed{stroke:var(--mixed);stroke-width:1;stroke-dasharray:3 1}</style>
+<rect class="card-bg" x="0.5" y="0.5" width="499" height="419" rx="10"/>
+<text class="heading" x="24" y="31">AI usage overview</text>
+<text class="subheading" x="24" y="51">As of 2026-07-20 · Asia/Seoul</text>
+<text class="meta" x="476" y="32" text-anchor="end">Device totals</text>
+<rect class="surface" x="24" y="70" width="218" height="62" rx="7"/>
+<text class="label" x="36" y="87">Today</text>
+<text class="value" x="36" y="113">455M</text>
+<g><rect class="badge-complete" x="182" y="78" width="47" height="14" rx="7"/><text class="badge-text badge-text-complete" x="205.5" y="88" text-anchor="middle">Complete</text></g>
+<text class="meta" x="36" y="126">Comparison unavailable</text>
+<rect class="surface" x="258" y="70" width="218" height="62" rx="7"/>
+<text class="label" x="270" y="87">Rolling 7 days</text>
+<text class="value" x="270" y="113">≥2.56B</text>
+<g><rect class="badge-partial" x="416" y="78" width="38" height="14" rx="7"/><text class="badge-text badge-text-partial" x="435" y="88" text-anchor="middle">Partial</text></g>
+<text class="meta" x="270" y="126">Comparison unavailable</text>
+<rect class="surface" x="24" y="143" width="218" height="62" rx="7"/>
+<text class="label" x="36" y="160">Rolling 30 days</text>
+<text class="value" x="36" y="186">≥5.73B</text>
+<g><rect class="badge-partial" x="182" y="151" width="38" height="14" rx="7"/><text class="badge-text badge-text-partial" x="201" y="161" text-anchor="middle">Partial</text></g>
+<text class="meta" x="36" y="199">Comparison unavailable</text>
+<rect class="surface" x="258" y="143" width="218" height="62" rx="7"/>
+<text class="label" x="270" y="160">Month to date</text>
+<text class="value" x="270" y="186">≥5.73B</text>
+<g><rect class="badge-partial" x="416" y="151" width="38" height="14" rx="7"/><text class="badge-text badge-text-partial" x="435" y="161" text-anchor="middle">Partial</text></g>
+<text class="meta" x="270" y="199">Comparison unavailable</text>
+<rect class="surface" x="24" y="216" width="452" height="70" rx="7"/>
+<text class="label" x="36" y="235">Lifetime</text>
+<text class="value" x="36" y="265">≥7.04B</text>
+<g><rect class="badge-partial" x="416" y="226" width="38" height="14" rx="7"/><text class="badge-text badge-text-partial" x="435" y="236" text-anchor="middle">Partial</text></g>
+<text class="meta" x="476" y="272" text-anchor="end">Sessions ≥213</text>
+<text class="label" x="24" y="305">Source share · rolling 30 days</text>
+<rect class="surface" x="24" y="314" width="452" height="12" rx="6"/>
+<text class="meta" x="24" y="341">Partial total · source share unavailable</text>
+<text class="label" x="24" y="361">Token mix · Partial</text>
+<rect class="mix-input" x="24" y="370" width="13.26" height="10"/>
+<rect class="mix-output" x="37.26" y="370" width="1.33" height="10"/>
+<rect class="mix-cache-read" x="38.589999999999996" y="370" width="437.41" height="10"/>
+<text class="meta" x="24" y="401">Input 168M</text>
+<text class="meta" x="112" y="401">Output 16.8M</text>
+<text class="meta" x="205" y="401">Cache 5.55B</text>
+<text class="meta" x="476" y="401" text-anchor="end">Unknown mix 0</text>
+</svg>
