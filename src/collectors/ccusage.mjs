@@ -253,6 +253,19 @@ function stdoutFromRunnerResult(result) {
   throw collectorError('CCUSAGE_COMMAND_FAILED');
 }
 
+function sanitizedChildEnvironment(overrides) {
+  const environment = {
+    ...process.env,
+    ...(overrides ?? {}),
+  };
+  for (const key of Object.keys(environment)) {
+    if (key.toLowerCase() === 'codex_bearer_token') {
+      delete environment[key];
+    }
+  }
+  return environment;
+}
+
 export function createCcusageRunner({
   entryPath = DEFAULT_CCUSAGE_ENTRY_PATH,
   timeoutMs = DEFAULT_CCUSAGE_TIMEOUT_MS,
@@ -275,7 +288,7 @@ export function createCcusageRunner({
       {
         cwd,
         encoding: 'utf8',
-        env: env === undefined ? process.env : { ...process.env, ...env },
+        env: sanitizedChildEnvironment(env),
         maxBuffer: maxOutputBytes,
         shell: false,
         timeout: timeoutMs,

@@ -247,7 +247,14 @@ test('runner는 process.execPath와 로컬 ccusage JS를 shell 없이 제한 실
     },
   });
 
-  const stdout = await runner(['claude', 'daily', '--json']);
+  const stdout = await runner(['claude', 'daily', '--json'], {
+    env: {
+      CODEX_BEARER_TOKEN: 'uppercase-secret',
+      codex_bearer_token: 'lowercase-secret',
+      CoDeX_BeArEr_ToKeN: 'mixed-case-secret',
+      CCUSAGE_SAFE_ENV: 'preserved',
+    },
+  });
   assert.equal(stdout, '{"daily":[],"totals":{}}');
   assert.equal(observed.command, process.execPath);
   assert.deepEqual(observed.args, [
@@ -260,6 +267,12 @@ test('runner는 process.execPath와 로컬 ccusage JS를 shell 없이 제한 실
   assert.equal(observed.options.windowsHide, true);
   assert.equal(observed.options.timeout, 4321);
   assert.equal(observed.options.maxBuffer, 12345);
+  assert.equal(observed.options.env.CCUSAGE_SAFE_ENV, 'preserved');
+  assert.equal(
+    Object.keys(observed.options.env)
+      .some((key) => key.toLowerCase() === 'codex_bearer_token'),
+    false,
+  );
 });
 
 test('명령 실패와 과대 출력 오류는 stderr, path, cause를 노출하지 않는다', async () => {
