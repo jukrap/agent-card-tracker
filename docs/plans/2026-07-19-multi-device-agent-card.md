@@ -6,7 +6,7 @@
 
 **Architecture:** 각 컴퓨터에서 고정 버전의 ccusage를 실행해 익명 일별 스냅샷을 만들고 Git 저장소로 동기화한다. 집계기는 Codex 계정 프로필 스냅샷이 신선할 때만 이를 우선하고, 그렇지 않으면 기기별 Codex 합계를 사용해 이중 집계를 막는다. GitHub Actions와 동일한 로컬 명령이 공개 JSON을 검증한 뒤 결정론적 SVG 세 장을 생성한다.
 
-**Tech Stack:** Node.js 20+ ESM, npm, ccusage 20.0.17, Node test runner, saxes, GitHub Actions, 정적 SVG
+**Tech Stack:** Node.js 24+ ESM, npm, ccusage 20.0.17, Node test runner, saxes, GitHub Actions, 정적 SVG
 
 ---
 
@@ -43,7 +43,7 @@ Expected: `src/cli.mjs`가 없어 `ERR_MODULE_NOT_FOUND`로 실패한다.
 
 **Step 3: 최소 프로젝트 설정과 CLI 라우터 구현**
 
-- `package.json`에 `type: module`, `engines.node: >=20`, `bin`, `test`, `check`, `check:syntax`, `check:determinism`, `setup`, `collect`, `profile`, `render`, `validate`, `sync`, `publish-cards` 스크립트를 둔다.
+- `package.json`에 `type: module`, `engines.node: >=24`, `bin`, `test`, `check`, `check:syntax`, `check:determinism`, `setup`, `collect`, `profile`, `render`, `validate`, `sync`, `publish-cards` 스크립트를 둔다.
 - `ccusage`는 정확히 `20.0.17`, `saxes`는 정확히 `6.0.0`으로 잠근다.
 - CLI는 알 수 없는 명령을 종료 코드 2로 거절하고 도움말을 제공한다.
 - `.gitattributes`에서 MJS/JSON/YML/MD/SVG를 LF로 고정해 Windows와 Ubuntu의 결정론을 맞춘다.
@@ -502,9 +502,9 @@ Expected: workflow 파일이 없어 실패한다.
 
 **Step 3: CI와 render workflow 구현**
 
-- `actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5`
-- `actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020`
-- Node 20, npm cache, 최소 권한, bounded timeout, `persist-credentials: false`를 사용한다.
+- `actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+- `actions/setup-node@820762786026740c76f36085b0efc47a31fe5020`
+- Node 24, npm cache, 최소 권한, bounded timeout, `persist-credentials: false`를 사용한다.
 - render는 공개 JSON만 읽고 profile bearer나 로컬 로그를 요구하지 않는다.
 - scheduled workflow가 지연·비활성화될 수 있음을 문서화하고 local sync를 기본 복구 경로로 둔다.
 - renderer push가 device push와 경합하면 최신 main으로 rebase한 뒤 install/validate/render를 다시 수행하고 최대 3회만 재시도한다.

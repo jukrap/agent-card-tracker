@@ -4,7 +4,7 @@ Both examples run the same `npm run sync` command from a dedicated clone. Use `l
 
 ## 1. Prepare the dedicated clone
 
-Install Git, Node.js 20 or newer, and npm. Choose an absolute operational path, then initialize this computer with the same IANA timezone used on every device:
+Install Git, Node.js 24 or newer, and npm. Choose an absolute operational path, then initialize this computer with the same IANA timezone used on every device:
 
 ```sh
 git clone https://github.com/jukrap/agent-card-tracker.git /absolute/path/to/agent-card-tracker
@@ -23,7 +23,7 @@ command -v node
 command -v npm
 ```
 
-If these commands point into a shell-only version manager, install a stable Node.js 20+ runtime available to background processes or provide its absolute binary directory in the scheduler `PATH`. Re-run `npm ci` in the clone whenever `package-lock.json` changes.
+If these commands point into a shell-only version manager, install a stable Node.js 24+ runtime available to background processes or provide its absolute binary directory in the scheduler `PATH`. Re-run `npm ci` in the clone whenever `package-lock.json` changes.
 
 ## macOS: launchd
 

@@ -30,7 +30,7 @@ test('public documentation covers the supported serverless multi-device flow', a
       assert.match(document, new RegExp(command.replaceAll(' ', '\\s+')));
     }
 
-    assert.match(document, /Node(?:\.js)? 20/i);
+    assert.match(document, /Node(?:\.js)? 24/i);
     assert.match(document, /CODEX_BEARER_TOKEN/);
     assert.match(document, /https:\/\/chatgpt\.com\/backend-api\/wham\/profiles\/me/);
     assert.match(document, /profile candidate/i);
@@ -98,4 +98,25 @@ test('public docs do not expose private working-material names or secret example
   assert.doesNotMatch(combined, /\.ai-agent-playbook|archive\/|archive\\/i);
   assert.doesNotMatch(combined, /Authorization:\s*Bearer\s+\S+/i);
   assert.doesNotMatch(combined, /CODEX_BEARER_TOKEN\s*=\s*\S+/);
+});
+
+test('README files explain mixed calendar observations without calling them lower bounds', async () => {
+  const [english, korean] = await Promise.all([
+    read('README.md'),
+    read('README.ko.md'),
+  ]);
+
+  for (const document of [english, korean]) {
+    assert.match(document, /Mixed/);
+    assert.match(document, /≈/);
+    assert.match(document, /provider calendar date/i);
+  }
+
+  assert.match(english, /not a lower bound/i);
+  assert.match(english, /comparisons? and streaks?.{0,80}unavailable/is);
+  assert.match(english, /provider-reported lifetime.{0,100}(?:exact|unaffected)/is);
+
+  assert.match(korean, /하한이 아닙니다/);
+  assert.match(korean, /비교와 연속 활동.{0,80}표시하지 않습니다/is);
+  assert.match(korean, /provider가 보고한 lifetime.{0,100}(?:정확|영향받지)/is);
 });

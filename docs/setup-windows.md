@@ -4,7 +4,7 @@ This guide runs the same `npm run sync` command with Windows Task Scheduler. Use
 
 ## 1. Prepare the dedicated clone
 
-Install Git, Node.js 20 or newer, and npm. Clone and initialize this computer with the same IANA timezone used by every other device:
+Install Git, Node.js 24 or newer, and npm. Clone and initialize this computer with the same IANA timezone used by every other device:
 
 ```powershell
 git clone https://github.com/jukrap/agent-card-tracker.git D:\agent-card-tracker

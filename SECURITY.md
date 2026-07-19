@@ -2,7 +2,7 @@
 
 ## Supported scope
 
-Only the current `main` branch, its checked-in lockfile, and Node.js 20 or newer are supported. There are no maintained older release lines at this time. Security fixes are applied to `main`; users should update their dedicated clones with a clean install before the next collection.
+Only the current `main` branch, its checked-in lockfile, and Node.js 24 or newer are supported. There are no maintained older release lines at this time. Security fixes are applied to `main`; users should update their dedicated clones with a clean install before the next collection.
 
 The supported deployment is the repository's documented flow: one private local config per computer, sanitized schema-version 1 snapshots, the fixed target repository, and the checked-in GitHub Actions workflows. Fork-specific changes, copied device configs, custom profile endpoints, modified validators, and unpinned dependencies are outside the supported security boundary.
 

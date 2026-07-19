@@ -34,8 +34,11 @@ The renderer does not silently turn missing observations into zero:
 
 - **Complete**: the displayed interval is fully covered by all required sources.
 - **Partial**: a known value is a lower bound because part of the interval or one source is unavailable. The card prefixes the value with `≥` and uses a dashed treatment.
+- **Mixed**: at least one bucket uses a provider calendar date that cannot be mapped exactly to the configured IANA timezone. The displayed sum is approximate, not a lower bound; the card prefixes it with `≈` and uses a distinct dashed treatment.
 - **Unknown**: no reliable value is available. The card shows `—` or an outlined cell/bar.
 - `0`: usage was observed and was actually zero; it is different from Unknown.
+
+Comparisons and streaks are unavailable when Mixed observations participate because calendar-day boundaries may not align. Source shares, token mix, trend bars, heatmap cells, active-day counts, and peak days remain visibly approximate. A provider-reported lifetime total is unaffected and stays exact because it is not calculated from calendar buckets; a tracked-daily lifetime can still be Mixed.
 
 A stale-source label means at least one device snapshot is older than 72 hours. Historical values remain included. When the account profile supplies Codex totals without a token breakdown, those tokens appear as **Unknown mix**, not as Claude-only usage.
 
@@ -50,7 +53,7 @@ Git is the synchronization layer and GitHub Actions is the renderer; neither Git
 
 ## Requirements
 
-- Node.js 20 or newer and npm
+- Node.js 24 or newer and npm
 - Git
 - A dedicated clone of `https://github.com/jukrap/agent-card-tracker.git` on every participating computer
 - Push access to `main`, with non-interactive Git authentication available to scheduled runs
