@@ -5,8 +5,8 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const checkoutSha = '34e114876b0b11c390a56381ad16ebd13914f8d5';
-const setupNodeSha = '49933ea5288caeca8642d1e84afbd3f7d6820020';
+const checkoutSha = '9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0';
+const setupNodeSha = '820762786026740c76f36085b0efc47a31fe5020';
 
 async function readRepositoryFile(relativePath) {
   return readFile(path.join(root, relativePath), 'utf8');
@@ -37,7 +37,8 @@ test('CI is read-only and runs every repository quality gate', async () => {
   assert.doesNotMatch(ci, /contents:\s*write/);
   assert.match(ci, /^concurrency:\s*$/m);
   assert.match(ci, /timeout-minutes:\s*\d+/);
-  assert.match(ci, /node-version:\s*20/);
+  assert.match(ci, /node-version:\s*24/);
+  assert.doesNotMatch(ci, /node-version:\s*20/);
   assert.match(ci, /npm ci --ignore-scripts/);
   assert.match(ci, /npm run check:syntax/);
   assert.match(ci, /npm test/);
@@ -60,10 +61,14 @@ test('card rendering is bounded, loop-free, and writes only in its render job', 
   assert.match(workflow, /^\s{2}push:\s*$/m);
   assert.match(workflow, /paths-ignore:[\s\S]*- ['"]cards\/\*\*['"]/);
 
-  assert.match(workflow, /date -u \+%F/);
-  assert.match(workflow, /npm run render -- --as-of/);
+  assert.doesNotMatch(workflow, /date -u \+%F/);
+  assert.match(workflow, /new Date\(\)\.toISOString\(\)/);
+  assert.match(workflow, /scripts\/resolve-render-context\.mjs --instant/);
+  assert.match(workflow, /npm run render -- --as-of "\$CARD_AS_OF" --as-of-instant "\$CARD_AS_OF_INSTANT"/);
   assert.match(workflow, /npm run validate/);
-  assert.match(workflow, /npm run check:determinism -- --as-of/);
+  assert.match(workflow, /npm run check:determinism -- --as-of "\$CARD_AS_OF" --as-of-instant "\$CARD_AS_OF_INSTANT"/);
+  assert.match(workflow, /npm run check:syntax/);
+  assert.match(workflow, /npm test/);
   assert.doesNotMatch(
     workflow,
     /CODEX_BEARER_TOKEN|ANTHROPIC_API_KEY|\.codex|\.claude|npm run (?:collect|profile|sync)/i,
@@ -95,9 +100,25 @@ test('publish retries at most three times and rebuilds after rebasing latest mai
 
   const retryBlock = workflow.slice(workflow.indexOf('for attempt in 1 2 3'));
   assert.match(retryBlock, /npm ci --ignore-scripts/);
+  assert.match(retryBlock, /npm run check:syntax/);
+  assert.match(retryBlock, /npm test/);
   assert.match(retryBlock, /npm run validate/);
-  assert.match(retryBlock, /npm run render -- --as-of/);
-  assert.match(retryBlock, /npm run check:determinism -- --as-of/);
+  assert.match(retryBlock, /npm run render -- --as-of "\$CARD_AS_OF" --as-of-instant "\$CARD_AS_OF_INSTANT"/);
+  assert.match(retryBlock, /npm run check:determinism -- --as-of "\$CARD_AS_OF" --as-of-instant "\$CARD_AS_OF_INSTANT"/);
+});
+
+test('both workflows resolve one captured instant through strict repository timezone data', async () => {
+  const workflows = await Promise.all([
+    readRepositoryFile('.github/workflows/ci.yml'),
+    readRepositoryFile('.github/workflows/render-cards.yml'),
+  ]);
+
+  for (const workflow of workflows) {
+    assert.equal(workflow.match(/new Date\(\)\.toISOString\(\)/g)?.length, 1);
+    assert.match(workflow, /scripts\/resolve-render-context\.mjs --instant/);
+    assert.match(workflow, /--as-of-instant "\$CARD_AS_OF_INSTANT"/);
+    assert.doesNotMatch(workflow, /date\s+(?:-u\s+)?\+%F/);
+  }
 });
 
 test('Dependabot checks npm and GitHub Actions every week', async () => {

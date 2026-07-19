@@ -25,34 +25,44 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out main
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           ref: main
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
-      - name: Resolve UTC card date
+      - name: Run source quality gate
         shell: bash
-        run: echo "CARD_AS_OF=$(date -u +%F)" >> "$GITHUB_ENV"
+        run: |
+          set -euo pipefail
+          npm run check:syntax
+          npm test
+          npm run validate
+
+      - name: Resolve render context
+        shell: bash
+        run: |
+          set -euo pipefail
+          render_instant="$(node --input-type=module -e 'process.stdout.write(new Date().toISOString())')"
+          node scripts/resolve-render-context.mjs --instant "$render_instant" >> "$GITHUB_ENV"
 
       - name: Render and verify public cards
         shell: bash
         run: |
           set -euo pipefail
+          npm run render -- --as-of "$CARD_AS_OF" --as-of-instant "$CARD_AS_OF_INSTANT"
           npm run validate
-          npm run render -- --as-of "$CARD_AS_OF"
-          npm run validate
-          npm run check:determinism -- --as-of "$CARD_AS_OF"
+          npm run check:determinism -- --as-of "$CARD_AS_OF" --as-of-instant "$CARD_AS_OF_INSTANT"
 
       - name: Publish rendered cards
         env:
@@ -100,10 +110,12 @@ jobs:
             fi
 
             npm ci --ignore-scripts
+            npm run check:syntax
+            npm test
             npm run validate
-            npm run render -- --as-of "$CARD_AS_OF"
+            npm run render -- --as-of "$CARD_AS_OF" --as-of-instant "$CARD_AS_OF_INSTANT"
             npm run validate
-            npm run check:determinism -- --as-of "$CARD_AS_OF"
+            npm run check:determinism -- --as-of "$CARD_AS_OF" --as-of-instant "$CARD_AS_OF_INSTANT"
 
             stage_cards
             ahead_count="$(git rev-list --count origin/main..HEAD)"
