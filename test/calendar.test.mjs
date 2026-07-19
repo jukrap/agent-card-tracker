@@ -6,6 +6,7 @@ import {
   assertIsoDate,
   assertTimeZone,
   dateAtInstant,
+  endOfDayInstant,
   daysBetween,
   daysInMonth,
   eachDay,
@@ -88,6 +89,21 @@ test('uses timezone calendar parts across New York DST spring and fall transitio
 
   assert.throws(() => dateAtInstant(Number.NaN, 'UTC'), RangeError);
   assert.throws(() => dateAtInstant('2024-01-01T00:00:00Z', 'UTC'), TypeError);
+});
+
+test('resolves deterministic timezone day-end instants across DST boundaries', () => {
+  assert.equal(
+    endOfDayInstant('2024-03-10', 'America/New_York'),
+    '2024-03-11T03:59:59.999Z',
+  );
+  assert.equal(
+    endOfDayInstant('2024-11-03', 'America/New_York'),
+    '2024-11-04T04:59:59.999Z',
+  );
+  assert.equal(
+    endOfDayInstant('2026-07-20', 'Asia/Seoul'),
+    '2026-07-20T14:59:59.999Z',
+  );
 });
 
 test('performs date arithmetic by epoch-day across leap days and year boundaries', () => {

@@ -6,6 +6,7 @@ AGENTS.md
 
 node_modules/
 .agent-card.local.json
+.agent-card-tmp/
 .env
 .env.*
 !.env.example

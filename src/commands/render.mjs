@@ -2,7 +2,12 @@ import * as defaultFileSystem from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-import { assertIsoDate } from '../domain/calendar.mjs';
+import {
+  assertIsoDate,
+  assertIsoUtcInstant,
+  dateAtInstant,
+  endOfDayInstant,
+} from '../domain/calendar.mjs';
 import { mergeUsage } from '../domain/merge.mjs';
 import {
   validateDeviceSnapshot,
@@ -18,9 +23,10 @@ const CARD_NAMES = Object.freeze(['overview', 'trends', 'activity']);
 const HELP = `Render deterministic static SVG cards
 
 Usage:
-  agent-card render --as-of YYYY-MM-DD
+  agent-card render --as-of YYYY-MM-DD [--as-of-instant ISO_UTC_INSTANT]
 
-The as-of date is required so the same public data produces identical bytes.
+The optional instant controls freshness checks. Without it, freshness uses the
+deterministic end of the as-of date in the configured timezone.
 `;
 
 export class RenderCommandError extends Error {
@@ -47,8 +53,25 @@ function validateAsOf(value) {
   }
 }
 
-function mergeInstant(asOf) {
-  return `${asOf}T23:59:59.999Z`;
+function resolveMergeInstant(asOf, requestedInstant, timezone) {
+  if (requestedInstant === undefined) {
+    try {
+      return endOfDayInstant(asOf, timezone);
+    } catch {
+      fail('INVALID_AS_OF_INSTANT');
+    }
+  }
+
+  let instant;
+  try {
+    instant = assertIsoUtcInstant(requestedInstant);
+  } catch {
+    fail('INVALID_AS_OF_INSTANT');
+  }
+  if (dateAtInstant(Date.parse(instant), timezone) !== asOf) {
+    fail('AS_OF_INSTANT_DATE_MISMATCH');
+  }
+  return instant;
 }
 
 async function listJsonFiles(directory, fileSystem) {
@@ -87,6 +110,60 @@ async function loadPublicJson(directory, validator, fileSystem) {
   return values;
 }
 
+function pathKey(value) {
+  const resolved = path.resolve(value);
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+}
+
+async function prepareStagingRoot(stagingRoot, fileSystem) {
+  try {
+    await fileSystem.mkdir(stagingRoot, { recursive: true });
+    const [stat, realParent, realRoot] = await Promise.all([
+      fileSystem.lstat(stagingRoot),
+      fileSystem.realpath(path.dirname(stagingRoot)),
+      fileSystem.realpath(stagingRoot),
+    ]);
+    if (
+      stat.isSymbolicLink()
+      || !stat.isDirectory()
+      || pathKey(path.dirname(realRoot)) !== pathKey(realParent)
+    ) {
+      fail('UNSAFE_STAGING_ROOT');
+    }
+    return realRoot;
+  } catch (error) {
+    if (error instanceof RenderCommandError) {
+      throw error;
+    }
+    fail('UNSAFE_STAGING_ROOT');
+  }
+}
+
+async function assertSafeStagingDirectory(
+  stagingDirectory,
+  expectedRealRoot,
+  fileSystem,
+) {
+  try {
+    const [stat, realDirectory] = await Promise.all([
+      fileSystem.lstat(stagingDirectory),
+      fileSystem.realpath(stagingDirectory),
+    ]);
+    if (
+      stat.isSymbolicLink()
+      || !stat.isDirectory()
+      || pathKey(path.dirname(realDirectory)) !== pathKey(expectedRealRoot)
+    ) {
+      fail('UNSAFE_STAGING_ROOT');
+    }
+  } catch (error) {
+    if (error instanceof RenderCommandError) {
+      throw error;
+    }
+    fail('UNSAFE_STAGING_ROOT');
+  }
+}
+
 async function stageCards({
   cards,
   outputDirectory,
@@ -94,7 +171,10 @@ async function stageCards({
   validateSvg,
 }) {
   await fileSystem.mkdir(outputDirectory, { recursive: true });
-  const stagingDirectory = await fileSystem.mkdtemp(path.join(outputDirectory, '.render-'));
+  const stagingRoot = path.join(path.dirname(outputDirectory), '.agent-card-tmp');
+  const realStagingRoot = await prepareStagingRoot(stagingRoot, fileSystem);
+  const stagingDirectory = await fileSystem.mkdtemp(path.join(stagingRoot, '.render-'));
+  await assertSafeStagingDirectory(stagingDirectory, realStagingRoot, fileSystem);
   try {
     for (const name of CARD_NAMES) {
       const contents = cards[name];
@@ -125,6 +205,7 @@ async function stageCards({
 export async function renderCards({
   cwd = process.cwd(),
   asOf,
+  asOfInstant,
   outputDirectory = path.join(cwd, 'cards'),
   fileSystem = defaultFileSystem,
   validateSvg = validateSvgDocument,
@@ -140,10 +221,12 @@ export async function renderCards({
     validateProfileCandidate,
     fileSystem,
   );
+  const timezone = deviceSnapshots[0]?.timezone ?? 'UTC';
+  const freshnessInstant = resolveMergeInstant(asOfDate, asOfInstant, timezone);
   const merged = mergeUsage({
     deviceSnapshots,
     profileCandidates,
-    asOf: mergeInstant(asOfDate),
+    asOf: freshnessInstant,
   });
   const statistics = computeStatistics(merged, { asOf: asOfDate });
   const cards = {
@@ -164,6 +247,7 @@ export async function renderCards({
 
   return {
     asOf: asOfDate,
+    asOfInstant: freshnessInstant,
     cardPaths: Object.fromEntries(
       CARD_NAMES.map((name) => [name, path.join(resolvedOutputDirectory, `${name}.svg`)]),
     ),
@@ -174,10 +258,24 @@ function parseArgs(args) {
   if (args.length === 1 && ['--help', '-h', 'help'].includes(args[0])) {
     return { help: true };
   }
-  if (args.length === 2 && args[0] === '--as-of') {
-    return { asOf: args[1] };
+  const options = {};
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === '--as-of' && args[index + 1] && options.asOf === undefined) {
+      options.asOf = args[index + 1];
+      index += 1;
+    } else if (
+      argument === '--as-of-instant'
+      && args[index + 1]
+      && options.asOfInstant === undefined
+    ) {
+      options.asOfInstant = args[index + 1];
+      index += 1;
+    } else {
+      return { invalid: true };
+    }
   }
-  return { invalid: true };
+  return options.asOf === undefined ? { invalid: true } : options;
 }
 
 export async function run(
@@ -191,12 +289,19 @@ export async function run(
     return 0;
   }
   if (options.invalid) {
-    write(io.stderr, 'Usage: agent-card render --as-of YYYY-MM-DD');
+    write(
+      io.stderr,
+      'Usage: agent-card render --as-of YYYY-MM-DD [--as-of-instant ISO_UTC_INSTANT]',
+    );
     return 2;
   }
 
   try {
-    const result = await renderCards({ ...dependencies, asOf: options.asOf });
+    const result = await renderCards({
+      ...dependencies,
+      asOf: options.asOf,
+      asOfInstant: options.asOfInstant,
+    });
     write(io.stdout, `Rendered 3 cards as of ${result.asOf}.`);
     return 0;
   } catch (error) {

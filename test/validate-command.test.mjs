@@ -286,6 +286,7 @@ test('local-only path는 Windows 대소문자 변형으로 우회할 수 없다'
   for (const localPath of [
     'agents.md',
     '.AI-AGENT-PLAYBOOK/private.md',
+    '.AGENT-CARD-TMP/.render-crash/overview.svg',
     '.Agent-Card.Local.Json',
     '.ENV',
     'debug.LOG',

@@ -2,21 +2,38 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { assertIsoDate } from '../src/domain/calendar.mjs';
+import { assertIsoDate, assertIsoUtcInstant } from '../src/domain/calendar.mjs';
 import { renderCards } from '../src/commands/render.mjs';
 
 const args = process.argv.slice(2);
 let asOf = null;
-if (args.length === 2 && args[0] === '--as-of') {
+let asOfInstant;
+let invalid = false;
+for (let index = 0; index < args.length; index += 1) {
+  const argument = args[index];
   try {
-    asOf = assertIsoDate(args[1]);
+    if (argument === '--as-of' && args[index + 1] && asOf === null) {
+      asOf = assertIsoDate(args[index + 1]);
+      index += 1;
+    } else if (
+      argument === '--as-of-instant'
+      && args[index + 1]
+      && asOfInstant === undefined
+    ) {
+      asOfInstant = assertIsoUtcInstant(args[index + 1]);
+      index += 1;
+    } else {
+      invalid = true;
+    }
   } catch {
-    asOf = null;
+    invalid = true;
   }
 }
 
-if (asOf === null) {
-  process.stderr.write('Usage: node scripts/check-render-determinism.mjs --as-of YYYY-MM-DD\n');
+if (asOf === null || invalid) {
+  process.stderr.write(
+    'Usage: node scripts/check-render-determinism.mjs --as-of YYYY-MM-DD [--as-of-instant ISO_UTC_INSTANT]\n',
+  );
   process.exitCode = 2;
 } else {
   const firstRoot = await mkdtemp(path.join(os.tmpdir(), 'agent-card-determinism-a-'));
@@ -27,11 +44,13 @@ if (asOf === null) {
     await renderCards({
       cwd: process.cwd(),
       asOf,
+      asOfInstant,
       outputDirectory: path.join(firstRoot, 'cards'),
     });
     await renderCards({
       cwd: process.cwd(),
       asOf,
+      asOfInstant,
       outputDirectory: path.join(secondRoot, 'cards'),
     });
 

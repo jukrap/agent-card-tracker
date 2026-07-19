@@ -679,6 +679,7 @@ function isLocalOnlyPath(relativePath) {
   if (
     segments.some((segment) => [
       '.ai-agent-playbook',
+      '.agent-card-tmp',
       '.agents',
       '.claude',
       '.codex',

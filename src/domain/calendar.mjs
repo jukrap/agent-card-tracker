@@ -1,5 +1,6 @@
 const DAY_MILLISECONDS = 86_400_000;
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/u;
+const ISO_UTC_INSTANT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
 const OFFSET_TIMEZONE_PATTERN = /^[+-]\d{2}:\d{2}$/u;
 const MIN_YEAR = 1;
 const MAX_YEAR = 9999;
@@ -74,6 +75,17 @@ export function assertIsoDate(value) {
   return value;
 }
 
+export function assertIsoUtcInstant(value) {
+  if (typeof value !== 'string' || !ISO_UTC_INSTANT_PATTERN.test(value)) {
+    throw new RangeError('instant must use canonical UTC ISO format');
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf()) || parsed.toISOString() !== value) {
+    throw new RangeError('instant must be a real canonical UTC instant');
+  }
+  return value;
+}
+
 export function assertTimeZone(timeZone) {
   if (typeof timeZone !== 'string') {
     throw new TypeError('timeZone must be a string');
@@ -116,6 +128,39 @@ export function dateAtInstant(epochMs, timeZone) {
   }).formatToParts(instant);
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return formatDate(Number(values.year), Number(values.month), Number(values.day));
+}
+
+export function endOfDayInstant(date, timeZone) {
+  assertIsoDate(date);
+  assertTimeZone(timeZone);
+  const nextDate = addDays(date, 1);
+  const nominalNextMidnight = Date.parse(`${nextDate}T00:00:00.000Z`);
+  let lower = nominalNextMidnight - 2 * DAY_MILLISECONDS;
+  let upper = nominalNextMidnight + 2 * DAY_MILLISECONDS;
+
+  if (
+    dateAtInstant(lower, timeZone) >= nextDate
+    || dateAtInstant(upper, timeZone) < nextDate
+  ) {
+    throw new RangeError('timezone transition is outside the supported search window');
+  }
+
+  while (lower < upper) {
+    const middle = lower + Math.floor((upper - lower) / 2);
+    if (dateAtInstant(middle, timeZone) >= nextDate) {
+      upper = middle;
+    } else {
+      lower = middle + 1;
+    }
+  }
+
+  if (
+    dateAtInstant(lower, timeZone) !== nextDate
+    || dateAtInstant(lower - 1, timeZone) !== date
+  ) {
+    throw new RangeError('date does not have a complete day in the timezone');
+  }
+  return new Date(lower - 1).toISOString();
 }
 
 export function addDays(date, amount) {
