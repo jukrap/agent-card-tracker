@@ -1,0 +1,14 @@
+{
+  "stats": {
+    "lifetime_tokens": 987654321,
+    "daily_usage_buckets": [
+      {
+        "start_date": "2026-07-17",
+        "tokens": 100
+      },
+      {
+        "start_date": "2026-07-18"
+      }
+    ]
+  }
+}
