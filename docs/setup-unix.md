@@ -131,6 +131,36 @@ npm run validate
 - On missing local usage, confirm the scheduler user and its `HOME`, `CODEX_HOME`, or `CLAUDE_CONFIG_DIR` without printing private paths into public logs.
 - On Git authentication failure, repair the scheduled user's credential and rerun. A recoverable local commit is preserved; never force-push.
 - On a device/profile ownership collision, stop duplicate writers, give the duplicate computer a fresh setup, and resolve any overlapping raw logs before retrying.
+- On `REMOTE_UPDATE_REQUIRES_RESTART`, unload/disable the scheduler, update the dedicated clone from `origin/main` without force-pushing, run `npm ci --ignore-scripts` and `npm run validate`, then launch a fresh sync. If one verified publication commit was preserved, rebase only that commit and abort on any conflict.
 - On stale cards, run sync, manually dispatch **Render usage cards**, or use `npm run publish-cards -- --as-of YYYY-MM-DD` as documented in the README.
+
+### SYNC_STALE_LOCK
+
+The lock is fail-closed to avoid deleting a lock that another process replaced or reacquired after inspection. Do not remove it merely because its timestamp looks old.
+
+1. Stop and disable the scheduler before inspecting the lock. On macOS, use the `launchctl bootout` command above and do not bootstrap the job again yet. On Linux, comment out or remove the exact agent-card crontab entry, save the crontab, and wait for any current run to finish.
+2. List `agent-card`, `npm`, and `node` candidates, then inspect each candidate's command and current working directory. There must be no `sync`, `render`, or `publish-cards` process whose working directory is `/absolute/path/to/agent-card-tracker`.
+
+   ```sh
+   pgrep -af 'agent-card|npm|node'
+   lsof -a -p PID -d cwd
+   ```
+
+   Replace `PID` with each candidate process ID. On macOS, where `pgrep -a` output differs, use `pgrep -fl 'agent-card|npm|node'` and the same `lsof` check. Do not kill unrelated processes. If ownership is uncertain, keep the scheduler disabled and do not delete the lock until the candidate has exited.
+3. Inspect the exact lock file without editing it:
+
+   ```sh
+   cat -- '/absolute/path/to/agent-card-tracker/.git/agent-card-sync.lock'
+   ```
+
+4. Only after the process check is clear, delete that one file:
+
+   ```sh
+   rm -- '/absolute/path/to/agent-card-tracker/.git/agent-card-sync.lock'
+   ```
+
+5. Keep the scheduler disabled, rerun the original `npm run sync`, `npm run render -- --as-of YYYY-MM-DD`, or `npm run publish-cards -- --as-of YYYY-MM-DD` command manually, and restore the scheduler only after it finishes.
+
+Never use `rm -r`, `rm -f`, a wildcard, or a command targeting `.git` as a whole for this recovery.
 
 When retiring a device, unload/remove its scheduler first. Keeping the public snapshot preserves history and eventually shows as stale; deleting it removes that device's past contribution from future cards.

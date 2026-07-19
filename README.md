@@ -157,7 +157,15 @@ If a replacement computer or new config receives the same raw log history, do no
 
 Sync fetches first and retries a non-fast-forward push up to three times only while its own device/profile paths are unchanged remotely. It does not force-push or auto-select conflict sides. On an authentication failure, repair the Git credential available to that scheduled user and rerun sync. On a path ownership/collision error, stop all writers using that device config, determine which machine owns it, create a fresh config for the duplicate machine, and resolve any overlapping logs before retrying.
 
+`REMOTE_UPDATE_REQUIRES_RESTART` means the fetched branch changed code, dependencies, workflows, or configuration rather than only public snapshots/cards. Stop the scheduler, update the dedicated clone from `origin/main` without a force push, run `npm ci --ignore-scripts` and `npm run validate`, then start a new `npm run sync` process. If the failed run preserved one publication commit, rebase only that verified commit onto `origin/main`; abort and inspect any conflict instead of choosing a side automatically.
+
 Other failures preserve recoverable local commits. Keep the dedicated clone clean, update it from `main`, validate with `npm run validate`, and rerun `npm run sync`. Never use a force push as recovery.
+
+### Stale repository lock
+
+`sync`, standalone `render`, and `publish-cards` share the exact lock file `.git/agent-card-sync.lock`. A `SYNC_STALE_LOCK` error is intentionally fail-closed: the command does not auto-delete a stale-looking lock because another process could replace or reacquire it between inspection and deletion.
+
+Recover in this order: stop and disable the clone's scheduler; verify that no `agent-card`, `npm`, or `node` process is running `sync`, `render`, or `publish-cards` for that exact clone; inspect `.git/agent-card-sync.lock`; delete only that exact file; then rerun the original command. Never use a wildcard, recursive deletion, or a broad `.git` cleanup. Follow the exact platform steps in the [Windows guide](docs/setup-windows.md#sync_stale_lock) or [macOS/Linux guide](docs/setup-unix.md#sync_stale_lock).
 
 ## Limitations
 
@@ -180,6 +188,7 @@ npm run check
 ```
 
 `render` and determinism checks require an explicit `--as-of` date so identical input produces byte-for-byte identical SVG files.
+Standalone `render` uses the same repository lock as `sync` and `publish-cards`; the programmatic renderer remains lock-free for callers that already hold that lock.
 
 ## License
 

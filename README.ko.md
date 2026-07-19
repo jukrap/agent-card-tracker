@@ -157,7 +157,15 @@ local config를 교체하거나 기기를 대체하기 전에 먼저 해당 sche
 
 sync는 먼저 fetch하고, 자신의 device/profile 경로가 원격에서 바뀌지 않은 경우에만 non-fast-forward push를 최대 세 번 재시도합니다. force push나 conflict side 자동 선택은 하지 않습니다. 인증 실패라면 예약 실행 사용자에게 보이는 Git credential을 고치고 sync를 다시 실행하세요. path ownership/collision 오류라면 해당 config를 쓰는 모든 writer를 중단하고 실제 소유 기기를 정한 다음, 중복 기기에 새 config를 만들고 겹치는 로그를 정리한 뒤 재시도합니다.
 
+`REMOTE_UPDATE_REQUIRES_RESTART`는 가져온 branch에서 공개 snapshot/card 외의 코드, 의존성, workflow, 설정이 바뀌었다는 뜻입니다. scheduler를 중지하고 force push 없이 전용 clone을 `origin/main`으로 갱신한 뒤 `npm ci --ignore-scripts`, `npm run validate`를 실행하고 새 `npm run sync` process를 시작하세요. 실패한 실행이 게시 commit 하나를 보존했다면 검증된 그 commit만 `origin/main` 위로 rebase하고, conflict가 발생하면 한쪽을 자동 선택하지 말고 abort한 뒤 원인을 확인하세요.
+
 그 밖의 push 실패에서도 복구 가능한 local commit은 보존됩니다. 전용 clone을 깨끗하게 유지하고 `main` 최신 상태를 반영한 뒤 `npm run validate`와 `npm run sync`를 다시 실행하세요. 복구를 위해 force push하지 마세요.
+
+### 오래된 저장소 lock
+
+`sync`, 단독 `render`, `publish-cards`는 정확히 `.git/agent-card-sync.lock` 파일 하나를 공유합니다. `SYNC_STALE_LOCK`은 의도적인 fail-closed 오류입니다. 확인과 삭제 사이에 다른 process가 lock을 교체하거나 다시 획득할 수 있으므로 명령이 오래돼 보이는 lock을 자동 삭제하지 않습니다.
+
+다음 순서를 지키세요. 먼저 해당 clone의 scheduler를 중지하고 비활성화합니다. 그 정확한 clone에서 `sync`, `render`, `publish-cards`를 실행 중인 `agent-card`, `npm`, `node` process가 하나도 없는지 확인합니다. `.git/agent-card-sync.lock` 내용을 점검하고 그 파일 하나만 삭제한 뒤 원래 명령을 다시 실행합니다. wildcard, 재귀 삭제, 광범위한 `.git` 정리를 사용하지 마세요. 정확한 명령은 [Windows 가이드](docs/setup-windows.md#sync_stale_lock) 또는 [macOS/Linux 가이드](docs/setup-unix.md#sync_stale_lock)를 따르세요.
 
 ## 한계
 
@@ -180,6 +188,7 @@ npm run check
 ```
 
 `render`와 결정론 검사는 명시적인 `--as-of` 날짜를 요구하므로 입력이 같으면 byte-for-byte 같은 SVG를 생성합니다.
+단독 `render`는 `sync`, `publish-cards`와 같은 저장소 lock을 사용하며, 이미 그 lock을 보유한 호출자를 위한 programmatic renderer는 lock을 다시 획득하지 않습니다.
 
 ## 라이선스
 
