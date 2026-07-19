@@ -1,0 +1,120 @@
+name: Render usage cards
+
+on:
+  schedule:
+    - cron: '27 15 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'cards/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-cards-main
+  cancel-in-progress: false
+
+jobs:
+  render:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out main
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Resolve UTC card date
+        shell: bash
+        run: echo "CARD_AS_OF=$(date -u +%F)" >> "$GITHUB_ENV"
+
+      - name: Render and verify public cards
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run validate
+          npm run render -- --as-of "$CARD_AS_OF"
+          npm run validate
+          npm run check:determinism -- --as-of "$CARD_AS_OF"
+
+      - name: Publish rendered cards
+        env:
+          RENDER_PUSH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          stage_cards() {
+            git add -- cards/overview.svg cards/trends.svg cards/activity.svg
+          }
+
+          push_cards() {
+            git -c credential.helper= \
+              -c 'credential.helper=!f() { echo username=x-access-token; echo password=$RENDER_PUSH_TOKEN; }; f' \
+              push origin HEAD:main
+          }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          stage_cards
+          if git diff --cached --quiet; then
+            echo "Cards are already current."
+            exit 0
+          fi
+          git commit -m "chore(cards): 사용량 카드 갱신"
+
+          for attempt in 1 2 3; do
+            if push_cards; then
+              echo "Published cards on attempt ${attempt}."
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq 3 ]]; then
+              echo "Card publish failed after three attempts." >&2
+              exit 1
+            fi
+
+            git fetch --no-tags origin main
+            if ! git rebase origin/main; then
+              git rebase --abort || true
+              echo "Card publish stopped because the latest main could not be rebased safely." >&2
+              exit 1
+            fi
+
+            npm ci --ignore-scripts
+            npm run validate
+            npm run render -- --as-of "$CARD_AS_OF"
+            npm run validate
+            npm run check:determinism -- --as-of "$CARD_AS_OF"
+
+            stage_cards
+            ahead_count="$(git rev-list --count origin/main..HEAD)"
+            if git diff --cached --quiet; then
+              if [[ "$ahead_count" -eq 0 ]]; then
+                echo "Latest main already contains the rendered cards."
+                exit 0
+              fi
+            elif [[ "$ahead_count" -eq 0 ]]; then
+              git commit -m "chore(cards): 사용량 카드 갱신"
+            else
+              git commit --amend --no-edit
+            fi
+          done
