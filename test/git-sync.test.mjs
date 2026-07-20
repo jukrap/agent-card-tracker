@@ -16,7 +16,10 @@ import {
   withRepositoryLock,
 } from '../src/git/repository.mjs';
 import { GitPublishError, publishChanges } from '../src/git/publish.mjs';
-import { synchronizeDevice } from '../src/commands/sync.mjs';
+import {
+  run as runSyncCommand,
+  synchronizeDevice,
+} from '../src/commands/sync.mjs';
 import { publishCards } from '../src/commands/publish-cards.mjs';
 
 const DEVICE_ID = `device-${'1'.repeat(32)}`;
@@ -39,6 +42,35 @@ function ok(stdout = '') {
 function failed(stderr = 'failed', exitCode = 1) {
   return { exitCode, stdout: '', stderr };
 }
+
+test('sync command reports account profile and device fallback success explicitly', async () => {
+  const cases = [
+    ['pushed', 'updated', 'Sanitized snapshots published (account profile updated).\n'],
+    ['noop', 'fallback', 'Snapshots are already up to date (device fallback).\n'],
+  ];
+
+  for (const [statusValue, profileStatus, expected] of cases) {
+    let stdout = '';
+    let stderr = '';
+    const status = await runSyncCommand(
+      [],
+      {
+        stdout: { write: (value) => { stdout += value; } },
+        stderr: { write: (value) => { stderr += value; } },
+      },
+      {
+        publishChangesImpl: async () => ({
+          status: statusValue,
+          profileStatus,
+        }),
+      },
+    );
+
+    assert.equal(status, 0);
+    assert.equal(stderr, '');
+    assert.equal(stdout, expected);
+  }
+});
 
 function repositoryRunner({
   cwd,

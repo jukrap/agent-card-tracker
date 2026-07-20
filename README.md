@@ -94,10 +94,12 @@ Session counts, when available, are unique sessions assigned to the configured t
 
 Account-wide collection requires:
 
-- a recent Codex CLI available as `codex.exe` on Windows or `codex` on macOS/Linux
+- a recent Codex CLI available on `PATH`
 - an existing ChatGPT sign-in for the same operating-system user that runs the command
 
-If the executable is not on the scheduler's `PATH`, set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to its absolute path. The project does not accept an executable path as a CLI argument and does not read an account credential or endpoint override.
+On Windows, an npm-installed native Codex binary beside the `codex` shim is preferred before the packaged app's `codex.exe`. This avoids a WindowsApps executable collision when the desktop app and npm CLI are both installed. If the executable is not on the scheduler's `PATH` or uses a custom layout, set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to its absolute path. The project does not accept an executable path as a CLI argument and does not read an account credential or endpoint override.
+
+`npm run sync` reports `account profile updated` when account-wide collection succeeded and `device fallback` when it published local-log totals instead.
 
 API-key-only users, older CLI versions, and environments without App Server account usage support still get the local-log Codex and Claude Code cards. An authentication failure, missing CLI, unsupported method, timeout, early exit, protocol drift, or invalid response preserves the last valid profile candidate. After that candidate is older than 48 hours, rendering automatically falls back to the sum of all devices' local Codex totals. GitHub Actions never starts the App Server and never receives local CLI authentication state.
 

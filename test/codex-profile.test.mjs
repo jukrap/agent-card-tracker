@@ -316,6 +316,40 @@ test('runner uses shell-free stdio App Server and the required request order', a
   assert.equal(fixture.observed.child.killCalls, 1);
 });
 
+test('runner discovers the npm Windows native binary before a packaged codex.exe', async () => {
+  const fixture = successfulAppServer();
+  const npmBin = 'C:\\Users\\developer\\AppData\\Roaming\\npm';
+  const shim = path.win32.join(npmBin, 'codex.cmd');
+  const expected = path.win32.join(
+    npmBin,
+    'node_modules', '@openai', 'codex', 'node_modules',
+    '@openai', 'codex-win32-x64', 'vendor',
+    'x86_64-pc-windows-msvc', 'bin', 'codex.exe',
+  );
+  const checked = [];
+  const runner = createCodexAppServerRunner({
+    spawnImpl: fixture.spawnImpl,
+    platform: 'win32',
+    arch: 'x64',
+    isFile(value) {
+      checked.push(value);
+      return value === shim || value === expected;
+    },
+  });
+
+  await runner({
+    cwd: 'C:\\repo',
+    env: { Path: '"C:\\Missing";"C:\\Users\\developer\\AppData\\Roaming\\npm"' },
+    timeoutMs: 100,
+  });
+
+  assert.equal(checked.length, 5);
+  assert.ok(checked.includes(shim));
+  assert.equal(checked.at(-1), expected);
+  assert.equal(fixture.observed.calls[0].command, expected);
+  assert.doesNotMatch(fixture.observed.calls[0].command, /WindowsApps/iu);
+});
+
 test('runner supports a validated absolute executable override', async () => {
   const fixture = successfulAppServer();
   const runner = createCodexAppServerRunner({
@@ -673,6 +707,8 @@ test('profile command help documents App Server prerequisites and fallback', asy
   assert.match(output.output().stdout, /experimental/i);
   assert.match(output.output().stdout, /ChatGPT/);
   assert.match(output.output().stdout, /AGENT_CARD_CODEX_BIN/);
+  assert.match(output.output().stdout, /npm-installed native/i);
+  assert.match(output.output().stdout, /codex\.exe/i);
   assert.match(output.output().stdout, /device totals/i);
   assert.doesNotMatch(output.output().stdout, /bearer|endpoint/i);
 });

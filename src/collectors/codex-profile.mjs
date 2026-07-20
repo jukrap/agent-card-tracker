@@ -1,4 +1,5 @@
 import { spawn as defaultSpawn } from 'node:child_process';
+import { statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -9,6 +10,17 @@ export const CODEX_APP_SERVER_ARGS = Object.freeze([
   '--listen',
   'stdio://',
 ]);
+
+const WINDOWS_NPM_CODEX_BINARIES = Object.freeze({
+  arm64: Object.freeze([
+    '@openai', 'codex-win32-arm64', 'vendor',
+    'aarch64-pc-windows-msvc', 'bin', 'codex.exe',
+  ]),
+  x64: Object.freeze([
+    '@openai', 'codex-win32-x64', 'vendor',
+    'x86_64-pc-windows-msvc', 'bin', 'codex.exe',
+  ]),
+});
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const COLLECTED_AT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -187,10 +199,75 @@ export function normalizeCodexProfile(payload, { collectedAt } = {}) {
   return normalized;
 }
 
-function resolveCodexCommand(env, platform) {
+function defaultIsFile(filePath) {
+  try {
+    return statSync(filePath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function windowsPathValue(env) {
+  for (const [key, value] of Object.entries(env)) {
+    if (key.toLowerCase() === 'path') {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function normalizeWindowsPathDirectory(value) {
+  let directory = value.trim();
+  if (directory.length >= 2 && directory.startsWith('"') && directory.endsWith('"')) {
+    directory = directory.slice(1, -1);
+  }
+  if (directory.length === 0
+    || CONTROL_CHARACTER_PATTERN.test(directory)
+    || !path.win32.isAbsolute(directory)) {
+    return null;
+  }
+  return directory;
+}
+
+function resolveWindowsNpmCodex(env, arch, isFile) {
+  const binaryParts = WINDOWS_NPM_CODEX_BINARIES[arch];
+  if (binaryParts === undefined) {
+    return undefined;
+  }
+  const pathValue = windowsPathValue(env);
+  if (typeof pathValue !== 'string' || CONTROL_CHARACTER_PATTERN.test(pathValue)) {
+    return undefined;
+  }
+
+  for (const entry of pathValue.split(path.win32.delimiter)) {
+    const directory = normalizeWindowsPathDirectory(entry);
+    if (directory === null) {
+      continue;
+    }
+    const hasCodexShim = ['codex.cmd', 'codex.ps1', 'codex']
+      .some((name) => isFile(path.win32.join(directory, name)));
+    if (!hasCodexShim) {
+      continue;
+    }
+    const candidate = path.win32.join(
+      directory,
+      'node_modules', '@openai', 'codex', 'node_modules',
+      ...binaryParts,
+    );
+    if (isFile(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+function resolveCodexCommand(env, platform, arch, isFile) {
   const override = env?.AGENT_CARD_CODEX_BIN;
   if (override === undefined) {
-    return platform === 'win32' ? 'codex.exe' : 'codex';
+    if (platform === 'win32') {
+      return resolveWindowsNpmCodex(env, arch, isFile) ?? 'codex.exe';
+    }
+    return 'codex';
   }
   if (typeof override !== 'string'
     || override.trim() !== override
@@ -267,8 +344,10 @@ function safeKill(child) {
 export function createCodexAppServerRunner({
   spawnImpl = defaultSpawn,
   platform = process.platform,
+  arch = process.arch,
+  isFile = defaultIsFile,
 } = {}) {
-  if (typeof spawnImpl !== 'function') {
+  if (typeof spawnImpl !== 'function' || typeof isFile !== 'function') {
     throw profileError('INVALID_ARGUMENT');
   }
 
@@ -279,7 +358,7 @@ export function createCodexAppServerRunner({
   } = {}) {
     assertRunnerArguments({ cwd, env, timeoutMs, platform });
     const childEnvironment = sanitizedChildEnvironment(env);
-    const command = resolveCodexCommand(childEnvironment, platform);
+    const command = resolveCodexCommand(childEnvironment, platform, arch, isFile);
 
     return new Promise((resolve, reject) => {
       let child;

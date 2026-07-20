@@ -35,6 +35,9 @@ test('public documentation covers the supported serverless multi-device flow', a
     assert.match(document, /App Server/i);
     assert.match(document, /account\/usage\/read/);
     assert.match(document, /AGENT_CARD_CODEX_BIN/);
+    assert.match(document, /npm.{0,80}native Codex binary/is);
+    assert.match(document, /account profile updated/i);
+    assert.match(document, /device fallback/i);
     assert.match(document, /ChatGPT/);
     assert.match(document, /API[- ]key/i);
     assert.match(document, /profile candidate/i);
@@ -85,6 +88,9 @@ test('scheduler guides use the same sync command and local App Server prerequisi
   assert.match(windows, /codex\.exe/i);
   assert.match(windows, /ChatGPT/);
   assert.match(windows, /AGENT_CARD_CODEX_BIN/);
+  assert.match(windows, /npm.{0,80}native binary/is);
+  assert.match(windows, /account profile updated/i);
+  assert.match(windows, /device fallback/i);
   assert.match(windows, /device totals|local Codex/i);
   assert.match(windows, /secret|credential|authentication/i);
 

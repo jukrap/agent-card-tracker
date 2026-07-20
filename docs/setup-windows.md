@@ -60,7 +60,9 @@ The application also takes a process lock, but preventing an overlapping task gi
 
 The IANA timezone and anonymous writer identity are in the ignored local config, so they do not depend on the scheduler environment. Git credentials must be available non-interactively to the task's user. Prefer Git Credential Manager or another user-scoped credential facility with access limited to this repository.
 
-For account-wide Codex totals, install a recent Codex CLI and complete its ChatGPT sign-in as the same Windows user that owns the task. Task Scheduler may have a smaller `PATH`; if it cannot find `codex.exe`, add the CLI directory to that user's environment or set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to the executable's absolute path.
+For account-wide Codex totals, install a recent Codex CLI and complete its ChatGPT sign-in as the same Windows user that owns the task. When both the desktop app and npm CLI are installed, the collector automatically prefers the npm package's native binary beside the `codex` shim instead of the packaged WindowsApps `codex.exe`. Task Scheduler may have a smaller `PATH`; if automatic discovery cannot find that binary, add the npm CLI directory to that user's environment or set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to the executable's absolute path.
+
+Successful sync output says `account profile updated` when account-wide usage was collected and `device fallback` when only local-log totals were published.
 
 Do not copy CLI authentication files or place credentials in **Add arguments**, a PowerShell command string, exported task XML, repository files, wrappers, or captured logs. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex and Claude Code aggregates and rendering falls back to device totals. Git credentials must remain available non-interactively to the task's user.
 

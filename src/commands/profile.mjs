@@ -22,6 +22,9 @@ Requirements:
   Install a recent Codex CLI and sign in with ChatGPT before running this command.
   API-key users and unsupported App Server versions can still use local-log cards.
 
+Windows:
+  Prefer the npm-installed native CLI binary on PATH over packaged codex.exe.
+
 Options:
   AGENT_CARD_CODEX_BIN may point to an absolute Codex CLI executable path.
 

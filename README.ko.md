@@ -94,10 +94,12 @@ session count를 얻을 수 있을 때는 session IDs 원문을 버리고 마지
 
 계정 전체 수집에는 다음이 필요합니다.
 
-- Windows에서는 `codex.exe`, macOS/Linux에서는 `codex`로 실행할 수 있는 최신 Codex CLI
+- `PATH`에서 찾을 수 있는 최신 Codex CLI
 - 명령을 실행하는 동일한 OS 사용자로 완료된 ChatGPT 로그인
 
-예약 실행 환경의 `PATH`에서 실행 파일을 찾을 수 없다면 비밀값이 아닌 `AGENT_CARD_CODEX_BIN` 환경변수에 절대 경로를 지정할 수 있습니다. 실행 파일 경로를 CLI argument로 받지 않으며, 계정 credential이나 endpoint override도 읽지 않습니다.
+Windows에서는 `codex` shim 옆에 있는 npm 설치 native Codex binary를 패키지 앱의 `codex.exe`보다 우선합니다. 데스크톱 앱과 npm CLI가 함께 설치됐을 때 WindowsApps 실행 파일 충돌을 피하기 위한 동작입니다. 예약 실행 환경의 `PATH`에서 실행 파일을 찾을 수 없거나 설치 구조가 다르다면 비밀값이 아닌 `AGENT_CARD_CODEX_BIN` 환경변수에 절대 경로를 지정할 수 있습니다. 실행 파일 경로를 CLI argument로 받지 않으며, 계정 credential이나 endpoint override도 읽지 않습니다.
+
+`npm run sync`는 계정 전체 수집에 성공하면 `account profile updated`, 로컬 로그 합계를 게시하면 `device fallback`을 출력합니다.
 
 API key만 사용하는 경우, 구버전 CLI, App Server 계정 사용량을 지원하지 않는 환경에서도 로컬 로그 기반 Codex·Claude Code 카드는 계속 동작합니다. 인증 실패, CLI 미설치, 미지원 method, timeout, 조기 종료, protocol 변경, 잘못된 응답이 발생하면 마지막 유효 profile candidate를 보존합니다. 그 candidate가 48시간보다 오래되면 모든 기기의 로컬 Codex 합계로 자동 fallback합니다. GitHub Actions는 App Server를 실행하지 않으며 로컬 CLI 로그인 상태도 전달받지 않습니다.
 

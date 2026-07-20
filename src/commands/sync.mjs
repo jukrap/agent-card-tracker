@@ -586,10 +586,13 @@ export async function run(
 
   try {
     const result = await synchronizeDevice(dependencies);
+    const profileStatus = result.profileStatus === 'updated'
+      ? 'account profile updated'
+      : 'device fallback';
     if (result.status === 'noop') {
-      write(io.stdout, 'Snapshots are already up to date.');
+      write(io.stdout, `Snapshots are already up to date (${profileStatus}).`);
     } else {
-      write(io.stdout, 'Sanitized snapshots published.');
+      write(io.stdout, `Sanitized snapshots published (${profileStatus}).`);
     }
     return 0;
   } catch (error) {
