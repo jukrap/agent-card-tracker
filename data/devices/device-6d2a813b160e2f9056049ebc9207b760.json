@@ -1,32 +1,32 @@
 {
   "collectorVersion": "0.1.0",
   "deviceId": "device-6d2a813b160e2f9056049ebc9207b760",
-  "generatedAt": "2026-07-19T22:53:00.099Z",
+  "generatedAt": "2026-07-20T15:21:46.097Z",
   "schemaVersion": 1,
   "sources": {
     "claude": {
       "coverage": {
         "sessions": {
-          "endDate": "2026-07-20",
-          "startDate": "2026-07-20"
+          "endDate": "2026-07-21",
+          "startDate": "2026-07-21"
         },
         "totals": {
-          "endDate": "2026-07-20",
-          "startDate": "2026-07-20"
+          "endDate": "2026-07-21",
+          "startDate": "2026-07-21"
         }
       },
       "days": [],
-      "lastSuccessfulAt": "2026-07-19T22:53:00.099Z",
+      "lastSuccessfulAt": "2026-07-20T15:21:46.097Z",
       "status": "ok"
     },
     "codex": {
       "coverage": {
         "sessions": {
-          "endDate": "2026-07-20",
+          "endDate": "2026-07-21",
           "startDate": "2026-02-17"
         },
         "totals": {
-          "endDate": "2026-07-20",
+          "endDate": "2026-07-21",
           "startDate": "2026-02-17"
         }
       },
@@ -325,20 +325,29 @@
           "date": "2026-07-19",
           "inputTokens": 46420806,
           "outputTokens": 4777589,
-          "sessions": 93,
+          "sessions": 92,
           "totalTokens": 1606872891
         },
         {
-          "cacheReadTokens": 442187264,
+          "cacheReadTokens": 1032519936,
           "cacheWriteTokens": 0,
           "date": "2026-07-20",
-          "inputTokens": 12082504,
-          "outputTokens": 1128921,
-          "sessions": 38,
-          "totalTokens": 455398689
+          "inputTokens": 40516578,
+          "outputTokens": 2683091,
+          "sessions": 74,
+          "totalTokens": 1075719605
+        },
+        {
+          "cacheReadTokens": 16745472,
+          "cacheWriteTokens": 0,
+          "date": "2026-07-21",
+          "inputTokens": 984104,
+          "outputTokens": 32006,
+          "sessions": 7,
+          "totalTokens": 17761582
         }
       ],
-      "lastSuccessfulAt": "2026-07-19T22:53:00.099Z",
+      "lastSuccessfulAt": "2026-07-20T15:21:46.097Z",
       "status": "ok"
     }
   },
