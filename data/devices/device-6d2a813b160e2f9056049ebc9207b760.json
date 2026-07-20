@@ -1,7 +1,7 @@
 {
   "collectorVersion": "0.1.0",
   "deviceId": "device-6d2a813b160e2f9056049ebc9207b760",
-  "generatedAt": "2026-07-20T15:26:19.691Z",
+  "generatedAt": "2026-07-20T16:30:59.968Z",
   "schemaVersion": 1,
   "sources": {
     "claude": {
@@ -16,7 +16,7 @@
         }
       },
       "days": [],
-      "lastSuccessfulAt": "2026-07-20T15:26:19.691Z",
+      "lastSuccessfulAt": "2026-07-20T16:30:59.968Z",
       "status": "ok"
     },
     "codex": {
@@ -338,16 +338,16 @@
           "totalTokens": 1075719605
         },
         {
-          "cacheReadTokens": 26128128,
+          "cacheReadTokens": 63679488,
           "cacheWriteTokens": 0,
           "date": "2026-07-21",
-          "inputTokens": 1131538,
-          "outputTokens": 48105,
-          "sessions": 7,
-          "totalTokens": 27307771
+          "inputTokens": 2628559,
+          "outputTokens": 123819,
+          "sessions": 9,
+          "totalTokens": 66431866
         }
       ],
-      "lastSuccessfulAt": "2026-07-20T15:26:19.691Z",
+      "lastSuccessfulAt": "2026-07-20T16:30:59.968Z",
       "status": "ok"
     }
   },
