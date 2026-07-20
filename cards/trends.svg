@@ -89,7 +89,7 @@
 <rect class="trend-bar state-partial" x="376.5" y="115" width="21" height="12" rx="1"/>
 <line class="divider" x1="16" y1="135" x2="400" y2="135"/>
 <text class="label" x="16" y="152">12 months</text>
-<text class="meta" x="16" y="166">Peak ≥6.37B</text>
+<text class="meta" x="16" y="166">Peak ≥6.38B</text>
 <line class="divider" x1="118" y1="170" x2="400" y2="170"/>
 <rect class="trend-bar state-unknown" x="118" y="163" width="21" height="7" rx="1"/>
 <rect class="trend-bar state-unknown" x="141.5" y="163" width="21" height="7" rx="1"/>
