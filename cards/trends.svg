@@ -1,30 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 460" role="img" aria-labelledby="usage-trends-title usage-trends-desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="190" viewBox="0 0 416 190" role="img" aria-labelledby="usage-trends-title usage-trends-desc">
 <title id="usage-trends-title">AI usage trends</title>
-<desc id="usage-trends-desc">Daily, weekly, and monthly token trends as of 2026-07-20. Mixed calendar bars use approximate values; dashed bars distinguish mixed, partial, and unknown observations.</desc>
-<style>:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--accent:#8250df;--accent-soft:#d8c7ff;--claude:#d97706;--codex:#2563eb;--mixed:#0969da;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#1f2328;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#d8c7ff;--heat-2:#b083f0;--heat-3:#8250df;--heat-4:#5a2ca0}
-@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#a371f7;--accent-soft:#4c2889;--claude:#f59e0b;--codex:#58a6ff;--mixed:#58a6ff;--unknown:#8b949e;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#2b1d45;--heat-2:#4c2889;--heat-3:#8250df;--heat-4:#a371f7}}
+<desc id="usage-trends-desc">Daily, weekly, and monthly token micro charts as of 2026-07-20. Partial bars are dashed, mixed calendar bars use an approximate marker, and unknown bars are outlines.</desc>
+<style>:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#0969da;--accent-soft:#ddf4ff;--claude:#9a6700;--codex:#0969da;--mixed:#8250df;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#ffffff;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#b6e3ff;--heat-2:#54aeff;--heat-3:#218bff;--heat-4:#0969da}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8c959f;--accent:#58a6ff;--accent-soft:#1f3b57;--claude:#d29922;--codex:#58a6ff;--mixed:#bc8cff;--unknown:#8c959f;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#0e4429;--heat-2:#006d32;--heat-3:#26a641;--heat-4:#39d353}}
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
-.surface{fill:var(--surface);stroke:var(--border);stroke-width:1}
-.heading{fill:var(--text);font-family:sans-serif;font-size:18px;font-weight:700}
-.subheading{fill:var(--muted);font-family:sans-serif;font-size:11px}
-.label{fill:var(--muted);font-family:sans-serif;font-size:10px;font-weight:600}
-.value{fill:var(--text);font-family:sans-serif;font-size:20px;font-weight:700}
-.small-value{fill:var(--text);font-family:sans-serif;font-size:12px;font-weight:600}
-.meta{fill:var(--muted);font-family:sans-serif;font-size:9px}
-.badge-complete{fill:var(--accent)}
-.badge-partial{fill:var(--claude)}
-.badge-mixed{fill:var(--mixed)}
-.badge-unknown{fill:var(--unknown)}
-.badge-text{font-family:sans-serif;font-size:8px;font-weight:700}
-.badge-text-complete{fill:var(--on-accent)}
-.badge-text-partial{fill:var(--on-partial)}
-.badge-text-mixed{fill:var(--on-mixed)}
-.badge-text-unknown{fill:var(--on-unknown)}
-.axis{stroke:var(--border);stroke-width:1}
+.heading{fill:var(--text);font-family:system-ui,sans-serif;font-size:14px;font-weight:600}
+.subheading{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px}
+.label{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px;font-weight:600}
+.value{fill:var(--text);font-family:system-ui,sans-serif;font-size:17px;font-weight:600}
+.small-value{fill:var(--text);font-family:system-ui,sans-serif;font-size:11px;font-weight:600}
+.meta{fill:var(--muted);font-family:system-ui,sans-serif;font-size:8px}
+.divider{stroke:var(--border);stroke-width:1}
+.bar-track{fill:var(--surface);stroke:var(--border);stroke-width:1}
 .source-claude{fill:var(--claude)}
 .source-codex{fill:var(--codex)}
-.mix-input{fill:#2da44e}
+.mix-input{fill:#1a7f37}
 .mix-output{fill:#cf222e}
 .mix-cache-read{fill:#bf8700}
 .mix-cache-write{fill:#8250df}
@@ -34,84 +25,83 @@
 .state-partial{fill:var(--accent);stroke:var(--claude);stroke-width:1;stroke-dasharray:2 2}
 .state-mixed{fill:var(--accent);stroke:var(--mixed);stroke-width:1;stroke-dasharray:4 2}
 .state-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.state-future{fill:none;stroke:var(--border);stroke-width:1}
 .heat-cell{stroke:var(--border);stroke-width:0.5}
-.state-future{fill:none;stroke:var(--border)}
 .level-1{fill:var(--heat-1)}
 .level-2{fill:var(--heat-2)}
 .level-3{fill:var(--heat-3)}
 .level-4{fill:var(--heat-4)}
 .coverage-partial{stroke:var(--claude);stroke-width:1;stroke-dasharray:1 1}
-.coverage-mixed{stroke:var(--mixed);stroke-width:1;stroke-dasharray:3 1}</style>
-<rect class="card-bg" x="0.5" y="0.5" width="499" height="459" rx="10"/>
-<text class="heading" x="24" y="31">Usage trends</text>
-<text class="subheading" x="24" y="51">As of 2026-07-20 · ≈ marks mixed calendar dates</text>
-<text class="label" x="24" y="80">Daily · 30 days</text>
-<text class="meta" x="476" y="80" text-anchor="end">Peak 1.61B</text>
-<line class="axis" x1="24" y1="140" x2="476" y2="140"/>
-<rect class="trend-bar state-partial" x="25" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="40" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="55" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="70" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="85" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="100" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="115" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="130" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="145" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="160" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="175" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="190" y="138" width="13" height="2" rx="1"/>
-<rect class="trend-bar state-partial" x="205" y="125" width="13" height="15" rx="1"/>
-<rect class="trend-bar state-partial" x="220" y="133" width="13" height="7" rx="1"/>
-<rect class="trend-bar state-partial" x="235" y="134" width="13" height="6" rx="1"/>
-<rect class="trend-bar state-partial" x="250" y="135" width="13" height="5" rx="1"/>
-<rect class="trend-bar state-partial" x="265" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="280" y="138" width="13" height="2" rx="1"/>
-<rect class="trend-bar state-partial" x="295" y="138" width="13" height="2" rx="1"/>
-<rect class="trend-bar state-partial" x="310" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="325" y="109" width="13" height="31" rx="1"/>
-<rect class="trend-bar state-partial" x="340" y="100" width="13" height="40" rx="1"/>
-<rect class="trend-bar state-partial" x="355" y="138" width="13" height="2" rx="1"/>
-<rect class="trend-bar state-partial" x="370" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="385" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="400" y="139" width="13" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="415" y="125" width="13" height="15" rx="1"/>
-<rect class="trend-bar state-partial" x="430" y="138" width="13" height="2" rx="1"/>
-<rect class="trend-bar state-partial" x="445" y="86" width="13" height="54" rx="1"/>
-<rect class="trend-bar state-active" x="460" y="125" width="13" height="15" rx="1"/>
-<text class="meta" x="24" y="155">2026-06-21</text>
-<text class="meta" x="476" y="155" text-anchor="end">2026-07-20</text>
-<text class="label" x="24" y="206">Weekly · 12 Monday-based weeks</text>
-<text class="meta" x="476" y="206" text-anchor="end">Peak 2.31B</text>
-<line class="axis" x1="24" y1="266" x2="476" y2="266"/>
-<rect class="trend-bar state-partial" x="25" y="265" width="35" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="62.5" y="265" width="35" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="100" y="265" width="35" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="137.5" y="265" width="35" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="175" y="263" width="35" height="3" rx="1"/>
-<rect class="trend-bar state-partial" x="212.5" y="253" width="35" height="13" rx="1"/>
-<rect class="trend-bar state-partial" x="250" y="262" width="35" height="4" rx="1"/>
-<rect class="trend-bar state-partial" x="287.5" y="265" width="35" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="325" y="246" width="35" height="20" rx="1"/>
-<rect class="trend-bar state-partial" x="362.5" y="212" width="35" height="54" rx="1"/>
-<rect class="trend-bar state-partial" x="400" y="217" width="35" height="49" rx="1"/>
-<rect class="trend-bar state-active" x="437.5" y="255" width="35" height="11" rx="1"/>
-<text class="meta" x="24" y="281">2026-05-04</text>
-<text class="meta" x="476" y="281" text-anchor="end">2026-07-20</text>
-<text class="label" x="24" y="332">Monthly · 12 months</text>
-<text class="meta" x="476" y="332" text-anchor="end">Peak 5.73B</text>
-<line class="axis" x1="24" y1="392" x2="476" y2="392"/>
-<rect class="trend-bar state-unknown" x="25" y="384" width="35" height="8" rx="1"/>
-<rect class="trend-bar state-unknown" x="62.5" y="384" width="35" height="8" rx="1"/>
-<rect class="trend-bar state-unknown" x="100" y="384" width="35" height="8" rx="1"/>
-<rect class="trend-bar state-unknown" x="137.5" y="384" width="35" height="8" rx="1"/>
-<rect class="trend-bar state-unknown" x="175" y="384" width="35" height="8" rx="1"/>
-<rect class="trend-bar state-unknown" x="212.5" y="384" width="35" height="8" rx="1"/>
-<rect class="trend-bar state-partial" x="250" y="389" width="35" height="3" rx="1"/>
-<rect class="trend-bar state-partial" x="287.5" y="391" width="35" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="325" y="390" width="35" height="2" rx="1"/>
-<rect class="trend-bar state-partial" x="362.5" y="391" width="35" height="1" rx="1"/>
-<rect class="trend-bar state-partial" x="400" y="384" width="35" height="8" rx="1"/>
-<rect class="trend-bar state-partial" x="437.5" y="338" width="35" height="54" rx="1"/>
-<text class="meta" x="24" y="407">2025-08-01</text>
-<text class="meta" x="476" y="407" text-anchor="end">2026-07-20</text>
+.coverage-mixed{stroke:var(--mixed);stroke-width:1;stroke-dasharray:3 1}
+.coverage-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}</style>
+<rect class="card-bg" x="0.5" y="0.5" width="415" height="189" rx="6"/>
+<text class="heading" x="16" y="27">Usage trends</text>
+<text class="subheading" x="16" y="43">As of 2026-07-20</text>
+<text class="meta" x="400" y="43" text-anchor="end">≥ partial · ≈ mixed · dashed unknown</text>
+<text class="label" x="16" y="66">30 days</text>
+<text class="meta" x="16" y="80">Peak ≥1.61B</text>
+<line class="divider" x1="118" y1="84" x2="400" y2="84"/>
+<rect class="trend-bar state-partial" x="118" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="127.4" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="136.8" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="146.2" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="155.6" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="165" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="174.4" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="183.8" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="193.2" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="202.6" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="212" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="221.4" y="82" width="7" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="230.8" y="77" width="7" height="7" rx="1"/>
+<rect class="trend-bar state-partial" x="240.2" y="81" width="7" height="3" rx="1"/>
+<rect class="trend-bar state-partial" x="249.6" y="81" width="7" height="3" rx="1"/>
+<rect class="trend-bar state-partial" x="259" y="82" width="7" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="268.4" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="277.8" y="82" width="7" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="287.2" y="82" width="7" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="296.6" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="306" y="70" width="7" height="14" rx="1"/>
+<rect class="trend-bar state-partial" x="315.4" y="66" width="7" height="18" rx="1"/>
+<rect class="trend-bar state-partial" x="324.8" y="82" width="7" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="334.2" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="343.6" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="353" y="83" width="7" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="362.4" y="77" width="7" height="7" rx="1"/>
+<rect class="trend-bar state-partial" x="371.8" y="82" width="7" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="381.2" y="59" width="7" height="25" rx="1"/>
+<rect class="trend-bar state-active" x="390.6" y="77" width="7" height="7" rx="1"/>
+<line class="divider" x1="16" y1="92" x2="400" y2="92"/>
+<text class="label" x="16" y="109">12 weeks</text>
+<text class="meta" x="16" y="123">Peak ≥2.31B</text>
+<line class="divider" x1="118" y1="127" x2="400" y2="127"/>
+<rect class="trend-bar state-partial" x="118" y="126" width="21" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="141.5" y="126" width="21" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="165" y="126" width="21" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="188.5" y="126" width="21" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="212" y="125" width="21" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="235.5" y="121" width="21" height="6" rx="1"/>
+<rect class="trend-bar state-partial" x="259" y="125" width="21" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="282.5" y="126" width="21" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="306" y="118" width="21" height="9" rx="1"/>
+<rect class="trend-bar state-partial" x="329.5" y="102" width="21" height="25" rx="1"/>
+<rect class="trend-bar state-partial" x="353" y="104" width="21" height="23" rx="1"/>
+<rect class="trend-bar state-active" x="376.5" y="122" width="21" height="5" rx="1"/>
+<line class="divider" x1="16" y1="135" x2="400" y2="135"/>
+<text class="label" x="16" y="152">12 months</text>
+<text class="meta" x="16" y="166">Peak ≥5.73B</text>
+<line class="divider" x1="118" y1="170" x2="400" y2="170"/>
+<rect class="trend-bar state-unknown" x="118" y="163" width="21" height="7" rx="1"/>
+<rect class="trend-bar state-unknown" x="141.5" y="163" width="21" height="7" rx="1"/>
+<rect class="trend-bar state-unknown" x="165" y="163" width="21" height="7" rx="1"/>
+<rect class="trend-bar state-unknown" x="188.5" y="163" width="21" height="7" rx="1"/>
+<rect class="trend-bar state-unknown" x="212" y="163" width="21" height="7" rx="1"/>
+<rect class="trend-bar state-unknown" x="235.5" y="163" width="21" height="7" rx="1"/>
+<rect class="trend-bar state-partial" x="259" y="168" width="21" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="282.5" y="169" width="21" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="306" y="168" width="21" height="2" rx="1"/>
+<rect class="trend-bar state-partial" x="329.5" y="169" width="21" height="1" rx="1"/>
+<rect class="trend-bar state-partial" x="353" y="166" width="21" height="4" rx="1"/>
+<rect class="trend-bar state-partial" x="376.5" y="145" width="21" height="25" rx="1"/>
+<text class="meta" x="400" y="184" text-anchor="end">Monday weeks · calendar months</text>
 </svg>

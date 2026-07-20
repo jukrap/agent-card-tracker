@@ -1580,6 +1580,59 @@ test('post-commit validation 실패는 commit 아래의 pre-build bytes로 rollb
   assert.ok(fake.calls.some(({ args }) => args[0] === 'commit'));
 });
 
+test('sync uses App Server profile collection without credential environment variables', async (t) => {
+  const cwd = await temporaryRepository(t);
+  await mkdir(path.join(cwd, 'data', 'devices'), { recursive: true });
+  await writeFile(path.join(cwd, '.agent-card.local.json'), JSON.stringify({
+    schemaVersion: 1,
+    deviceId: DEVICE_ID,
+    writerKey: WRITER_KEY,
+    timezone: 'Asia/Seoul',
+  }));
+  await writeFile(path.join(cwd, ...DEVICE_PATH.split('/')), JSON.stringify(snapshot()));
+
+  let runnerOptions;
+  const result = await synchronizeDevice({
+    cwd,
+    env: {},
+    now: () => new Date('2026-07-19T01:00:00.000Z'),
+    publishChangesImpl: async ({ resolvePlan }) => {
+      const plan = await resolvePlan();
+      const built = await plan.build();
+      return { status: 'noop', ...built };
+    },
+    collectSnapshot: async ({ snapshotPath }) => {
+      const next = snapshot();
+      await writeFile(snapshotPath, JSON.stringify(next));
+      return next;
+    },
+    profileRunner: async (options) => {
+      runnerOptions = options;
+      return {
+        dailyUsageBuckets: [{ startDate: '2026-07-18', tokens: 123 }],
+        summary: {
+          lifetimeTokens: 456,
+          currentStreakDays: 7,
+          peakDailyTokens: 123,
+        },
+      };
+    },
+    validateRepository: async () => true,
+  });
+
+  assert.equal(runnerOptions.cwd, cwd);
+  assert.deepEqual(runnerOptions.env, {});
+  assert.ok(result.stagePaths.includes(PROFILE_PATH));
+  const candidate = JSON.parse(await readFile(
+    path.join(cwd, ...PROFILE_PATH.split('/')),
+    'utf8',
+  ));
+  assert.deepEqual(candidate.daily, [{ date: '2026-07-18', totalTokens: 123 }]);
+  assert.equal(candidate.lifetimeTotalTokens, 456);
+  assert.equal(JSON.stringify(candidate).includes('currentStreakDays'), false);
+  assert.equal(JSON.stringify(candidate).includes('peakDailyTokens'), false);
+});
+
 test('profile collector가 반환한 invalid candidate는 fallback으로 숨기지 않는다', async (t) => {
   const cwd = await temporaryRepository(t);
   await mkdir(path.join(cwd, 'data', 'devices'), { recursive: true });

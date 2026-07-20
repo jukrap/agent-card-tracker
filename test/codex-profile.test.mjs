@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { PassThrough } from 'node:stream';
 import test from 'node:test';
 
 import {
-  CODEX_PROFILE_ENDPOINT,
+  CODEX_APP_SERVER_ARGS,
   CodexProfileError,
   MAX_PROFILE_RESPONSE_BYTES,
   collectCodexProfile,
+  createCodexAppServerRunner,
   normalizeCodexProfile,
 } from '../src/collectors/codex-profile.mjs';
 import { run as runProfileCommand } from '../src/commands/profile.mjs';
@@ -17,26 +20,13 @@ import { run as runProfileCommand } from '../src/commands/profile.mjs';
 const FIXED_NOW = '2026-07-19T12:34:56.000Z';
 const DEVICE_ID = 'device-00112233445566778899aabbccddeeff';
 const WRITER_KEY = '11'.repeat(32);
-const TEST_TOKEN = 'test-only-profile-token';
-
-async function readFixture(name) {
-  return JSON.parse(
-    await readFile(new URL(`./fixtures/profile/${name}`, import.meta.url), 'utf8'),
-  );
-}
-
-function jsonResponse(value, init = {}) {
-  return new Response(JSON.stringify(value), {
-    status: 200,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
-    ...init,
-  });
-}
+const PRIVATE_DETAILS = 'C:\\Users\\private\\profile.json raw-account-response';
 
 function expectProfileError(error, code) {
   assert.ok(error instanceof CodexProfileError);
   assert.equal(error.code, code);
-  assert.equal(error.message.includes(TEST_TOKEN), false);
+  assert.equal(error.message.includes(PRIVATE_DETAILS), false);
+  assert.equal(error.stack.includes(PRIVATE_DETAILS), false);
   assert.equal(Object.hasOwn(error, 'cause'), false);
   return true;
 }
@@ -78,16 +68,99 @@ async function makeTempDirectory(t, prefix) {
   return directory;
 }
 
-test('sanitizer keeps only strict daily totals and optional lifetime total', async () => {
-  const payload = await readFixture('success.json');
-  payload.profile = {
-    display_name: 'discard this identity',
-    username: 'discard-this-too',
-  };
-  payload.stats.unknown_raw_field = { nested: true };
-  payload.stats.daily_usage_buckets[0].unknown_bucket_field = 'discarded';
+class FakeStdin extends EventEmitter {
+  constructor(onWrite) {
+    super();
+    this.onWrite = onWrite;
+    this.writes = [];
+    this.ended = false;
+  }
 
-  assert.deepEqual(normalizeCodexProfile(payload, { collectedAt: FIXED_NOW }), {
+  write(value) {
+    this.writes.push(value);
+    this.onWrite?.(value);
+    return true;
+  }
+
+  end() {
+    this.ended = true;
+  }
+}
+
+class FakeChild extends EventEmitter {
+  constructor(onMessage) {
+    super();
+    this.stdout = new PassThrough();
+    this.stderr = new PassThrough();
+    this.killed = false;
+    this.killCalls = 0;
+    this.stdin = new FakeStdin((value) => {
+      onMessage?.(JSON.parse(value), this);
+    });
+  }
+
+  kill() {
+    this.killCalls += 1;
+    this.killed = true;
+    return true;
+  }
+}
+
+function appServerFixture(onMessage) {
+  const observed = { calls: [], child: null };
+  return {
+    observed,
+    spawnImpl(command, args, options) {
+      observed.calls.push({ command, args: [...args], options });
+      observed.child = new FakeChild(onMessage);
+      return observed.child;
+    },
+  };
+}
+
+function emitJson(child, value) {
+  child.stdout.write(Buffer.from(`${JSON.stringify(value)}\n`, 'utf8'));
+}
+
+function successfulAppServer(payload = {
+  dailyUsageBuckets: [
+    { startDate: '2026-07-17', tokens: 100 },
+    { startDate: '2026-07-18', tokens: 250 },
+  ],
+  summary: {
+    lifetimeTokens: 987654321,
+    currentStreakDays: 9,
+    longestRunningTurnSec: 120,
+    longestStreakDays: 20,
+    peakDailyTokens: 500,
+  },
+}) {
+  return appServerFixture((message, child) => {
+    if (message.method === 'initialize') {
+      emitJson(child, { method: 'account/updated', params: {} });
+      emitJson(child, { id: message.id, result: { serverInfo: {} } });
+    } else if (message.method === 'account/usage/read') {
+      emitJson(child, { id: message.id, result: payload });
+    }
+  });
+}
+
+test('normalizer publishes only daily totals and optional lifetime total', () => {
+  const result = normalizeCodexProfile({
+    dailyUsageBuckets: [
+      { startDate: '2026-07-17', tokens: 100 },
+      { startDate: '2026-07-18T12:00:00Z', tokens: 250 },
+    ],
+    summary: {
+      lifetimeTokens: 987654321,
+      currentStreakDays: 9,
+      longestRunningTurnSec: 120,
+      longestStreakDays: 20,
+      peakDailyTokens: 500,
+    },
+  }, { collectedAt: FIXED_NOW });
+
+  assert.deepEqual(result, {
     dateBasis: 'provider-calendar-date',
     daily: [
       { date: '2026-07-17', totalTokens: 100 },
@@ -100,46 +173,57 @@ test('sanitizer keeps only strict daily totals and optional lifetime total', asy
       bucketCount: 2,
     },
   });
+  assert.equal(JSON.stringify(result).includes('Streak'), false);
+  assert.equal(JSON.stringify(result).includes('peak'), false);
 });
 
-test('missing lifetime stays unknown and is never replaced by the daily sum', () => {
-  for (const lifetime of ['missing', null]) {
-    const stats = {
-      daily_usage_buckets: [
-        { start_date: '2026-07-18', tokens: 30 },
-        { start_date: '2026-07-19', tokens: 40 },
-      ],
-      ...(lifetime === 'missing' ? {} : { lifetime_tokens: lifetime }),
-    };
-    const result = normalizeCodexProfile({ stats }, { collectedAt: FIXED_NOW });
-
+test('null or missing buckets and lifetime remain empty or unknown', () => {
+  for (const payload of [
+    { dailyUsageBuckets: null, summary: { lifetimeTokens: null } },
+    { summary: {} },
+  ]) {
+    const result = normalizeCodexProfile(payload, { collectedAt: FIXED_NOW });
+    assert.deepEqual(result.daily, []);
+    assert.deepEqual(result.coverage, {
+      startDate: null,
+      endDate: null,
+      bucketCount: 0,
+    });
     assert.equal(Object.hasOwn(result, 'lifetimeTotalTokens'), false);
-    assert.equal(result.daily.reduce((sum, day) => sum + day.totalTokens, 0), 70);
   }
 });
 
-test('a partial bucket invalidates the complete response', async () => {
-  const payload = await readFixture('partial.json');
-
-  assert.throws(
-    () => normalizeCodexProfile(payload, { collectedAt: FIXED_NOW }),
-    (error) => expectProfileError(error, 'INVALID_SCHEMA'),
-  );
+test('normalizer rejects protocol drift, partial buckets, and invalid summary values', () => {
+  const cases = [
+    { summary: {}, unknown: true },
+    { dailyUsageBuckets: [{ startDate: '2026-07-18', tokens: 1, extra: 2 }], summary: {} },
+    { dailyUsageBuckets: [{ startDate: '2026-07-18' }], summary: {} },
+    { dailyUsageBuckets: [], summary: { futureField: 1 } },
+    { dailyUsageBuckets: [], summary: { currentStreakDays: -1 } },
+    { dailyUsageBuckets: 'changed', summary: {} },
+    { dailyUsageBuckets: [], summary: null },
+  ];
+  for (const payload of cases) {
+    assert.throws(
+      () => normalizeCodexProfile(payload, { collectedAt: FIXED_NOW }),
+      (error) => expectProfileError(error, 'INVALID_SCHEMA'),
+    );
+  }
 });
 
-test('dates are exact date or RFC3339 values, unique, ascending, and provider-calendar based', () => {
-  const invalidDates = [
+test('dates are exact date or RFC3339 values, unique, ascending, and bounded', () => {
+  for (const startDate of [
     '2026-02-30',
     '2026-07-18 trailing',
     '2026-07-18T00:00:00',
     '2026-07-18T24:00:00Z',
     '2026-07-18T00:00:00+15:00',
-  ];
-
-  for (const startDate of invalidDates) {
+    '2026-07-21',
+  ]) {
     assert.throws(
       () => normalizeCodexProfile({
-        stats: { daily_usage_buckets: [{ start_date: startDate, tokens: 1 }] },
+        dailyUsageBuckets: [{ startDate, tokens: 1 }],
+        summary: {},
       }, { collectedAt: FIXED_NOW }),
       (error) => expectProfileError(error, 'INVALID_SCHEMA'),
     );
@@ -147,252 +231,292 @@ test('dates are exact date or RFC3339 values, unique, ascending, and provider-ca
 
   for (const dailyUsageBuckets of [
     [
-      { start_date: '2026-07-18', tokens: 1 },
-      { start_date: '2026-07-18T12:00:00Z', tokens: 2 },
+      { startDate: '2026-07-18', tokens: 1 },
+      { startDate: '2026-07-18T12:00:00Z', tokens: 2 },
     ],
     [
-      { start_date: '2026-07-19', tokens: 1 },
-      { start_date: '2026-07-18', tokens: 2 },
+      { startDate: '2026-07-19', tokens: 1 },
+      { startDate: '2026-07-18', tokens: 2 },
     ],
   ]) {
     assert.throws(
-      () => normalizeCodexProfile({
-        stats: { daily_usage_buckets: dailyUsageBuckets },
-      }, { collectedAt: FIXED_NOW }),
+      () => normalizeCodexProfile({ dailyUsageBuckets, summary: {} }, {
+        collectedAt: FIXED_NOW,
+      }),
       (error) => expectProfileError(error, 'INVALID_SCHEMA'),
     );
   }
 
   const preserved = normalizeCodexProfile({
-    stats: {
-      daily_usage_buckets: [
-        { start_date: '2026-07-19T23:30:00-10:00', tokens: 12 },
-      ],
-    },
+    dailyUsageBuckets: [{ startDate: '2026-07-19T23:30:00-10:00', tokens: 12 }],
+    summary: {},
   }, { collectedAt: FIXED_NOW });
   assert.equal(preserved.daily[0].date, '2026-07-19');
-});
-
-test('a bucket more than one UTC calendar day after collectedAt is invalid', () => {
   assert.doesNotThrow(() => normalizeCodexProfile({
-    stats: { daily_usage_buckets: [{ start_date: '2026-07-20', tokens: 1 }] },
+    dailyUsageBuckets: [{ startDate: '2026-07-20', tokens: 1 }],
+    summary: {},
   }, { collectedAt: FIXED_NOW }));
-
-  assert.throws(
-    () => normalizeCodexProfile({
-      stats: { daily_usage_buckets: [{ start_date: '2026-07-21', tokens: 1 }] },
-    }, { collectedAt: FIXED_NOW }),
-    (error) => expectProfileError(error, 'INVALID_SCHEMA'),
-  );
 });
 
-test('all published counts are non-negative safe integers', () => {
-  for (const tokens of [-1, 1.5, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
+test('all usage counts are non-negative safe integers', () => {
+  for (const tokens of [-1, 1.5, '1', Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
     assert.throws(
       () => normalizeCodexProfile({
-        stats: { daily_usage_buckets: [{ start_date: '2026-07-19', tokens }] },
+        dailyUsageBuckets: [{ startDate: '2026-07-19', tokens }],
+        summary: {},
       }, { collectedAt: FIXED_NOW }),
       (error) => expectProfileError(error, 'INVALID_SCHEMA'),
     );
   }
-
   for (const lifetimeTokens of [-1, 1.5, '10', Number.POSITIVE_INFINITY]) {
     assert.throws(
       () => normalizeCodexProfile({
-        stats: { lifetime_tokens: lifetimeTokens, daily_usage_buckets: [] },
+        dailyUsageBuckets: [],
+        summary: { lifetimeTokens },
       }, { collectedAt: FIXED_NOW }),
       (error) => expectProfileError(error, 'INVALID_SCHEMA'),
     );
   }
 });
 
-test('collector uses only the fixed endpoint and safe request headers', async () => {
-  const payload = await readFixture('success.json');
-  let observed;
-  const fetchImpl = async (url, init) => {
-    observed = { url, init };
-    return jsonResponse(payload);
-  };
-
-  const result = await collectCodexProfile({
-    bearerToken: TEST_TOKEN,
-    fetchImpl,
-    collectedAt: FIXED_NOW,
+test('runner uses shell-free stdio App Server and the required request order', async () => {
+  const fixture = successfulAppServer();
+  const runner = createCodexAppServerRunner({
+    spawnImpl: fixture.spawnImpl,
+    platform: 'win32',
+  });
+  const result = await runner({
+    cwd: 'C:\\repo',
+    env: {
+      CODEX_BEARER_TOKEN: PRIVATE_DETAILS,
+      safe_marker: 'kept',
+    },
+    timeoutMs: 100,
   });
 
-  assert.equal(observed.url, CODEX_PROFILE_ENDPOINT);
-  assert.equal(observed.init.method, 'GET');
-  assert.equal(observed.init.redirect, 'error');
-  assert.equal(observed.init.headers.Authorization, `Bearer ${TEST_TOKEN}`);
-  assert.equal(observed.init.headers.Accept, 'application/json');
-  assert.equal(observed.init.headers.originator, 'Codex Desktop');
-  assert.ok(observed.init.signal instanceof AbortSignal);
-  assert.equal(result.daily.length, 2);
+  assert.equal(fixture.observed.calls.length, 1);
+  const call = fixture.observed.calls[0];
+  assert.equal(call.command, 'codex.exe');
+  assert.deepEqual(call.args, CODEX_APP_SERVER_ARGS);
+  assert.equal(call.options.shell, false);
+  assert.deepEqual(call.options.stdio, ['pipe', 'pipe', 'pipe']);
+  assert.equal(call.options.windowsHide, true);
+  assert.deepEqual(call.options.env, { safe_marker: 'kept' });
+
+  const requests = fixture.observed.child.stdin.writes.map((line) => JSON.parse(line));
+  assert.deepEqual(requests.map((request) => request.method), [
+    'initialize',
+    'initialized',
+    'account/usage/read',
+  ]);
+  assert.deepEqual(requests[0].params.capabilities, { experimentalApi: true });
+  assert.equal(requests[2].params, null);
+  assert.equal(result.summary.lifetimeTokens, 987654321);
+  assert.equal(fixture.observed.child.stdin.ended, true);
+  assert.equal(fixture.observed.child.killCalls, 1);
 });
 
-test('production token comes from CODEX_BEARER_TOKEN and is required', async () => {
-  let authorization;
-  await collectCodexProfile({
-    env: { CODEX_BEARER_TOKEN: TEST_TOKEN },
-    fetchImpl: async (_url, init) => {
-      authorization = init.headers.Authorization;
-      return jsonResponse({ stats: { daily_usage_buckets: [] } });
-    },
-    collectedAt: FIXED_NOW,
+test('runner supports a validated absolute executable override', async () => {
+  const fixture = successfulAppServer();
+  const runner = createCodexAppServerRunner({
+    spawnImpl: fixture.spawnImpl,
+    platform: 'win32',
   });
-  assert.equal(authorization, `Bearer ${TEST_TOKEN}`);
-
-  await assert.rejects(
-    collectCodexProfile({
-      env: {},
-      fetchImpl: async () => assert.fail('fetch must not run without a token'),
-      collectedAt: FIXED_NOW,
-    }),
-    (error) => expectProfileError(error, 'TOKEN_REQUIRED'),
-  );
-});
-
-test('bearer prefix is normalized once while blank and control-character tokens are rejected', async () => {
-  let authorization;
-  await collectCodexProfile({
-    bearerToken: `Bearer ${TEST_TOKEN}`,
-    fetchImpl: async (_url, init) => {
-      authorization = init.headers.Authorization;
-      return jsonResponse({ stats: { daily_usage_buckets: [] } });
-    },
-    collectedAt: FIXED_NOW,
+  await runner({
+    cwd: 'C:\\repo',
+    env: { AGENT_CARD_CODEX_BIN: 'C:\\Tools\\codex.exe' },
+    timeoutMs: 100,
   });
-  assert.equal(authorization, `Bearer ${TEST_TOKEN}`);
+  assert.equal(fixture.observed.calls[0].command, 'C:\\Tools\\codex.exe');
 
-  for (const bearerToken of ['', '   ', 'Bearer ', ' bearer    ']) {
+  for (const override of ['codex.exe', ' C:\\Tools\\codex.exe', 'C:\\Tools\\bad\n.exe']) {
     await assert.rejects(
-      collectCodexProfile({
-        bearerToken,
-        fetchImpl: async () => assert.fail('fetch must not run for a blank token'),
-        collectedAt: FIXED_NOW,
+      async () => runner({
+        cwd: 'C:\\repo',
+        env: { AGENT_CARD_CODEX_BIN: override },
+        timeoutMs: 100,
       }),
-      (error) => expectProfileError(error, 'TOKEN_REQUIRED'),
+      (error) => expectProfileError(error, 'INVALID_ARGUMENT'),
     );
   }
 
-  for (const bearerToken of [
-    `${TEST_TOKEN}\r\n`,
-    `prefix\n${TEST_TOKEN}`,
-    `prefix\u0000${TEST_TOKEN}`,
-    `prefix\u007f${TEST_TOKEN}`,
+  const unixFixture = successfulAppServer();
+  const unixRunner = createCodexAppServerRunner({
+    spawnImpl: unixFixture.spawnImpl,
+    platform: 'linux',
+  });
+  await unixRunner({ cwd: '/repo', env: {}, timeoutMs: 100 });
+  assert.equal(unixFixture.observed.calls[0].command, 'codex');
+});
+
+test('runner returns fixed safe codes for account and method errors', async () => {
+  for (const [errorCode, expected] of [
+    [-32001, 'ACCOUNT_USAGE_FAILED'],
+    [-32601, 'APP_SERVER_UNSUPPORTED'],
   ]) {
+    const fixture = appServerFixture((message, child) => {
+      if (message.method === 'initialize') {
+        emitJson(child, { id: message.id, result: {} });
+      } else if (message.method === 'account/usage/read') {
+        emitJson(child, {
+          id: message.id,
+          error: { code: errorCode, message: PRIVATE_DETAILS },
+        });
+      }
+    });
+    const runner = createCodexAppServerRunner({
+      spawnImpl: fixture.spawnImpl,
+      platform: 'linux',
+    });
     await assert.rejects(
-      collectCodexProfile({
-        bearerToken,
-        fetchImpl: async () => assert.fail('fetch must not run for a control character'),
-        collectedAt: FIXED_NOW,
-      }),
-      (error) => expectProfileError(error, 'TOKEN_INVALID'),
+      runner({ cwd: '/repo', env: {}, timeoutMs: 100 }),
+      (error) => expectProfileError(error, expected),
     );
+    assert.equal(fixture.observed.child.killCalls, 1);
   }
 });
 
-test('redirects, auth failures, other HTTP errors, and HTML are fixed safe errors', async () => {
-  const cases = [
-    [
-      { redirected: true, status: 200 },
-      'REDIRECT_REJECTED',
-    ],
-    [
-      new Response(`private body ${TEST_TOKEN}`, { status: 401 }),
-      'AUTH_FAILED',
-    ],
-    [
-      new Response(`private body ${TEST_TOKEN}`, { status: 503 }),
-      'HTTP_ERROR',
-    ],
-    [
-      new Response('<html>private</html>', {
-        status: 200,
-        headers: { 'content-type': 'text/html' },
-      }),
-      'INVALID_CONTENT_TYPE',
-    ],
+test('runner rejects malformed, invalid UTF-8, duplicate, and unknown responses', async () => {
+  const writers = [
+    (child) => child.stdout.write(Buffer.from('{bad json\n')),
+    (child) => child.stdout.write(Buffer.from([0xc3, 0x28, 0x0a])),
+    (child) => {
+      emitJson(child, { id: 1, result: {} });
+      emitJson(child, { id: 1, result: {} });
+    },
+    (child) => emitJson(child, { id: 99, result: {} }),
+    (child) => emitJson(child, { id: 1, result: {}, extra: true }),
   ];
 
-  for (const [response, code] of cases) {
+  for (const writeResponse of writers) {
+    const fixture = appServerFixture((message, child) => {
+      if (message.method === 'initialize') {
+        writeResponse(child);
+      }
+    });
+    const runner = createCodexAppServerRunner({
+      spawnImpl: fixture.spawnImpl,
+      platform: 'linux',
+    });
     await assert.rejects(
-      collectCodexProfile({
-        bearerToken: TEST_TOKEN,
-        fetchImpl: async () => response,
-        collectedAt: FIXED_NOW,
-      }),
-      (error) => expectProfileError(error, code),
+      runner({ cwd: '/repo', env: {}, timeoutMs: 100 }),
+      (error) => expectProfileError(error, 'APP_SERVER_PROTOCOL'),
     );
+    assert.equal(fixture.observed.child.stdin.ended, true);
+    assert.equal(fixture.observed.child.killCalls, 1);
   }
 });
 
-test('timeout, invalid JSON, network causes, and schema drift never leak raw details', async () => {
-  const privateDetails = `${TEST_TOKEN} C:\\Users\\private\\profile.json response-body`;
-  const cases = [
-    [async () => { throw new DOMException(privateDetails, 'TimeoutError'); }, 'TIMEOUT'],
-    [async () => { throw new Error(privateDetails); }, 'NETWORK_ERROR'],
-    [async () => new Response('{bad json', {
-      headers: { 'content-type': 'application/json' },
-    }), 'INVALID_JSON'],
-    [async () => jsonResponse({ stats: { daily_usage_buckets: 'changed' } }), 'INVALID_SCHEMA'],
-  ];
-
-  for (const [fetchImpl, code] of cases) {
+test('runner enforces the combined one MiB output limit', async () => {
+  for (const streamName of ['stdout', 'stderr']) {
+    const fixture = appServerFixture((message, child) => {
+      if (message.method === 'initialize') {
+        child[streamName].write(Buffer.alloc(MAX_PROFILE_RESPONSE_BYTES + 1, 120));
+      }
+    });
+    const runner = createCodexAppServerRunner({
+      spawnImpl: fixture.spawnImpl,
+      platform: 'linux',
+    });
     await assert.rejects(
-      collectCodexProfile({
-        bearerToken: TEST_TOKEN,
-        fetchImpl,
-        collectedAt: FIXED_NOW,
-      }),
-      (error) => {
-        expectProfileError(error, code);
-        assert.equal(error.message.includes(privateDetails), false);
-        assert.equal(error.stack.includes(privateDetails), false);
-        return true;
-      },
+      runner({ cwd: '/repo', env: {}, timeoutMs: 100 }),
+      (error) => expectProfileError(error, 'APP_SERVER_OUTPUT_TOO_LARGE'),
     );
+    assert.equal(fixture.observed.child.killCalls, 1);
   }
 });
 
-test('response body is streamed with a hard one MiB byte limit', async () => {
-  const oversized = `{"padding":"${'x'.repeat(MAX_PROFILE_RESPONSE_BYTES)}"}`;
-  assert.ok(Buffer.byteLength(oversized) > MAX_PROFILE_RESPONSE_BYTES);
+test('runner handles timeout, early exit, missing CLI, and spawn failure with cleanup', async () => {
+  const timeoutFixture = appServerFixture(() => {});
+  const timeoutRunner = createCodexAppServerRunner({
+    spawnImpl: timeoutFixture.spawnImpl,
+    platform: 'linux',
+  });
+  await assert.rejects(
+    timeoutRunner({ cwd: '/repo', env: {}, timeoutMs: 10 }),
+    (error) => expectProfileError(error, 'APP_SERVER_TIMEOUT'),
+  );
+  assert.equal(timeoutFixture.observed.child.stdin.ended, true);
+  assert.equal(timeoutFixture.observed.child.killCalls, 1);
+
+  const exitFixture = appServerFixture((_message, child) => {
+    queueMicrotask(() => child.emit('exit', 1));
+  });
+  const exitRunner = createCodexAppServerRunner({
+    spawnImpl: exitFixture.spawnImpl,
+    platform: 'linux',
+  });
+  await assert.rejects(
+    exitRunner({ cwd: '/repo', env: {}, timeoutMs: 100 }),
+    (error) => expectProfileError(error, 'APP_SERVER_EXITED'),
+  );
+  assert.equal(exitFixture.observed.child.killCalls, 1);
+
+  const missingFixture = appServerFixture((_message, child) => {
+    queueMicrotask(() => {
+      const error = new Error(PRIVATE_DETAILS);
+      error.code = 'ENOENT';
+      child.emit('error', error);
+    });
+  });
+  const missingRunner = createCodexAppServerRunner({
+    spawnImpl: missingFixture.spawnImpl,
+    platform: 'linux',
+  });
+  await assert.rejects(
+    missingRunner({ cwd: '/repo', env: {}, timeoutMs: 100 }),
+    (error) => expectProfileError(error, 'APP_SERVER_FAILED'),
+  );
+  assert.equal(missingFixture.observed.child.stdin.ended, true);
+  assert.equal(missingFixture.observed.child.killCalls, 1);
+
+  const spawnRunner = createCodexAppServerRunner({
+    spawnImpl: () => { throw new Error(PRIVATE_DETAILS); },
+    platform: 'linux',
+  });
+  await assert.rejects(
+    spawnRunner({ cwd: '/repo', env: {}, timeoutMs: 100 }),
+    (error) => expectProfileError(error, 'APP_SERVER_FAILED'),
+  );
+});
+
+test('collector works without credentials in env and sanitizes runner failures', async () => {
+  let observed;
+  const result = await collectCodexProfile({
+    cwd: '/repo',
+    env: {},
+    timeoutMs: 123,
+    collectedAt: FIXED_NOW,
+    runner: async (options) => {
+      observed = options;
+      return {
+        dailyUsageBuckets: [{ startDate: '2026-07-18', tokens: 10 }],
+        summary: { lifetimeTokens: 50 },
+      };
+    },
+  });
+  assert.deepEqual(observed, { cwd: '/repo', env: {}, timeoutMs: 123 });
+  assert.equal(result.lifetimeTotalTokens, 50);
 
   await assert.rejects(
     collectCodexProfile({
-      bearerToken: TEST_TOKEN,
-      fetchImpl: async () => new Response(oversized, {
-        headers: { 'content-type': 'application/json' },
-      }),
+      cwd: '/repo',
+      env: {},
       collectedAt: FIXED_NOW,
+      runner: async () => { throw new Error(PRIVATE_DETAILS); },
     }),
-    (error) => expectProfileError(error, 'RESPONSE_TOO_LARGE'),
-  );
-
-  await assert.rejects(
-    collectCodexProfile({
-      bearerToken: TEST_TOKEN,
-      fetchImpl: async () => new Response(null, {
-        headers: {
-          'content-type': 'application/json',
-          'content-length': String(MAX_PROFILE_RESPONSE_BYTES + 1),
-        },
-      }),
-      collectedAt: FIXED_NOW,
-    }),
-    (error) => expectProfileError(error, 'RESPONSE_TOO_LARGE'),
+    (error) => expectProfileError(error, 'APP_SERVER_FAILED'),
   );
 });
 
-test('profile command writes one validated candidate with a hashed writer key', async (t) => {
+test('profile command writes a validated candidate without environment credentials', async (t) => {
   const cwd = await makeTempDirectory(t, 'agent-card-profile-success-');
-  const payload = await readFixture('success.json');
   const output = makeIo();
+  let runnerOptions;
 
   const status = await runProfileCommand([], output.io, {
     cwd,
-    env: { CODEX_BEARER_TOKEN: TEST_TOKEN },
+    env: {},
     now: () => new Date(FIXED_NOW),
     loadConfig: async () => ({
       schemaVersion: 1,
@@ -400,10 +524,21 @@ test('profile command writes one validated candidate with a hashed writer key', 
       writerKey: WRITER_KEY,
       timezone: 'Asia/Seoul',
     }),
-    fetchImpl: async () => jsonResponse(payload),
+    profileRunner: async (options) => {
+      runnerOptions = options;
+      return {
+        dailyUsageBuckets: [
+          { startDate: '2026-07-17', tokens: 100 },
+          { startDate: '2026-07-18', tokens: 250 },
+        ],
+        summary: { lifetimeTokens: 987654321 },
+      };
+    },
   });
 
   assert.equal(status, 0);
+  assert.equal(runnerOptions.cwd, cwd);
+  assert.deepEqual(runnerOptions.env, {});
   const candidate = JSON.parse(await readFile(
     path.join(cwd, 'data', 'profiles', `${DEVICE_ID}.json`),
     'utf8',
@@ -431,18 +566,17 @@ test('profile command writes one validated candidate with a hashed writer key', 
   assert.equal(output.output().stderr, '');
 });
 
-test('profile command preserves an existing candidate on every collection failure', async (t) => {
+test('profile command preserves an existing candidate on collection failure', async (t) => {
   const cwd = await makeTempDirectory(t, 'agent-card-profile-failure-');
   const destination = path.join(cwd, 'data', 'profiles', `${DEVICE_ID}.json`);
   await mkdir(path.dirname(destination), { recursive: true });
   const previous = `${JSON.stringify(makeExistingCandidate(), null, 2)}\n`;
   await writeFile(destination, previous, 'utf8');
   const output = makeIo();
-  const privateDetails = `${TEST_TOKEN} C:\\Users\\private\\profile.json`;
 
   const status = await runProfileCommand([], output.io, {
     cwd,
-    env: { CODEX_BEARER_TOKEN: TEST_TOKEN },
+    env: {},
     now: () => new Date(FIXED_NOW),
     loadConfig: async () => ({
       schemaVersion: 1,
@@ -450,118 +584,95 @@ test('profile command preserves an existing candidate on every collection failur
       writerKey: WRITER_KEY,
       timezone: 'Asia/Seoul',
     }),
-    fetchImpl: async () => { throw new Error(privateDetails); },
+    profileRunner: async () => { throw new Error(PRIVATE_DETAILS); },
   });
 
   assert.equal(status, 1);
   assert.equal(await readFile(destination, 'utf8'), previous);
-  assert.match(output.output().stderr, /NETWORK_ERROR/);
-  assert.equal(output.output().stderr.includes(TEST_TOKEN), false);
+  assert.match(output.output().stderr, /APP_SERVER_FAILED/);
   assert.equal(output.output().stderr.includes(cwd), false);
-  assert.equal(output.output().stderr.includes(privateDetails), false);
+  assert.equal(output.output().stderr.includes(PRIVATE_DETAILS), false);
 });
 
-test('writer ownership conflict aborts before request and preserves exact bytes', async (t) => {
-  const cwd = await makeTempDirectory(t, 'agent-card-profile-conflict-');
-  const destination = path.join(cwd, 'data', 'profiles', `${DEVICE_ID}.json`);
-  await mkdir(path.dirname(destination), { recursive: true });
-  const previous = `${JSON.stringify(makeExistingCandidate({
-    writerKeyHash: 'ff'.repeat(32),
-  }), null, 2)}\n`;
-  await writeFile(destination, previous, 'utf8');
-  const output = makeIo();
-  let fetchCalls = 0;
+for (const [name, overrides, expectedCode] of [
+  ['writer ownership conflict', { writerKeyHash: 'ff'.repeat(32) }, 'WRITER_KEY_CONFLICT'],
+  ['device identity mismatch', { deviceId: `device-${'ff'.repeat(16)}` }, 'WRITER_KEY_CONFLICT'],
+]) {
+  test(`${name} aborts before App Server collection`, async (t) => {
+    const cwd = await makeTempDirectory(t, 'agent-card-profile-conflict-');
+    const destination = path.join(cwd, 'data', 'profiles', `${DEVICE_ID}.json`);
+    await mkdir(path.dirname(destination), { recursive: true });
+    const previous = `${JSON.stringify(makeExistingCandidate(overrides), null, 2)}\n`;
+    await writeFile(destination, previous, 'utf8');
+    const output = makeIo();
+    let runnerCalls = 0;
 
-  const status = await runProfileCommand([], output.io, {
-    cwd,
-    env: { CODEX_BEARER_TOKEN: TEST_TOKEN },
-    loadConfig: async () => ({
-      schemaVersion: 1,
-      deviceId: DEVICE_ID,
-      writerKey: WRITER_KEY,
-      timezone: 'Asia/Seoul',
-    }),
-    fetchImpl: async () => {
-      fetchCalls += 1;
-      return jsonResponse({ stats: { daily_usage_buckets: [] } });
-    },
+    const status = await runProfileCommand([], output.io, {
+      cwd,
+      env: {},
+      loadConfig: async () => ({
+        schemaVersion: 1,
+        deviceId: DEVICE_ID,
+        writerKey: WRITER_KEY,
+        timezone: 'Asia/Seoul',
+      }),
+      profileRunner: async () => {
+        runnerCalls += 1;
+        return { dailyUsageBuckets: [], summary: {} };
+      },
+    });
+
+    assert.equal(status, 1);
+    assert.equal(runnerCalls, 0);
+    assert.equal(await readFile(destination, 'utf8'), previous);
+    assert.equal(
+      output.output().stderr,
+      `Codex profile collection failed: ${expectedCode}\n`,
+    );
   });
+}
 
-  assert.equal(status, 1);
-  assert.equal(fetchCalls, 0);
-  assert.equal(await readFile(destination, 'utf8'), previous);
-  assert.equal(output.output().stderr, 'Codex profile collection failed: WRITER_KEY_CONFLICT\n');
-});
-
-test('candidate device identity mismatch also fails as a writer ownership conflict', async (t) => {
-  const cwd = await makeTempDirectory(t, 'agent-card-profile-device-conflict-');
-  const destination = path.join(cwd, 'data', 'profiles', `${DEVICE_ID}.json`);
-  await mkdir(path.dirname(destination), { recursive: true });
-  const previous = `${JSON.stringify(makeExistingCandidate({
-    deviceId: `device-${'ff'.repeat(16)}`,
-  }), null, 2)}\n`;
-  await writeFile(destination, previous, 'utf8');
-  const output = makeIo();
-  let fetchCalls = 0;
-
-  const status = await runProfileCommand([], output.io, {
-    cwd,
-    env: { CODEX_BEARER_TOKEN: TEST_TOKEN },
-    loadConfig: async () => ({
-      schemaVersion: 1,
-      deviceId: DEVICE_ID,
-      writerKey: WRITER_KEY,
-      timezone: 'Asia/Seoul',
-    }),
-    fetchImpl: async () => {
-      fetchCalls += 1;
-      return jsonResponse({ stats: { daily_usage_buckets: [] } });
-    },
-  });
-
-  assert.equal(status, 1);
-  assert.equal(fetchCalls, 0);
-  assert.equal(await readFile(destination, 'utf8'), previous);
-  assert.equal(output.output().stderr, 'Codex profile collection failed: WRITER_KEY_CONFLICT\n');
-});
-
-test('a malformed existing candidate fails closed before request and preserves exact bytes', async (t) => {
+test('a malformed existing candidate fails closed before App Server collection', async (t) => {
   const cwd = await makeTempDirectory(t, 'agent-card-profile-malformed-');
   const destination = path.join(cwd, 'data', 'profiles', `${DEVICE_ID}.json`);
   await mkdir(path.dirname(destination), { recursive: true });
   const previous = '{"malformed":"candidate"}\n';
   await writeFile(destination, previous, 'utf8');
   const output = makeIo();
-  let fetchCalls = 0;
+  let runnerCalls = 0;
 
   const status = await runProfileCommand([], output.io, {
     cwd,
-    env: { CODEX_BEARER_TOKEN: TEST_TOKEN },
+    env: {},
     loadConfig: async () => ({
       schemaVersion: 1,
       deviceId: DEVICE_ID,
       writerKey: WRITER_KEY,
       timezone: 'Asia/Seoul',
     }),
-    fetchImpl: async () => {
-      fetchCalls += 1;
-      return jsonResponse({ stats: { daily_usage_buckets: [] } });
+    profileRunner: async () => {
+      runnerCalls += 1;
+      return { dailyUsageBuckets: [], summary: {} };
     },
   });
 
   assert.equal(status, 1);
-  assert.equal(fetchCalls, 0);
+  assert.equal(runnerCalls, 0);
   assert.equal(await readFile(destination, 'utf8'), previous);
-  assert.equal(output.output().stderr, 'Codex profile collection failed: EXISTING_PROFILE_INVALID\n');
+  assert.equal(
+    output.output().stderr,
+    'Codex profile collection failed: EXISTING_PROFILE_INVALID\n',
+  );
 });
 
-test('profile command help warns that the fixed endpoint is unofficial', async () => {
+test('profile command help documents App Server prerequisites and fallback', async () => {
   const output = makeIo();
   const status = await runProfileCommand(['--help'], output.io);
 
   assert.equal(status, 0);
   assert.match(output.output().stdout, /experimental/i);
-  assert.match(output.output().stdout, /unofficial/i);
-  assert.match(output.output().stdout, /CODEX_BEARER_TOKEN/);
-  assert.equal(output.output().stdout.includes('--endpoint'), false);
+  assert.match(output.output().stdout, /ChatGPT/);
+  assert.match(output.output().stdout, /AGENT_CARD_CODEX_BIN/);
+  assert.match(output.output().stdout, /device totals/i);
+  assert.doesNotMatch(output.output().stdout, /bearer|endpoint/i);
 });

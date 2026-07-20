@@ -25,14 +25,18 @@ test('public documentation covers the supported serverless multi-device flow', a
       'npm ci',
       'npm run setup -- --timezone',
       'npm run sync',
+      'npm run profile',
       'npm run publish-cards',
     ]) {
       assert.match(document, new RegExp(command.replaceAll(' ', '\\s+')));
     }
 
     assert.match(document, /Node(?:\.js)? 24/i);
-    assert.match(document, /CODEX_BEARER_TOKEN/);
-    assert.match(document, /https:\/\/chatgpt\.com\/backend-api\/wham\/profiles\/me/);
+    assert.match(document, /App Server/i);
+    assert.match(document, /account\/usage\/read/);
+    assert.match(document, /AGENT_CARD_CODEX_BIN/);
+    assert.match(document, /ChatGPT/);
+    assert.match(document, /API[- ]key/i);
     assert.match(document, /profile candidate/i);
     assert.match(document, /Claude Code/i);
     assert.match(document, /raw (?:logs?|prompts?)/i);
@@ -48,37 +52,55 @@ test('public documentation covers the supported serverless multi-device flow', a
 
   assert.match(english, /newest fresh.{0,100}profile candidate/is);
   assert.match(english, /never (?:adds?|sums?).{0,80}(?:profile|local Codex)/is);
+  assert.match(english, /falls back.{0,120}all devices.{0,80}local Codex/is);
   assert.match(korean, /가장 최신.{0,100}profile candidate/is);
   assert.match(korean, /(?:절대|결코).{0,80}(?:합산|더하지)/is);
+  assert.match(korean, /모든 기기의 로컬 Codex 합계로 자동 fallback/is);
 });
 
-test('README files contain exact raw GitHub card URLs for profile embedding', async () => {
-  const documents = (await Promise.all([read('README.md'), read('README.ko.md')])).join('\n');
-  for (const card of ['overview', 'trends', 'activity']) {
-    const rawUrl = `https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/${card}.svg`;
-    assert.match(documents, new RegExp(`!\\[[^\\]]+\\]\\(${rawUrl.replaceAll('.', '\\.') }\\)`));
+test('README files contain the full-width and paired 49 percent GitHub layout', async () => {
+  const documents = await Promise.all([read('README.md'), read('README.ko.md')]);
+  for (const document of documents) {
+    for (const [card, width] of [
+      ['overview', '100%'],
+      ['trends', '49%'],
+      ['activity', '49%'],
+    ]) {
+      const rawUrl = `https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/${card}.svg`;
+      assert.match(
+        document,
+        new RegExp(`<img width="${width.replace('%', '\\%')}" src="${rawUrl.replaceAll('.', '\\.')}"`),
+      );
+    }
   }
 });
 
-test('scheduler guides call the same sync command with execution context and secret guidance', async () => {
+test('scheduler guides use the same sync command and local App Server prerequisites', async () => {
   const windows = await read('docs/setup-windows.md');
   const unix = await read('docs/setup-unix.md');
 
   assert.match(windows, /Task Scheduler/i);
   assert.match(windows, /npm run sync/);
   assert.match(windows, /Start in|working directory/i);
-  assert.match(windows, /environment|환경/i);
-  assert.match(windows, /secret|credential|token/i);
+  assert.match(windows, /codex\.exe/i);
+  assert.match(windows, /ChatGPT/);
+  assert.match(windows, /AGENT_CARD_CODEX_BIN/);
+  assert.match(windows, /device totals|local Codex/i);
+  assert.match(windows, /secret|credential|authentication/i);
 
   assert.match(unix, /launchd/);
   assert.match(unix, /cron/);
   assert.ok((unix.match(/npm run sync/g) ?? []).length >= 2);
   assert.match(unix, /WorkingDirectory|working directory/i);
   assert.match(unix, /EnvironmentVariables|environment/i);
-  assert.match(unix, /secret|credential|token/i);
+  assert.match(unix, /Codex CLI/i);
+  assert.match(unix, /ChatGPT/);
+  assert.match(unix, /AGENT_CARD_CODEX_BIN/);
+  assert.match(unix, /local Codex fallback/i);
+  assert.match(unix, /secret|credential|authentication/i);
 });
 
-test('security policy provides private reporting, supported scope, and privacy boundaries', async () => {
+test('security policy provides private reporting and App Server privacy boundaries', async () => {
   const security = await read('SECURITY.md');
   assert.match(security, /private vulnerability reporting/i);
   assert.match(security, /supported/i);
@@ -86,18 +108,25 @@ test('security policy provides private reporting, supported scope, and privacy b
   assert.match(security, /coordinated disclosure/i);
   assert.match(security, /raw logs/i);
   assert.match(security, /public.{0,80}aggregate/is);
-  assert.match(security, /CODEX_BEARER_TOKEN/);
+  assert.match(security, /App Server response bodies/i);
+  assert.match(security, /CLI authentication state/i);
+  assert.match(security, /AGENT_CARD_CODEX_BIN/);
 });
 
-test('.env.example declares only the empty optional profile variable', async () => {
-  assert.equal(await read('.env.example'), 'CODEX_BEARER_TOKEN=\n');
+test('legacy bearer environment example is removed', async () => {
+  await assert.rejects(
+    read('.env.example'),
+    (error) => error?.code === 'ENOENT',
+  );
 });
 
-test('public docs do not expose private working-material names or secret examples', async () => {
+test('public docs omit the retired bearer and unofficial endpoint guidance', async () => {
   const combined = (await Promise.all(PUBLIC_DOCS.map(read))).join('\n');
   assert.doesNotMatch(combined, /\.ai-agent-playbook|archive\/|archive\\/i);
   assert.doesNotMatch(combined, /Authorization:\s*Bearer\s+\S+/i);
-  assert.doesNotMatch(combined, /CODEX_BEARER_TOKEN\s*=\s*\S+/);
+  assert.doesNotMatch(combined, /CODEX_BEARER_TOKEN/i);
+  assert.doesNotMatch(combined, /backend-api\/wham\/profiles\/me/i);
+  assert.doesNotMatch(combined, /unofficial (?:profile )?endpoint/i);
 });
 
 test('README files explain mixed calendar observations without calling them lower bounds', async () => {

@@ -106,9 +106,9 @@ Cron may email command output depending on system configuration. Sync output is 
 
 Git authentication must work without a prompt for the scheduler's user. Prefer an OS credential helper or a narrowly scoped SSH/Git credential protected by user-only permissions. Do not put a token in the remote URL, crontab, plist, command argument, or log.
 
-`CODEX_BEARER_TOKEN` is intentionally absent from both examples. It is optional; without it, sync still publishes local Codex and Claude Code aggregates. When no fresh profile candidate exists, rendering uses the all-device local Codex fallback.
+For account-wide Codex totals, install a recent Codex CLI and complete its ChatGPT sign-in as the same user that owns the launchd job or crontab. Background jobs often have a smaller `PATH`; add the CLI directory to the private scheduler environment or set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to the executable's absolute path.
 
-If you choose the experimental profile adapter, inject the bearer through an access-controlled local credential mechanism that ultimately executes the same `npm run sync`. Do not store the bearer directly in a plist, crontab, repository file, shell history, or wrapper readable by other users. GitHub Actions neither needs nor receives it.
+Do not copy CLI authentication files or place credentials in a plist, crontab, repository file, shell history, wrapper, or log. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex and Claude Code aggregates and rendering uses the all-device local Codex fallback. GitHub Actions neither starts the App Server nor receives local CLI authentication state.
 
 ## Verify and recover
 

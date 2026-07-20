@@ -15,29 +15,20 @@ const NUMBER_UNITS = Object.freeze([
 ]);
 
 export const CARD_STYLE = `
-:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#59636e;--accent:#8250df;--accent-soft:#d8c7ff;--claude:#d97706;--codex:#2563eb;--mixed:#0969da;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#1f2328;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#d8c7ff;--heat-2:#b083f0;--heat-3:#8250df;--heat-4:#5a2ca0}
-@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#a371f7;--accent-soft:#4c2889;--claude:#f59e0b;--codex:#58a6ff;--mixed:#58a6ff;--unknown:#8b949e;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#2b1d45;--heat-2:#4c2889;--heat-3:#8250df;--heat-4:#a371f7}}
+:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#0969da;--accent-soft:#ddf4ff;--claude:#9a6700;--codex:#0969da;--mixed:#8250df;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#ffffff;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#b6e3ff;--heat-2:#54aeff;--heat-3:#218bff;--heat-4:#0969da}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8c959f;--accent:#58a6ff;--accent-soft:#1f3b57;--claude:#d29922;--codex:#58a6ff;--mixed:#bc8cff;--unknown:#8c959f;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#0e4429;--heat-2:#006d32;--heat-3:#26a641;--heat-4:#39d353}}
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
-.surface{fill:var(--surface);stroke:var(--border);stroke-width:1}
-.heading{fill:var(--text);font-family:sans-serif;font-size:18px;font-weight:700}
-.subheading{fill:var(--muted);font-family:sans-serif;font-size:11px}
-.label{fill:var(--muted);font-family:sans-serif;font-size:10px;font-weight:600}
-.value{fill:var(--text);font-family:sans-serif;font-size:20px;font-weight:700}
-.small-value{fill:var(--text);font-family:sans-serif;font-size:12px;font-weight:600}
-.meta{fill:var(--muted);font-family:sans-serif;font-size:9px}
-.badge-complete{fill:var(--accent)}
-.badge-partial{fill:var(--claude)}
-.badge-mixed{fill:var(--mixed)}
-.badge-unknown{fill:var(--unknown)}
-.badge-text{font-family:sans-serif;font-size:8px;font-weight:700}
-.badge-text-complete{fill:var(--on-accent)}
-.badge-text-partial{fill:var(--on-partial)}
-.badge-text-mixed{fill:var(--on-mixed)}
-.badge-text-unknown{fill:var(--on-unknown)}
-.axis{stroke:var(--border);stroke-width:1}
+.heading{fill:var(--text);font-family:system-ui,sans-serif;font-size:14px;font-weight:600}
+.subheading{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px}
+.label{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px;font-weight:600}
+.value{fill:var(--text);font-family:system-ui,sans-serif;font-size:17px;font-weight:600}
+.small-value{fill:var(--text);font-family:system-ui,sans-serif;font-size:11px;font-weight:600}
+.meta{fill:var(--muted);font-family:system-ui,sans-serif;font-size:8px}
+.divider{stroke:var(--border);stroke-width:1}
+.bar-track{fill:var(--surface);stroke:var(--border);stroke-width:1}
 .source-claude{fill:var(--claude)}
 .source-codex{fill:var(--codex)}
-.mix-input{fill:#2da44e}
+.mix-input{fill:#1a7f37}
 .mix-output{fill:#cf222e}
 .mix-cache-read{fill:#bf8700}
 .mix-cache-write{fill:#8250df}
@@ -47,14 +38,15 @@ export const CARD_STYLE = `
 .state-partial{fill:var(--accent);stroke:var(--claude);stroke-width:1;stroke-dasharray:2 2}
 .state-mixed{fill:var(--accent);stroke:var(--mixed);stroke-width:1;stroke-dasharray:4 2}
 .state-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.state-future{fill:none;stroke:var(--border);stroke-width:1}
 .heat-cell{stroke:var(--border);stroke-width:0.5}
-.state-future{fill:none;stroke:var(--border)}
 .level-1{fill:var(--heat-1)}
 .level-2{fill:var(--heat-2)}
 .level-3{fill:var(--heat-3)}
 .level-4{fill:var(--heat-4)}
 .coverage-partial{stroke:var(--claude);stroke-width:1;stroke-dasharray:1 1}
 .coverage-mixed{stroke:var(--mixed);stroke-width:1;stroke-dasharray:3 1}
+.coverage-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
 `.trim();
 
 export function escapeXml(value) {
@@ -106,34 +98,28 @@ export function coverageLabel(coverage) {
   return 'Unknown';
 }
 
-export function badge(x, y, coverage) {
-  const label = coverageLabel(coverage);
-  const width = label === 'Complete' ? 47 : label === 'Partial' ? 38 : label === 'Mixed' ? 36 : 43;
-  const safeCoverage = escapeXml(
-    ['complete', 'partial', 'mixed'].includes(coverage) ? coverage : 'unknown',
-  );
-  return `<g><rect class="badge-${safeCoverage}" x="${x}" y="${y}" width="${width}" height="14" rx="7"/><text class="badge-text badge-text-${safeCoverage}" x="${x + width / 2}" y="${y + 10}" text-anchor="middle">${label}</text></g>`;
-}
-
 export function comparisonText(comparison) {
   if (comparison?.kind === 'mixed') {
-    return 'Mixed calendars · no comparison';
+    return '≈ no comparison';
   }
   if (comparison?.kind === 'flat') {
     return 'No change';
   }
   if (comparison?.kind === 'new') {
-    return 'New vs prior period';
+    return 'New vs prior';
   }
   if (comparison?.kind === 'percent' && Number.isFinite(comparison.percentage)) {
     const rounded = Math.round(comparison.percentage * 10) / 10;
-    return `${rounded > 0 ? '+' : ''}${trimFixed(rounded.toFixed(1))}% vs prior period`;
+    return `${rounded > 0 ? '+' : ''}${trimFixed(rounded.toFixed(1))}% vs prior`;
   }
-  return 'Comparison unavailable';
+  return '— comparison';
 }
 
 export function proportionalWidths(values, totalWidth) {
-  if (!Array.isArray(values) || !Number.isFinite(totalWidth) || totalWidth < 0) {
+  if (!Array.isArray(values)
+    || values.some((value) => !Number.isFinite(value) || value < 0)
+    || !Number.isFinite(totalWidth)
+    || totalWidth < 0) {
     throw new TypeError('invalid proportional width input');
   }
   const total = values.reduce((sum, value) => sum + value, 0);
@@ -168,11 +154,11 @@ export function cardDocument({
   const descriptionId = `${id}-desc`;
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${titleId} ${descriptionId}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${titleId} ${descriptionId}">`,
     `<title id="${titleId}">${escapeXml(title)}</title>`,
     `<desc id="${descriptionId}">${escapeXml(description)}</desc>`,
     `<style>${CARD_STYLE}</style>`,
-    `<rect class="card-bg" x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="10"/>`,
+    `<rect class="card-bg" x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="6"/>`,
     body,
     '</svg>',
     '',

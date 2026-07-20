@@ -185,14 +185,16 @@ function publicPaths(config) {
 }
 
 async function defaultCollectProfile({
+  cwd,
   config,
   env,
-  fetchImpl,
+  profileRunner,
   collectedAt,
 }) {
   const normalized = await collectCodexProfile({
+    cwd,
     env,
-    fetchImpl,
+    runner: profileRunner,
     collectedAt,
   });
   return {
@@ -365,7 +367,7 @@ export async function synchronizeDevice({
   cwd = process.cwd(),
   env = process.env,
   now = () => new Date(),
-  fetchImpl = globalThis.fetch,
+  profileRunner,
   gitRunner,
   usageRunner,
   collectUsage,
@@ -487,7 +489,7 @@ export async function synchronizeDevice({
                 cwd,
                 config,
                 env,
-                fetchImpl,
+                profileRunner,
                 collectedAt: profileCollectedAt,
                 fileSystem,
               });

@@ -18,12 +18,15 @@ const HELP = `Collect the experimental Codex account profile
 Usage:
   agent-card profile
 
-Authentication:
-  Set CODEX_BEARER_TOKEN in the local process environment.
+Requirements:
+  Install a recent Codex CLI and sign in with ChatGPT before running this command.
+  API-key users and unsupported App Server versions can still use local-log cards.
 
-Warning:
-  This experimental adapter uses a fixed, unofficial Codex endpoint that may change.
-  It never accepts the bearer token or an endpoint override as a CLI argument.
+Options:
+  AGENT_CARD_CODEX_BIN may point to an absolute Codex CLI executable path.
+
+The account usage API is experimental. Collection failures preserve the last
+valid profile candidate, and rendering later falls back to device totals.
 `;
 
 function write(stream, value) {
@@ -88,7 +91,7 @@ export async function run(
     cwd = process.cwd(),
     env = process.env,
     now = () => new Date(),
-    fetchImpl = globalThis.fetch,
+    profileRunner,
     loadConfig = defaultLoadConfig,
     fileSystem = defaultFileSystem,
     writeProfile = writeJsonAtomic,
@@ -139,14 +142,15 @@ export async function run(
   let normalized;
   try {
     normalized = await collectCodexProfile({
+      cwd,
       env,
-      fetchImpl,
+      runner: profileRunner,
       collectedAt,
     });
   } catch (error) {
     return commandFailure(
       io,
-      error instanceof CodexProfileError ? error.code : 'NETWORK_ERROR',
+      error instanceof CodexProfileError ? error.code : 'APP_SERVER_FAILED',
     );
   }
 

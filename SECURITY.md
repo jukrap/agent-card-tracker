@@ -4,7 +4,7 @@
 
 Only the current `main` branch, its checked-in lockfile, and Node.js 24 or newer are supported. There are no maintained older release lines at this time. Security fixes are applied to `main`; users should update their dedicated clones with a clean install before the next collection.
 
-The supported deployment is the repository's documented flow: one private local config per computer, sanitized schema-version 1 snapshots, the fixed target repository, and the checked-in GitHub Actions workflows. Fork-specific changes, copied device configs, custom profile endpoints, modified validators, and unpinned dependencies are outside the supported security boundary.
+The supported deployment is the repository's documented flow: one private local config per computer, sanitized schema-version 1 snapshots, the fixed target repository, and the checked-in GitHub Actions workflows. Fork-specific changes, copied device configs, modified App Server protocol handling, modified validators, and unpinned dependencies are outside the supported security boundary.
 
 ## Reporting a vulnerability
 
@@ -30,10 +30,10 @@ Please report these privately:
 - a validator bypass for a secret-shaped value or an active/external SVG resource
 - command, argument, path, or Git injection
 - writer-key ownership bypass or cross-device file overwrite
-- leakage of `CODEX_BEARER_TOKEN`, Git credentials, upstream response bodies, or private error details
+- leakage of local CLI authentication state, Git credentials, App Server response bodies, stderr, or private error details
 - unsafe conflict recovery that can overwrite remote history or another device's snapshot
 
-Availability or schema changes in the unofficial provider endpoint, inaccurate upstream usage totals, and vulnerabilities in GitHub or `ccusage` should also be reported to their respective maintainers. They become in scope here only when this repository handles the failure unsafely.
+Availability or schema changes in the experimental Codex App Server method, inaccurate upstream usage totals, and vulnerabilities in GitHub, Codex CLI, or `ccusage` should also be reported to their respective maintainers. They become in scope here only when this repository handles the failure unsafely.
 
 ## Privacy and threat boundary
 
@@ -47,9 +47,9 @@ The controls reduce accidental disclosure and unsafe automation; they do not pro
 
 ## Credential handling
 
-`CODEX_BEARER_TOKEN` is an optional account credential for the experimental fixed profile endpoint. Supply it only through the local process environment. Never place it in Git, a CLI argument, task/cron/plist text, GitHub Actions secrets for this project, captured terminal output, or a public issue. The example environment file intentionally contains no value and is not automatically loaded.
+Account-wide collection reuses the Codex CLI login already available to the local operating-system user. This project does not request, read, copy, persist, or print the CLI authentication store. Never copy that store into the repository, a task/cron/plist definition, GitHub Actions, captured terminal output, or a public issue. `AGENT_CARD_CODEX_BIN` is a non-secret executable override and must be an absolute path.
 
-Git push credentials belong in the platform's credential manager or another access-controlled mechanism available to the scheduled user. Use the least privilege needed for this one repository and protect local config, credential stores, scheduler definitions, and logs with user-only permissions.
+Git push credentials belong in the platform's credential manager or another access-controlled mechanism available to the scheduled user. Use the least privilege needed for this one repository and protect local config, CLI authentication storage, credential stores, scheduler definitions, and logs with user-only permissions.
 
 If any credential may have been exposed:
 
@@ -69,6 +69,6 @@ History cleanup does not make a previously published credential safe; rotation i
 - Run `npm ci` from the lockfile and `npm run validate` before manual publication.
 - Do not force-push to recover from collection or card conflicts.
 - Treat scheduled GitHub Actions as best effort and review unexpected card or data diffs before publishing locally.
-- Keep optional bearer access out of GitHub Actions; rendering uses public sanitized data only.
+- Keep local CLI authentication state out of GitHub Actions; rendering uses public sanitized data only.
 
 The public artifacts are data, not a backup of the raw usage history. Keep any needed private backup under your own access controls.

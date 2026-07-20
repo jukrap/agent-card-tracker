@@ -158,18 +158,53 @@ function assertXml(svg) {
   assert.equal(error, null);
 }
 
+function numericAttribute(tag, name, defaultValue = null) {
+  const match = new RegExp(`\\s${name}="(-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))"`, 'u').exec(tag);
+  return match === null ? defaultValue : Number(match[1]);
+}
+
+function assertGeometryWithin(svg, width, height) {
+  for (const match of svg.matchAll(/<rect\b[^>]*>/gu)) {
+    const tag = match[0];
+    const x = numericAttribute(tag, 'x', 0);
+    const y = numericAttribute(tag, 'y', 0);
+    const rectWidth = numericAttribute(tag, 'width');
+    const rectHeight = numericAttribute(tag, 'height');
+    assert.ok(x >= 0 && y >= 0 && rectWidth >= 0 && rectHeight >= 0);
+    assert.ok(x + rectWidth <= width && y + rectHeight <= height, tag);
+  }
+  for (const match of svg.matchAll(/<line\b[^>]*>/gu)) {
+    const tag = match[0];
+    for (const [xName, yName] of [['x1', 'y1'], ['x2', 'y2']]) {
+      const x = numericAttribute(tag, xName);
+      const y = numericAttribute(tag, yName);
+      assert.ok(x >= 0 && x <= width && y >= 0 && y <= height, tag);
+    }
+  }
+  for (const match of svg.matchAll(/<text\b[^>]*>/gu)) {
+    const tag = match[0];
+    const x = numericAttribute(tag, 'x');
+    const y = numericAttribute(tag, 'y');
+    assert.ok(x >= 0 && x <= width && y >= 0 && y <= height, tag);
+  }
+}
+
 function assertSafeCard(svg, viewBox) {
   assertXml(svg);
+  const [, , rawWidth, rawHeight] = viewBox.split(' ');
+  const width = Number(rawWidth);
+  const height = Number(rawHeight);
   assert.match(svg, /<title id="[^"]+">/);
   assert.match(svg, /<desc id="[^"]+">/);
   assert.match(svg, /role="img"/);
   assert.match(svg, /aria-labelledby="[^"]+ [^"]+"/);
-  assert.match(svg, new RegExp(`viewBox="${viewBox}"`));
+  assert.match(svg, new RegExp(`width="${width}" height="${height}" viewBox="${viewBox}"`));
   assert.match(svg, /prefers-color-scheme:\s*dark/);
   assert.doesNotMatch(svg, /<script|<foreignObject|<image|<a\b|<use\b/i);
   assert.doesNotMatch(svg, /\son[a-z]+\s*=|\s(?:href|xlink:href)\s*=|data:|@import|url\s*\(/i);
   assert.equal(svg.includes('\r'), false);
   assert.equal(svg.endsWith('\n'), true);
+  assertGeometryWithin(svg, width, height);
 }
 
 function captureStream() {
@@ -193,29 +228,30 @@ test('세 카드가 접근 가능한 고정 viewBox의 self-contained XML을 생
   const trends = renderTrends(statistics);
   const activity = renderActivity(statistics);
 
-  assertSafeCard(overview, '0 0 500 420');
-  assertSafeCard(trends, '0 0 500 460');
-  assertSafeCard(activity, '0 0 500 340');
+  assertSafeCard(overview, '0 0 846 210');
+  assertSafeCard(trends, '0 0 416 190');
+  assertSafeCard(activity, '0 0 416 190');
   assert.match(overview, /UTC &amp; &lt;safe&gt;/);
   assert.match(overview, /2 stale sources/);
 });
 
-test('light와 dark theme의 badge 텍스트 대비가 WCAG AA 기준을 충족한다', () => {
+test('light와 dark theme의 텍스트 대비와 비색상 상태 단서가 기준을 충족한다', () => {
   const themes = Array.from(CARD_STYLE.matchAll(/:root\{([^}]+)\}/gu), (match) => (
     cssVariables(match[1])
   ));
 
   assert.equal(themes.length, 2);
   for (const theme of themes) {
-    assert.ok(contrastRatio(theme['--accent'], theme['--on-accent']) >= 4.5);
-    assert.ok(contrastRatio(theme['--claude'], theme['--on-partial']) >= 4.5);
-    assert.ok(contrastRatio(theme['--unknown'], theme['--on-unknown']) >= 4.5);
+    assert.ok(contrastRatio(theme['--text'], theme['--bg']) >= 4.5);
+    assert.ok(contrastRatio(theme['--muted'], theme['--bg']) >= 4.5);
+    assert.ok(contrastRatio(theme['--accent'], theme['--bg']) >= 3);
+    assert.ok(contrastRatio(theme['--claude'], theme['--bg']) >= 3);
+    assert.ok(contrastRatio(theme['--mixed'], theme['--bg']) >= 3);
   }
 
   const overview = renderOverview(sampleStatistics(), { codexSource: 'profile' });
-  assert.match(overview, /class="badge-text badge-text-complete"/);
-  assert.match(overview, /class="badge-text badge-text-partial"/);
-  assert.match(overview, /class="badge-text badge-text-unknown"/);
+  assert.doesNotMatch(overview, /badge-/);
+  assert.match(overview, /≥ partial · ≈ mixed calendars · — unknown/);
 });
 
 test('관측 0, unknown, partial과 profile total-only unknown token mix를 구분한다', () => {
@@ -224,9 +260,9 @@ test('관측 0, unknown, partial과 profile total-only unknown token mix를 구�
   assert.match(overview, />0</);
   assert.match(overview, />Unknown</);
   assert.match(overview, />Partial</);
-  assert.match(overview, />Unknown mix 300</);
+  assert.match(overview, />Unknown ≥300</);
   assert.match(overview, /class="mix-unknown"/);
-  assert.match(overview, />Profile total</);
+  assert.match(overview, /Account-wide Codex · device Claude/);
 });
 
 test('source share의 관측된 0과 unknown을 서로 다른 문구로 표시한다', () => {
@@ -317,9 +353,9 @@ test('renderCards는 정렬된 strict 공개 JSON을 읽어 세 카드를 원자
   assert.equal(result.asOf, AS_OF);
   assert.deepEqual(Object.keys(result.cardPaths), ['overview', 'trends', 'activity']);
   for (const [name, viewBox] of [
-    ['overview', '0 0 500 420'],
-    ['trends', '0 0 500 460'],
-    ['activity', '0 0 500 340'],
+    ['overview', '0 0 846 210'],
+    ['trends', '0 0 416 190'],
+    ['activity', '0 0 416 190'],
   ]) {
     const contents = await readFile(path.join(cwd, 'cards', `${name}.svg`), 'utf8');
     assertSafeCard(contents, viewBox);
@@ -372,7 +408,7 @@ test('빈 data 디렉터리도 unknown empty state의 유효한 카드를 만든
   const trends = await readFile(path.join(cwd, 'cards', 'trends.svg'), 'utf8');
   assert.match(overview, /No observed usage yet/);
   assert.match(trends, /No observed usage yet/);
-  assertSafeCard(overview, '0 0 500 420');
+  assertSafeCard(overview, '0 0 846 210');
 });
 
 test('malformed 공개 JSON은 기존 카드 교체 전에 fail closed 처리한다', async (t) => {
@@ -458,30 +494,20 @@ test('mixed calendar 관측은 ≈와 비색상 상태로 표시하고 비교와
   const activity = renderActivity(statistics);
 
   assert.match(overview, />≈400</);
-  assert.match(overview, /class="badge-mixed"/);
   assert.match(overview, />Mixed</);
-  assert.match(overview, />Mixed calendars · no comparison</);
   assert.match(overview, />Claude ≈25%</);
   assert.match(overview, />Codex ≈75%</);
   assert.match(overview, />Token mix · Mixed</);
-  assert.match(overview, />Input ≈10</);
-  assert.match(overview, /Mixed calendar observations use ≈/);
+  assert.match(overview, />Input ≈10/);
+  assert.match(overview, /mixed calendar values use approximately/i);
 
   assert.match(trends, /class="trend-bar state-mixed"/);
-  assert.match(trends, /≈ marks mixed calendar dates/);
-  assert.match(trends, /Mixed calendar bars use approximate values/);
+  assert.match(trends, /≈ mixed/);
+  assert.match(trends, /mixed calendar bars use an approximate marker/i);
 
   assert.match(activity, /coverage-mixed/);
   assert.match(activity, />≈84</);
-  assert.match(activity, /<text class="value" x="184" y="232">—<\/text>/);
-  assert.match(activity, />≈2026-07-11</);
-  assert.match(activity, />≈88K</);
-  assert.match(activity, /Mixed calendar cells are approximate; streaks are unavailable/);
-
-  const themes = Array.from(CARD_STYLE.matchAll(/:root\{([^}]+)\}/gu), (match) => (
-    cssVariables(match[1])
-  ));
-  for (const theme of themes) {
-    assert.ok(contrastRatio(theme['--mixed'], theme['--on-mixed']) >= 4.5);
-  }
+  assert.match(activity, /<text class="value" x="112" y="166">—<\/text>/);
+  assert.match(activity, /<text class="value" x="304" y="166">≈88K<\/text>/);
+  assert.match(activity, /partial and mixed observations use dashed borders/i);
 });

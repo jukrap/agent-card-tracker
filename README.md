@@ -12,18 +12,16 @@ The cards report token activity, not work quality or productivity. Read [Privacy
 - `trends.svg`: 30 daily, 12 Monday-based weekly, and 12 monthly buckets
 - `activity.svg`: a 53-week heatmap, active days, streaks, and peak day
 
-Add these exact Markdown snippets to your GitHub profile README:
+Use this HTML layout in your GitHub profile README. The overview uses the full row; trends and activity share the next row at 49% each:
 
-```markdown
-![AI usage overview](https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/overview.svg)
-```
-
-```markdown
-![AI usage trends](https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/trends.svg)
-```
-
-```markdown
-![AI usage activity](https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/activity.svg)
+```html
+<p>
+  <img width="100%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/overview.svg" alt="AI usage overview">
+</p>
+<p>
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/trends.svg" alt="AI usage trends">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/activity.svg" alt="AI usage activity">
+</p>
 ```
 
 The SVG files are self-contained and include light/dark palettes and accessibility metadata. GitHub may cache raw content, so a newly rendered card can take a short time to appear everywhere.
@@ -92,19 +90,24 @@ Session counts, when available, are unique sessions assigned to the configured t
 
 ## Experimental Codex account profile
 
-`ccusage` reads only the logs present on one computer. The optional profile adapter is what attempts to obtain the account-wide token totals visible through the Codex profile service. It calls the fixed, unofficial endpoint `https://chatgpt.com/backend-api/wham/profiles/me` and reads authentication only from the `CODEX_BEARER_TOKEN` process environment variable.
+`ccusage` reads only the logs present on one computer. For account-wide Codex totals, `npm run profile` and `npm run sync` start the signed-in Codex CLI's experimental App Server over local JSONL stdio, initialize it with experimental API support, and read `account/usage/read`. This is a local CLI protocol call, not a screen scrape of the Codex app and not a direct unofficial HTTP request.
 
-This endpoint is undocumented and can change or stop working. The bearer is an account credential: never commit it, paste it into a command-line argument, place it in scheduler definitions, send it to GitHub Actions, or include it in logs. The project does not load `.env.example`; that file only documents the variable name. Prefer the operating system's credential facility or another local, access-controlled mechanism when injecting the environment into an interactive run.
+Account-wide collection requires:
 
-After placing the bearer in the current process environment, the adapter can be tested with:
+- a recent Codex CLI available as `codex.exe` on Windows or `codex` on macOS/Linux
+- an existing ChatGPT sign-in for the same operating-system user that runs the command
+
+If the executable is not on the scheduler's `PATH`, set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to its absolute path. The project does not accept an executable path as a CLI argument and does not read an account credential or endpoint override.
+
+API-key-only users, older CLI versions, and environments without App Server account usage support still get the local-log Codex and Claude Code cards. An authentication failure, missing CLI, unsupported method, timeout, early exit, protocol drift, or invalid response preserves the last valid profile candidate. After that candidate is older than 48 hours, rendering automatically falls back to the sum of all devices' local Codex totals. GitHub Actions never starts the App Server and never receives local CLI authentication state.
+
+To test account-wide collection independently:
 
 ```console
 npm run profile
 ```
 
-`npm run sync` also treats profile collection as optional. Authentication expiry, schema drift, timeout, or endpoint failure preserves the last valid candidate. Once that candidate is no longer fresh, rendering automatically uses all-device local Codex data. GitHub Actions never needs or receives this bearer.
-
-Profile buckets provide date-only provider calendar labels. The project preserves those labels instead of pretending they belong to the configured IANA timezone. Profile data also may lack input/output/cache breakdown and session counts, which remain Unknown.
+The public schema remains version 1. Only sanitized daily token totals, an optional provider lifetime total, and coverage metadata are written. App Server streak, peak, turn-duration, identity, and raw response fields are not published. Provider calendar dates are preserved rather than pretending they belong to the configured IANA timezone; missing input/output/cache breakdown and session counts remain Unknown.
 
 ## Privacy boundary
 
@@ -115,7 +118,7 @@ Public snapshots contain only:
 - daily input, output, cache-read, cache-write, total token, and optional session counts
 - for a profile candidate, sanitized daily totals, optional provider lifetime total, and coverage metadata
 
-They do **not** contain raw logs, raw prompts or responses, project names, file paths, session IDs, account identity, email, hostname, username, Git credentials, API keys, or bearer secrets. Exact allowlists and repository validation reject unknown fields and secret/path-shaped public content.
+They do **not** contain raw logs, raw prompts or responses, project names, file paths, session IDs, account identity, email, hostname, username, Git credentials, API keys, access tokens, CLI authentication state, or App Server response bodies. Exact allowlists and repository validation reject unknown fields and secret/path-shaped public content.
 
 The aggregate data itself is intentionally public. Token volume, active dates, timezone, session counts, and collection freshness can reveal working patterns. Use a private repository instead if that metadata is too sensitive, but note that private-repository GitHub Actions billing differs and this repository's public-profile URLs will not work for unauthenticated readers.
 
@@ -169,7 +172,7 @@ Recover in this order: stop and disable the clone's scheduler; verify that no `a
 
 ## Limitations
 
-- The experimental profile endpoint has no stability guarantee and may report a different scope from local logs.
+- The experimental App Server account usage method has no stability guarantee and may report a different scope from local logs.
 - Provider calendar dates are not timezone-converted because the upstream payload has no time-of-day or timezone.
 - Token categories and totals follow upstream `ccusage`/profile semantics; they are not billing records.
 - Token count, sessions, streaks, and activity are not measures of productivity, correctness, or engineering impact.

@@ -60,9 +60,9 @@ The application also takes a process lock, but preventing an overlapping task gi
 
 The IANA timezone and anonymous writer identity are in the ignored local config, so they do not depend on the scheduler environment. Git credentials must be available non-interactively to the task's user. Prefer Git Credential Manager or another user-scoped credential facility with access limited to this repository.
 
-`CODEX_BEARER_TOKEN` is optional and is intentionally absent from the task example. Never put it in **Add arguments**, a PowerShell command string, exported task XML, repository file, or captured log. If you cannot inject it with an access-controlled OS facility, omit it; sync still publishes local Codex and Claude Code aggregates, and rendering falls back to local Codex when no fresh profile candidate exists.
+For account-wide Codex totals, install a recent Codex CLI and complete its ChatGPT sign-in as the same Windows user that owns the task. Task Scheduler may have a smaller `PATH`; if it cannot find `codex.exe`, add the CLI directory to that user's environment or set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to the executable's absolute path.
 
-Do not store secrets in a wrapper merely to make Task Scheduler inherit them. Any wrapper, task definition, and log that you add must remain outside the repository and readable only by the scheduled user.
+Do not copy CLI authentication files or place credentials in **Add arguments**, a PowerShell command string, exported task XML, repository files, wrappers, or captured logs. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex and Claude Code aggregates and rendering falls back to device totals. Git credentials must remain available non-interactively to the task's user.
 
 ## 5. Test and monitor
 
@@ -73,7 +73,7 @@ In Task Scheduler, right-click the task and choose **Run**. Confirm:
 3. the commit reaches `origin/main` or the command reports no change;
 4. the **Render usage cards** GitHub Actions workflow finishes afterward.
 
-The command output is deliberately limited, but scheduler history and any extra logs still reveal execution times. Restrict their access and retention. Never enable shell tracing around a process that may receive a credential.
+The command output is deliberately limited, but scheduler history and any extra logs still reveal execution times. Restrict their access and retention. Never enable shell tracing around collection or print the scheduled user's environment.
 
 For a manual check from the same working directory and user:
 

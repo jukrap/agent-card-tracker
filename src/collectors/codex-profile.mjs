@@ -1,25 +1,42 @@
-export const CODEX_PROFILE_ENDPOINT = 'https://chatgpt.com/backend-api/wham/profiles/me';
+import { spawn as defaultSpawn } from 'node:child_process';
+import path from 'node:path';
+import process from 'node:process';
+
 export const DEFAULT_PROFILE_TIMEOUT_MS = 15_000;
 export const MAX_PROFILE_RESPONSE_BYTES = 1024 * 1024;
+export const CODEX_APP_SERVER_ARGS = Object.freeze([
+  'app-server',
+  '--listen',
+  'stdio://',
+]);
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const COLLECTED_AT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const RFC3339_PATTERN = /^(?<date>\d{4}-\d{2}-\d{2})T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-](?:(?:0\d|1[0-3]):[0-5]\d|14:00))$/;
-const MAX_BEARER_BYTES = 16 * 1024;
+const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/u;
+const INITIALIZE_REQUEST_ID = 1;
+const USAGE_REQUEST_ID = 2;
+const RESPONSE_FIELDS = new Set(['id', 'result', 'error']);
+const NOTIFICATION_FIELDS = new Set(['method', 'params']);
+const PROTOCOL_ERROR_FIELDS = new Set(['code', 'message', 'data']);
+const EXPECTED_SUMMARY_FIELDS = new Set([
+  'currentStreakDays',
+  'lifetimeTokens',
+  'longestRunningTurnSec',
+  'longestStreakDays',
+  'peakDailyTokens',
+]);
 
 const ERROR_MESSAGES = Object.freeze({
-  AUTH_FAILED: 'Codex profile authentication failed',
-  HTTP_ERROR: 'Codex profile request failed',
+  ACCOUNT_USAGE_FAILED: 'Codex account usage could not be read',
+  APP_SERVER_EXITED: 'Codex App Server exited before returning account usage',
+  APP_SERVER_FAILED: 'Codex App Server could not be started',
+  APP_SERVER_OUTPUT_TOO_LARGE: 'Codex App Server output exceeded the safe limit',
+  APP_SERVER_PROTOCOL: 'Codex App Server returned an invalid protocol message',
+  APP_SERVER_TIMEOUT: 'Codex App Server account usage request timed out',
+  APP_SERVER_UNSUPPORTED: 'Codex App Server does not support account usage',
   INVALID_ARGUMENT: 'Codex profile collector received an invalid argument',
-  INVALID_CONTENT_TYPE: 'Codex profile response was not JSON',
-  INVALID_JSON: 'Codex profile response was not valid JSON',
-  INVALID_SCHEMA: 'Codex profile response did not match the expected schema',
-  NETWORK_ERROR: 'Codex profile request could not be completed',
-  REDIRECT_REJECTED: 'Codex profile endpoint redirect was rejected',
-  RESPONSE_TOO_LARGE: 'Codex profile response exceeded the safe limit',
-  TIMEOUT: 'Codex profile request timed out',
-  TOKEN_INVALID: 'Codex profile bearer token was invalid',
-  TOKEN_REQUIRED: 'Codex profile bearer token is required',
+  INVALID_SCHEMA: 'Codex account usage did not match the expected schema',
 });
 
 export class CodexProfileError extends Error {
@@ -40,6 +57,10 @@ function isPlainObject(value) {
   }
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
+}
+
+function hasOnlyKeys(value, expectedKeys) {
+  return Object.keys(value).every((key) => expectedKeys.has(key));
 }
 
 function assertSafeCount(value) {
@@ -103,13 +124,27 @@ function maximumProviderDate(collectedAt) {
   return nextDay.toISOString().slice(0, 10);
 }
 
+function validateNullableSummaryCounts(summary) {
+  if (!hasOnlyKeys(summary, EXPECTED_SUMMARY_FIELDS)) {
+    throw profileError('INVALID_SCHEMA');
+  }
+  for (const field of EXPECTED_SUMMARY_FIELDS) {
+    if (Object.hasOwn(summary, field) && summary[field] !== null) {
+      assertSafeCount(summary[field]);
+    }
+  }
+}
+
 export function normalizeCodexProfile(payload, { collectedAt } = {}) {
   const safeCollectedAt = normalizeCollectedAt(collectedAt);
-  if (!isPlainObject(payload) || !isPlainObject(payload.stats)) {
+  if (!isPlainObject(payload)
+    || !hasOnlyKeys(payload, new Set(['dailyUsageBuckets', 'summary']))
+    || !isPlainObject(payload.summary)) {
     throw profileError('INVALID_SCHEMA');
   }
 
-  const buckets = payload.stats.daily_usage_buckets;
+  validateNullableSummaryCounts(payload.summary);
+  const buckets = payload.dailyUsageBuckets ?? [];
   if (!Array.isArray(buckets)) {
     throw profileError('INVALID_SCHEMA');
   }
@@ -119,11 +154,12 @@ export function normalizeCodexProfile(payload, { collectedAt } = {}) {
   const maximumDate = maximumProviderDate(safeCollectedAt);
   for (const bucket of buckets) {
     if (!isPlainObject(bucket)
-      || !Object.hasOwn(bucket, 'start_date')
+      || !hasOnlyKeys(bucket, new Set(['startDate', 'tokens']))
+      || !Object.hasOwn(bucket, 'startDate')
       || !Object.hasOwn(bucket, 'tokens')) {
       throw profileError('INVALID_SCHEMA');
     }
-    const date = normalizeProviderCalendarDate(bucket.start_date);
+    const date = normalizeProviderCalendarDate(bucket.startDate);
     const totalTokens = assertSafeCount(bucket.tokens);
     if ((previousDate !== undefined && date <= previousDate) || date > maximumDate) {
       throw profileError('INVALID_SCHEMA');
@@ -144,172 +180,365 @@ export function normalizeCodexProfile(payload, { collectedAt } = {}) {
         },
   };
 
-  if (Object.hasOwn(payload.stats, 'lifetime_tokens')
-    && payload.stats.lifetime_tokens !== null) {
-    normalized.lifetimeTotalTokens = assertSafeCount(payload.stats.lifetime_tokens);
+  if (Object.hasOwn(payload.summary, 'lifetimeTokens')
+    && payload.summary.lifetimeTokens !== null) {
+    normalized.lifetimeTotalTokens = assertSafeCount(payload.summary.lifetimeTokens);
   }
   return normalized;
 }
 
-function normalizeBearer(value) {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw profileError('TOKEN_REQUIRED');
+function resolveCodexCommand(env, platform) {
+  const override = env?.AGENT_CARD_CODEX_BIN;
+  if (override === undefined) {
+    return platform === 'win32' ? 'codex.exe' : 'codex';
   }
-  if (/[\u0000-\u001f\u007f]/u.test(value)) {
-    throw profileError('TOKEN_INVALID');
+  if (typeof override !== 'string'
+    || override.trim() !== override
+    || override.length === 0
+    || CONTROL_CHARACTER_PATTERN.test(override)) {
+    throw profileError('INVALID_ARGUMENT');
   }
-  let token = value.trim();
-  if (/^Bearer(?:\s+|$)/i.test(token)) {
-    token = token.replace(/^Bearer(?:\s+|$)/i, '').trim();
+  const isAbsolute = platform === 'win32'
+    ? path.win32.isAbsolute(override)
+    : path.posix.isAbsolute(override);
+  if (!isAbsolute) {
+    throw profileError('INVALID_ARGUMENT');
   }
-  if (token.length === 0) {
-    throw profileError('TOKEN_REQUIRED');
-  }
-  if (Buffer.byteLength(token, 'utf8') > MAX_BEARER_BYTES || /\s/u.test(token)) {
-    throw profileError('TOKEN_INVALID');
-  }
-  return token;
+  return override;
 }
 
-function classifyRequestError(error) {
-  if (error instanceof CodexProfileError) {
-    return error;
+function sanitizedChildEnvironment(env) {
+  const environment = { ...env };
+  for (const key of Object.keys(environment)) {
+    if (key.toLowerCase() === 'codex_bearer_token') {
+      delete environment[key];
+    }
   }
-  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') {
-    return profileError('TIMEOUT');
-  }
-  return profileError('NETWORK_ERROR');
+  return environment;
 }
 
-async function readLimitedBody(response) {
-  const rawLength = response.headers.get('content-length');
-  if (rawLength !== null && /^\d+$/.test(rawLength)) {
-    const contentLength = Number(rawLength);
-    if (!Number.isSafeInteger(contentLength) || contentLength > MAX_PROFILE_RESPONSE_BYTES) {
-      throw profileError('RESPONSE_TOO_LARGE');
-    }
+function assertRunnerArguments({ cwd, env, timeoutMs, platform }) {
+  if ((cwd !== undefined && (typeof cwd !== 'string' || cwd.length === 0))
+    || env === null
+    || typeof env !== 'object'
+    || Array.isArray(env)
+    || !Number.isSafeInteger(timeoutMs)
+    || timeoutMs <= 0
+    || (platform !== 'win32' && platform !== 'darwin' && platform !== 'linux')) {
+    throw profileError('INVALID_ARGUMENT');
   }
+}
 
-  if (response.body === null) {
-    return '';
-  }
-  if (typeof response.body?.getReader !== 'function') {
-    throw profileError('NETWORK_ERROR');
-  }
+function isProtocolError(value) {
+  return isPlainObject(value)
+    && hasOnlyKeys(value, PROTOCOL_ERROR_FIELDS)
+    && Number.isInteger(value.code)
+    && typeof value.message === 'string';
+}
 
-  const chunks = [];
-  let totalBytes = 0;
-  const reader = response.body.getReader();
+function classifyResponseError(error) {
+  if (!isProtocolError(error)) {
+    return profileError('APP_SERVER_PROTOCOL');
+  }
+  if (error.code === -32601) {
+    return profileError('APP_SERVER_UNSUPPORTED');
+  }
+  return profileError('ACCOUNT_USAGE_FAILED');
+}
+
+function safeEnd(child) {
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      if (!(value instanceof Uint8Array)) {
-        throw profileError('NETWORK_ERROR');
-      }
-      totalBytes += value.byteLength;
-      if (totalBytes > MAX_PROFILE_RESPONSE_BYTES) {
-        try {
-          await reader.cancel();
-        } catch {
-          // Cancellation is best-effort and its raw failure is intentionally discarded.
-        }
-        throw profileError('RESPONSE_TOO_LARGE');
-      }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  const bytes = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    child.stdin?.end();
   } catch {
-    throw profileError('INVALID_JSON');
+    // Process cleanup is best-effort. Raw failures are intentionally discarded.
   }
 }
 
-function assertResponse(response) {
-  if (response === null
-    || typeof response !== 'object'
-    || !Number.isInteger(response.status)) {
-    throw profileError('NETWORK_ERROR');
+function safeKill(child) {
+  try {
+    if (child.killed !== true) {
+      child.kill();
+    }
+  } catch {
+    // Process cleanup is best-effort. Raw failures are intentionally discarded.
   }
-  if (response.redirected === true || (response.status >= 300 && response.status < 400)) {
-    throw profileError('REDIRECT_REJECTED');
+}
+
+export function createCodexAppServerRunner({
+  spawnImpl = defaultSpawn,
+  platform = process.platform,
+} = {}) {
+  if (typeof spawnImpl !== 'function') {
+    throw profileError('INVALID_ARGUMENT');
   }
-  if (response.status === 401 || response.status === 403) {
-    throw profileError('AUTH_FAILED');
-  }
-  if (response.status < 200 || response.status >= 300) {
-    throw profileError('HTTP_ERROR');
-  }
-  if (typeof response.headers?.get !== 'function') {
-    throw profileError('NETWORK_ERROR');
-  }
-  const mediaType = response.headers.get('content-type')
-    ?.split(';', 1)[0]
-    .trim()
-    .toLowerCase();
-  if (mediaType !== 'application/json' && !mediaType?.endsWith('+json')) {
-    throw profileError('INVALID_CONTENT_TYPE');
-  }
+
+  return function runCodexAppServer({
+    cwd = process.cwd(),
+    env = process.env,
+    timeoutMs = DEFAULT_PROFILE_TIMEOUT_MS,
+  } = {}) {
+    assertRunnerArguments({ cwd, env, timeoutMs, platform });
+    const childEnvironment = sanitizedChildEnvironment(env);
+    const command = resolveCodexCommand(childEnvironment, platform);
+
+    return new Promise((resolve, reject) => {
+      let child;
+      try {
+        child = spawnImpl(command, CODEX_APP_SERVER_ARGS, {
+          cwd,
+          env: childEnvironment,
+          shell: false,
+          stdio: ['pipe', 'pipe', 'pipe'],
+          windowsHide: true,
+        });
+      } catch {
+        reject(profileError('APP_SERVER_FAILED'));
+        return;
+      }
+
+      if (!child
+        || typeof child.on !== 'function'
+        || typeof child.stdout?.on !== 'function'
+        || typeof child.stderr?.on !== 'function'
+        || typeof child.stdin?.write !== 'function') {
+        safeEnd(child ?? {});
+        safeKill(child ?? {});
+        reject(profileError('APP_SERVER_FAILED'));
+        return;
+      }
+
+      let settled = false;
+      let stage = 'initializing';
+      let stdoutBuffer = '';
+      let outputBytes = 0;
+      const decoder = new TextDecoder('utf-8', { fatal: true });
+      let timer;
+
+      const finish = (error, value) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        clearTimeout(timer);
+        safeEnd(child);
+        safeKill(child);
+        if (error) {
+          reject(error);
+        } else {
+          resolve(value);
+        }
+      };
+
+      const failProtocol = () => finish(profileError('APP_SERVER_PROTOCOL'));
+
+      const writeMessage = (message) => {
+        if (settled) {
+          return;
+        }
+        try {
+          child.stdin.write(`${JSON.stringify(message)}\n`);
+        } catch {
+          finish(profileError('APP_SERVER_FAILED'));
+        }
+      };
+
+      const handleResponse = (message) => {
+        if (!hasOnlyKeys(message, RESPONSE_FIELDS)
+          || !Object.hasOwn(message, 'id')
+          || (message.id !== INITIALIZE_REQUEST_ID && message.id !== USAGE_REQUEST_ID)
+          || (Object.hasOwn(message, 'result') === Object.hasOwn(message, 'error'))) {
+          failProtocol();
+          return;
+        }
+
+        if (message.id === INITIALIZE_REQUEST_ID) {
+          if (stage !== 'initializing') {
+            failProtocol();
+            return;
+          }
+          if (Object.hasOwn(message, 'error')) {
+            finish(classifyResponseError(message.error));
+            return;
+          }
+          if (!isPlainObject(message.result)) {
+            failProtocol();
+            return;
+          }
+
+          stage = 'reading-usage';
+          writeMessage({ method: 'initialized' });
+          writeMessage({
+            id: USAGE_REQUEST_ID,
+            method: 'account/usage/read',
+            params: null,
+          });
+          return;
+        }
+
+        if (stage !== 'reading-usage') {
+          failProtocol();
+          return;
+        }
+        if (Object.hasOwn(message, 'error')) {
+          finish(classifyResponseError(message.error));
+          return;
+        }
+        if (!isPlainObject(message.result)) {
+          failProtocol();
+          return;
+        }
+        stage = 'complete';
+        finish(undefined, message.result);
+      };
+
+      const handleLine = (rawLine) => {
+        const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
+        if (line.length === 0) {
+          failProtocol();
+          return;
+        }
+
+        let message;
+        try {
+          message = JSON.parse(line);
+        } catch {
+          failProtocol();
+          return;
+        }
+        if (!isPlainObject(message)) {
+          failProtocol();
+          return;
+        }
+
+        if (Object.hasOwn(message, 'id')) {
+          handleResponse(message);
+          return;
+        }
+
+        if (!hasOnlyKeys(message, NOTIFICATION_FIELDS)
+          || typeof message.method !== 'string'
+          || message.method.length === 0
+          || (Object.hasOwn(message, 'params')
+            && message.params !== null
+            && !isPlainObject(message.params))) {
+          failProtocol();
+        }
+      };
+
+      const accountBytes = (chunk) => {
+        if (!(chunk instanceof Uint8Array)) {
+          failProtocol();
+          return false;
+        }
+        outputBytes += chunk.byteLength;
+        if (outputBytes > MAX_PROFILE_RESPONSE_BYTES) {
+          finish(profileError('APP_SERVER_OUTPUT_TOO_LARGE'));
+          return false;
+        }
+        return true;
+      };
+
+      child.stdout.on('data', (chunk) => {
+        if (settled || !accountBytes(chunk)) {
+          return;
+        }
+        try {
+          stdoutBuffer += decoder.decode(chunk, { stream: true });
+        } catch {
+          failProtocol();
+          return;
+        }
+
+        let newlineIndex = stdoutBuffer.indexOf('\n');
+        while (!settled && newlineIndex !== -1) {
+          const line = stdoutBuffer.slice(0, newlineIndex);
+          stdoutBuffer = stdoutBuffer.slice(newlineIndex + 1);
+          handleLine(line);
+          newlineIndex = stdoutBuffer.indexOf('\n');
+        }
+      });
+
+      child.stderr.on('data', (chunk) => {
+        if (!settled) {
+          accountBytes(chunk);
+        }
+      });
+
+      child.stdout.on('end', () => {
+        if (settled) {
+          return;
+        }
+        try {
+          stdoutBuffer += decoder.decode();
+        } catch {
+          failProtocol();
+          return;
+        }
+        if (stdoutBuffer.length > 0) {
+          handleLine(stdoutBuffer);
+          stdoutBuffer = '';
+        }
+      });
+
+      const failStart = () => finish(profileError('APP_SERVER_FAILED'));
+      child.on('error', failStart);
+      child.stdout.on('error', failStart);
+      child.stderr.on('error', failStart);
+      if (typeof child.stdin?.on === 'function') {
+        child.stdin.on('error', failStart);
+      }
+      child.on('exit', () => {
+        if (!settled) {
+          finish(profileError('APP_SERVER_EXITED'));
+        }
+      });
+
+      timer = setTimeout(
+        () => finish(profileError('APP_SERVER_TIMEOUT')),
+        timeoutMs,
+      );
+
+      writeMessage({
+        id: INITIALIZE_REQUEST_ID,
+        method: 'initialize',
+        params: {
+          clientInfo: {
+            name: 'agent_card_tracker',
+            title: 'Agent Card Tracker',
+            version: '0.1.0',
+          },
+          capabilities: {
+            experimentalApi: true,
+          },
+        },
+      });
+    });
+  };
 }
 
 export async function collectCodexProfile({
-  bearerToken,
+  cwd = process.cwd(),
   env = process.env,
-  fetchImpl = globalThis.fetch,
+  runner,
   timeoutMs = DEFAULT_PROFILE_TIMEOUT_MS,
   collectedAt = new Date().toISOString(),
 } = {}) {
-  if (typeof fetchImpl !== 'function'
+  if ((runner !== undefined && typeof runner !== 'function')
     || !Number.isSafeInteger(timeoutMs)
     || timeoutMs <= 0) {
     throw profileError('INVALID_ARGUMENT');
   }
   const safeCollectedAt = normalizeCollectedAt(collectedAt);
-  const token = normalizeBearer(
-    bearerToken === undefined ? env?.CODEX_BEARER_TOKEN : bearerToken,
-  );
-
-  let response;
-  try {
-    response = await fetchImpl(CODEX_PROFILE_ENDPOINT, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-        originator: 'Codex Desktop',
-      },
-      redirect: 'error',
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    assertResponse(response);
-  } catch (error) {
-    throw classifyRequestError(error);
-  }
-
-  let text;
-  try {
-    text = await readLimitedBody(response);
-  } catch (error) {
-    throw classifyRequestError(error);
-  }
+  const execute = runner ?? createCodexAppServerRunner();
 
   let payload;
   try {
-    payload = JSON.parse(text);
-  } catch {
-    throw profileError('INVALID_JSON');
+    payload = await execute({ cwd, env, timeoutMs });
+  } catch (error) {
+    if (error instanceof CodexProfileError) {
+      throw error;
+    }
+    throw profileError('APP_SERVER_FAILED');
   }
   return normalizeCodexProfile(payload, { collectedAt: safeCollectedAt });
 }

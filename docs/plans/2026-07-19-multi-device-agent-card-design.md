@@ -9,7 +9,7 @@ Build a GitHub profile card system that combines Codex and Claude Code usage fro
 - Codex account-wide profile statistics are useful but come from an experimental, undocumented endpoint and must never be the only data source.
 - GitHub-hosted runners cannot read logs stored on a user's computers.
 - Claude Code usage is collected from local logs on every participating computer.
-- Raw prompts, responses, paths, session identifiers, hostnames, credentials, and bearer tokens must never enter public artifacts.
+- Raw prompts, responses, paths, session identifiers, hostnames, credentials, and access tokens must never enter public artifacts.
 - The repository must operate with GitHub Actions and local schedulers at no personal server cost.
 
 ## Architecture
@@ -34,7 +34,7 @@ Codex uses exactly one of these sources:
 
 Profile and local Codex values are never added together. A profile snapshot is fresh for a configurable interval. Missing, stale, malformed, or failed profile data automatically selects the local fallback.
 
-The experimental profile adapter accepts a bearer token only through an environment variable, sends it only to the fixed ChatGPT profile endpoint, validates the expected statistics, and persists only sanitized daily token totals. Its network dependency is injected in tests rather than exposing an endpoint override that could exfiltrate the bearer. It never logs the token, an error cause, or an API response body.
+The experimental profile adapter starts the signed-in Codex CLI App Server over local stdio, enables the experimental API during initialization, validates `account/usage/read`, and persists only sanitized daily token totals and the optional lifetime total. Process execution and protocol responses are injected in tests. It never logs CLI authentication state, stderr, an error cause, or a raw App Server response.
 
 ## Public data contract
 
