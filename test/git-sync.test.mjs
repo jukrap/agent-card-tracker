@@ -99,6 +99,8 @@ function publicationRunner({
   unsafeAttributeValue = null,
   unsafeAttributePath = null,
   configuredHooks = '',
+  configuredHookScope = '--local',
+  worktreeConfigEnabled = false,
   trackedPaths = [DEVICE_PATH, ...CARD_PATHS],
 } = {}) {
   const calls = [];
@@ -144,8 +146,13 @@ function publicationRunner({
       const status = rebased ? statusAfterRebase : initialTrackedStatus;
       return ok(status.length === 0 ? '' : `${status}\0`);
     }
+    if (command === 'config\0--local\0--bool\0--get\0extensions.worktreeConfig') {
+      return worktreeConfigEnabled ? ok('true') : failed('', 1);
+    }
     if (args[0] === 'config' && args.includes('--get-regexp')) {
-      return configuredHooks.length === 0 ? failed('', 1) : ok(configuredHooks);
+      return configuredHooks.length > 0 && args[1] === configuredHookScope
+        ? ok(configuredHooks)
+        : failed('', 1);
     }
     if (command === 'ls-files\0--cached\0-z'
       || command === 'ls-tree\0-r\0--name-only\0-z\0refs/remotes/origin/main') {
@@ -886,6 +893,14 @@ test('configured hook과 전체 tree의 unsafe attribute는 mutation 전에 차�
     {
       name: 'configured hook',
       options: { configuredHooks: 'hook.pre-commit.command hostile-helper' },
+    },
+    {
+      name: 'configured worktree hook',
+      options: {
+        configuredHooks: 'hook.pre-commit.command hostile-helper',
+        configuredHookScope: '--worktree',
+        worktreeConfigEnabled: true,
+      },
     },
     {
       name: 'filter=false driver',

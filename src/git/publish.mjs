@@ -423,8 +423,27 @@ async function assertInfoAttributesEmpty(gitDirectory, fileSystem) {
   }
 }
 
+async function configuredHookScopes(runner, cwd) {
+  const worktreeConfig = await runGit(
+    runner,
+    ['config', '--local', '--bool', '--get', 'extensions.worktreeConfig'],
+    { cwd, allowExitCodes: [0, 1] },
+  );
+  if (worktreeConfig.exitCode === 1) {
+    return ['--local', '--global', '--system'];
+  }
+  const value = worktreeConfig.stdout.trim();
+  if (value !== 'true' && value !== 'false') {
+    throw publishError('GIT_STATE_INVALID');
+  }
+  return value === 'true'
+    ? ['--local', '--worktree', '--global', '--system']
+    : ['--local', '--global', '--system'];
+}
+
 async function assertNoConfiguredHooks(runner, cwd) {
-  for (const scope of ['--local', '--worktree', '--global', '--system']) {
+  const scopes = await configuredHookScopes(runner, cwd);
+  for (const scope of scopes) {
     const result = await runGit(
       runner,
       ['config', scope, '--get-regexp', '^hook\\.'],
