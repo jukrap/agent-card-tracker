@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="416" height="190" viewBox="0 0 416 190" role="img" aria-labelledby="usage-activity-title usage-activity-desc">
 <title id="usage-activity-title">AI usage activity</title>
-<desc id="usage-activity-desc">A 53 by 7 activity heatmap with active days, current and longest streaks, and peak usage through 2026-07-20. Unknown days are outlined; partial and mixed observations use dashed borders and text markers.</desc>
+<desc id="usage-activity-desc">A 53 by 7 activity heatmap with active days, current and longest streaks, and peak usage through 2026-07-21. Unknown days are outlined; partial and mixed observations use dashed borders and text markers.</desc>
 <style>:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#0969da;--accent-soft:#ddf4ff;--claude:#9a6700;--codex:#0969da;--mixed:#8250df;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#ffffff;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#b6e3ff;--heat-2:#54aeff;--heat-3:#218bff;--heat-4:#0969da}
 @media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8c959f;--accent:#58a6ff;--accent-soft:#1f3b57;--claude:#d29922;--codex:#58a6ff;--mixed:#bc8cff;--unknown:#8c959f;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#0e4429;--heat-2:#006d32;--heat-3:#26a641;--heat-4:#39d353}}
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
@@ -36,7 +36,7 @@
 .coverage-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}</style>
 <rect class="card-bg" x="0.5" y="0.5" width="415" height="189" rx="6"/>
 <text class="heading" x="16" y="27">AI activity</text>
-<text class="subheading" x="16" y="43">53 weeks · through 2026-07-20 · Monday start</text>
+<text class="subheading" x="16" y="43">53 weeks · through 2026-07-21 · Monday start</text>
 <text class="meta" x="25" y="60" text-anchor="end">M</text>
 <text class="meta" x="25" y="67" text-anchor="end">T</text>
 <text class="meta" x="25" y="74" text-anchor="end">W</text>
@@ -409,7 +409,7 @@
 <rect class="heat-cell state-active level-2 coverage-partial" x="388" y="90" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-4 coverage-partial" x="388" y="97" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-4 coverage-complete" x="395" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-unknown level-0 coverage-unknown" x="395" y="62" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="69" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="76" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="83" width="5" height="5" rx="1"/>
@@ -422,8 +422,8 @@
 <text class="value" x="16" y="166">≥34</text>
 <text class="meta" x="16" y="180">Partial</text>
 <text class="label" x="112" y="145">Current streak</text>
-<text class="value" x="112" y="166">≥4</text>
-<text class="meta" x="112" y="180">Partial</text>
+<text class="value" x="112" y="166">—</text>
+<text class="meta" x="112" y="180">Unknown</text>
 <text class="label" x="208" y="145">Longest streak</text>
 <text class="value" x="208" y="166">≥9</text>
 <text class="meta" x="208" y="180">Partial</text>
