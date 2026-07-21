@@ -3,22 +3,17 @@ import * as defaultFileSystem from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
+import { CARD_ARTIFACT_PATHS } from '../card-catalog.mjs';
 import { assertIsoDate } from '../domain/calendar.mjs';
 import { GitPublishError, publishChanges } from '../git/publish.mjs';
 import { CLI_NAME } from '../product.mjs';
 
-const CARD_PATHS = Object.freeze([
-  'cards/overview.svg',
-  'cards/achievements.svg',
-  'cards/records.svg',
-  'cards/trends.svg',
-  'cards/activity.svg',
-  'cards/compact.svg',
-]);
+const CARD_PATHS = CARD_ARTIFACT_PATHS;
+
 
 const HELP = `Usage: ${CLI_NAME} publish-cards --as-of YYYY-MM-DD
 
-Render, validate, and publish exactly the six static SVG cards.
+Render, validate, and publish exactly the 35 static theme SVG cards.
 Use this only as a recovery path when the GitHub render workflow is unavailable.
 `;
 

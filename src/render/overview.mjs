@@ -73,7 +73,7 @@ export function renderOverview(statistics, {
   const body = [
     renderContainedPrestige({ width: 846, height: 210 }),
     `<text class="heading" x="16" y="27">CODEX RENOWN · ${escapeXml(identity)}</text>`,
-    `<text class="subheading" x="16" y="44">Your Codex usage, told through milestones. · ${escapeXml(statistics.asOf)}</text>`,
+    `<text class="subheading" x="16" y="44">As of ${escapeXml(statistics.asOf)} · ${escapeXml(statistics.calendarLabel)} · Your Codex usage, told through milestones.</text>`,
     `<text class="label" x="830" y="27" text-anchor="end">${sourceLabel}</text>`,
     ...(staleDeviceCount > 0
       ? [`<text class="meta" x="830" y="44" text-anchor="end">${escapeXml(staleLabel)}</text>`]

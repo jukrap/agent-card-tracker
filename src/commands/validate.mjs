@@ -6,6 +6,7 @@ import { promisify, TextDecoder } from 'node:util';
 
 import { SaxesParser } from 'saxes';
 
+import { CARD_ARTIFACT_PATHS } from '../card-catalog.mjs';
 import {
   validateDeviceSnapshot,
   validateProfileCandidate,
@@ -23,6 +24,7 @@ const GIT_TIMEOUT_MS = 30_000;
 const SAFE_RULE_CODE = /^[A-Z][A-Z0-9_]{0,63}$/;
 const SAFE_RELATIVE_PATH = /^[A-Za-z0-9._/-]+$/;
 const UTF8_DECODER = new TextDecoder('utf-8', { fatal: true });
+const CARD_ARTIFACT_PATH_SET = new Set(CARD_ARTIFACT_PATHS);
 
 const PUBLIC_DIRECTORIES = Object.freeze([
   {
@@ -490,6 +492,9 @@ async function discoverPublicFiles(rootPath, definition, fileSystem) {
       fail('PUBLIC_PATH_NAME', '<unsafe-path>');
     }
     scanSensitivePublicPath(relativePath);
+    if (definition.kind === 'card' && !CARD_ARTIFACT_PATH_SET.has(relativePath)) {
+      fail('PUBLIC_CARD_PATH', relativePath);
+    }
     if (entry.isSymbolicLink()) {
       fail('PUBLIC_SYMLINK', relativePath);
     }
@@ -762,6 +767,9 @@ function inspectRepositoryEntries(entries) {
       }
       if (entry.path === definition.relativeDirectory) {
         fail('PUBLIC_FILE_TYPE', entry.path);
+      }
+      if (definition.kind === 'card' && !CARD_ARTIFACT_PATH_SET.has(entry.path)) {
+        fail('PUBLIC_CARD_PATH', entry.path);
       }
       const tail = entry.path.slice(definition.relativeDirectory.length + 1);
       if (tail.includes('/') || path.posix.extname(tail) !== definition.extension) {

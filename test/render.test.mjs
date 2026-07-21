@@ -13,7 +13,13 @@ import test from 'node:test';
 
 import { SaxesParser } from 'saxes';
 
-import { CARD_NAMES, CARD_VIEW_BOXES } from '../src/card-catalog.mjs';
+import {
+  CARD_ARTIFACT_PATHS,
+  CARD_NAMES,
+  CARD_VIEW_BOXES,
+  THEME_NAMES,
+  cardFilename,
+} from '../src/card-catalog.mjs';
 import { eachDay } from '../src/domain/calendar.mjs';
 import { computeStatistics } from '../src/domain/statistics.mjs';
 import { renderCards, run as runRenderCommand } from '../src/commands/render.mjs';
@@ -300,7 +306,7 @@ test('overview keeps a safe-integer lifetime readable at max rank', () => {
   assert.match(overview, /MAX RANK/);
 });
 
-test('renderCards atomically writes all seven schema v2 cards', async (t) => {
+test('renderCards atomically writes all 35 themed schema v2 cards', async (t) => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const candidate = profileCandidate();
@@ -316,10 +322,15 @@ test('renderCards atomically writes all seven schema v2 cards', async (t) => {
     asOf: AS_OF,
     asOfInstant: '2026-07-21T12:00:00.000Z',
   });
-  assert.deepEqual(Object.keys(result.cardPaths), CARD_NAMES);
-  for (const name of CARD_NAMES) {
-    const contents = await readFile(path.join(cwd, 'cards', `${name}.svg`), 'utf8');
-    assertSafeCard(contents, CARD_VIEW_BOXES[name]);
+  assert.deepEqual(Object.keys(result.cardPaths), CARD_ARTIFACT_PATHS);
+  for (const theme of THEME_NAMES) {
+    for (const name of CARD_NAMES) {
+      const contents = await readFile(
+        path.join(cwd, 'cards', cardFilename(name, theme)),
+        'utf8',
+      );
+      assertSafeCard(contents, CARD_VIEW_BOXES[name]);
+    }
   }
 });
 
@@ -327,8 +338,12 @@ test('validation failure preserves every existing card byte', async (t) => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-atomic-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   await mkdir(path.join(cwd, 'cards'), { recursive: true });
-  await Promise.all(CARD_NAMES.map((name) => (
-    writeFile(path.join(cwd, 'cards', `${name}.svg`), `old-${name}\n`, 'utf8')
+  await Promise.all(CARD_ARTIFACT_PATHS.map((artifactPath) => (
+    writeFile(
+      path.join(cwd, 'cards', path.basename(artifactPath)),
+      `old-${artifactPath}\n`,
+      'utf8',
+    )
   )));
 
   let calls = 0;
@@ -347,10 +362,10 @@ test('validation failure preserves every existing card byte', async (t) => {
   );
 
   assert.equal(calls, 3);
-  for (const name of CARD_NAMES) {
+  for (const artifactPath of CARD_ARTIFACT_PATHS) {
     assert.equal(
-      await readFile(path.join(cwd, 'cards', `${name}.svg`), 'utf8'),
-      `old-${name}\n`,
+      await readFile(path.join(cwd, 'cards', path.basename(artifactPath)), 'utf8'),
+      `old-${artifactPath}\n`,
     );
   }
 });
@@ -368,7 +383,7 @@ test('empty public data renders valid Unranked and unknown cards', async (t) => 
   assertSafeCard(overview, CARD_VIEW_BOXES.overview);
 });
 
-test('render CLI and determinism check report seven cards', async (t) => {
+test('render CLI and determinism check report 35 cards', async (t) => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-cli-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const stdout = captureStream();
@@ -387,7 +402,7 @@ test('render CLI and determinism check report seven cards', async (t) => {
     ),
     0,
   );
-  assert.match(stdout.text(), /Rendered 7 cards as of 2026-07-21/);
+  assert.match(stdout.text(), /Rendered 35 cards as of 2026-07-21/);
 
   const valid = spawnSync(
     process.execPath,
@@ -395,5 +410,5 @@ test('render CLI and determinism check report seven cards', async (t) => {
     { cwd: process.cwd(), encoding: 'utf8' },
   );
   assert.equal(valid.status, 0, valid.stderr);
-  assert.match(valid.stdout, /Deterministic SVG OK \(7 cards, as-of 2026-07-21\)/);
+  assert.match(valid.stdout, /Deterministic SVG OK \(35 cards, as-of 2026-07-21\)/);
 });

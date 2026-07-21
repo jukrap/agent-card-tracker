@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { CARD_NAMES } from '../src/card-catalog.mjs';
+import { CARD_ARTIFACT_PATHS } from '../src/card-catalog.mjs';
 import { assertIsoDate, assertIsoUtcInstant } from '../src/domain/calendar.mjs';
 import { renderCards } from '../src/commands/render.mjs';
 
@@ -54,14 +54,15 @@ if (asOf === null || invalid) {
       outputDirectory: path.join(secondRoot, 'cards'),
     });
 
-    for (const name of CARD_NAMES) {
-      const first = await readFile(path.join(firstRoot, 'cards', `${name}.svg`));
-      const second = await readFile(path.join(secondRoot, 'cards', `${name}.svg`));
+    for (const artifactPath of CARD_ARTIFACT_PATHS) {
+      const filename = path.posix.basename(artifactPath);
+      const first = await readFile(path.join(firstRoot, 'cards', filename));
+      const second = await readFile(path.join(secondRoot, 'cards', filename));
       if (!first.equals(second)) {
-        throw new Error(`${name}.svg is not deterministic`);
+        throw new Error(`${filename} is not deterministic`);
       }
     }
-    process.stdout.write(`Deterministic SVG OK (${CARD_NAMES.length} cards, as-of ${asOf})\n`);
+    process.stdout.write(`Deterministic SVG OK (${CARD_ARTIFACT_PATHS.length} cards, as-of ${asOf})\n`);
   } finally {
     await Promise.all([
       rm(firstRoot, { recursive: true, force: true }),

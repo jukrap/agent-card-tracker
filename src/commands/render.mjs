@@ -2,7 +2,12 @@ import * as defaultFileSystem from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-import { CARD_NAMES } from '../card-catalog.mjs';
+import {
+  CARD_ARTIFACT_PATHS,
+  CARD_NAMES,
+  THEME_NAMES,
+  cardFilename,
+} from '../card-catalog.mjs';
 import {
   assertIsoDate,
   assertIsoUtcInstant,
@@ -183,20 +188,22 @@ async function stageCards({
   const stagingDirectory = await fileSystem.mkdtemp(path.join(stagingRoot, '.render-'));
   await assertSafeStagingDirectory(stagingDirectory, realStagingRoot, fileSystem);
   try {
-    for (const name of CARD_NAMES) {
-      const contents = cards[name];
-      await validateSvg(contents);
+    for (const artifactPath of CARD_ARTIFACT_PATHS) {
+      const contents = cards[artifactPath];
+      const filename = path.posix.basename(artifactPath);
+      await validateSvg(contents, { filePath: artifactPath });
       await fileSystem.writeFile(
-        path.join(stagingDirectory, `${name}.svg`),
+        path.join(stagingDirectory, filename),
         contents,
         { encoding: 'utf8', flag: 'wx', mode: 0o644 },
       );
     }
 
-    for (const name of CARD_NAMES) {
+    for (const artifactPath of CARD_ARTIFACT_PATHS) {
+      const filename = path.posix.basename(artifactPath);
       await fileSystem.rename(
-        path.join(stagingDirectory, `${name}.svg`),
-        path.join(outputDirectory, `${name}.svg`),
+        path.join(stagingDirectory, filename),
+        path.join(outputDirectory, filename),
       );
     }
   } finally {
@@ -206,7 +213,7 @@ async function stageCards({
 
 /**
  * Loads all sanitized public snapshots, computes coverage-aware statistics, and
- * atomically replaces the seven deterministic card files after every SVG has
+ * atomically replaces the 35 deterministic theme card files after every SVG has
  * passed validation.
  */
 export async function renderCards({
@@ -236,17 +243,25 @@ export async function renderCards({
     asOf: freshnessInstant,
   });
   const statistics = computeStatistics(merged, { asOf: asOfDate });
-  const cards = {
-    overview: renderOverview(statistics, {
-      staleDeviceCount: merged.diagnostics.staleDeviceCount,
-    }),
-    achievements: renderAchievements(statistics),
-    'trophy-case': renderTrophyCase(statistics),
-    records: renderRecords(statistics),
-    trends: renderTrends(statistics),
-    activity: renderActivity(statistics),
-    compact: renderCompact(statistics),
-  };
+  const cards = Object.fromEntries(THEME_NAMES.flatMap((theme) => {
+    const options = { theme };
+    const themedCards = {
+      overview: renderOverview(statistics, {
+        ...options,
+        staleDeviceCount: merged.diagnostics.staleDeviceCount,
+      }),
+      achievements: renderAchievements(statistics, options),
+      'trophy-case': renderTrophyCase(statistics, options),
+      records: renderRecords(statistics, options),
+      trends: renderTrends(statistics, options),
+      activity: renderActivity(statistics, options),
+      compact: renderCompact(statistics, options),
+    };
+    return CARD_NAMES.map((cardName) => [
+      `cards/${cardFilename(cardName, theme)}`,
+      themedCards[cardName],
+    ]);
+  }));
   const resolvedOutputDirectory = path.resolve(cwd, outputDirectory);
   await stageCards({
     cards,
@@ -258,9 +273,10 @@ export async function renderCards({
   return {
     asOf: asOfDate,
     asOfInstant: freshnessInstant,
-    cardPaths: Object.fromEntries(
-      CARD_NAMES.map((name) => [name, path.join(resolvedOutputDirectory, `${name}.svg`)]),
-    ),
+    cardPaths: Object.fromEntries(CARD_ARTIFACT_PATHS.map((artifactPath) => [
+      artifactPath,
+      path.join(resolvedOutputDirectory, path.posix.basename(artifactPath)),
+    ])),
   };
 }
 
@@ -325,7 +341,7 @@ export async function run(
         asOfInstant: options.asOfInstant,
       }),
     );
-    write(io.stdout, `Rendered ${CARD_NAMES.length} cards as of ${result.asOf}.`);
+    write(io.stdout, `Rendered ${CARD_ARTIFACT_PATHS.length} cards as of ${result.asOf}.`);
     return 0;
   } catch (error) {
     const code = error instanceof RenderCommandError
