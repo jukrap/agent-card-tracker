@@ -43,6 +43,14 @@ test('all 20 ranks have a unique deterministic 24px glyph', () => {
     const first = renderRankGlyph(rank.rank, { x: 3, y: 4, size: 24 });
     assert.equal(first, renderRankGlyph(rank.rank, { x: 3, y: 4, size: 24 }));
     assert.match(first, new RegExp(`rank-glyph-${rank.glyphId}`, 'u'));
+    assert.equal(validateSvgDocument(cardDocument({
+      id: `rank-glyph-${rank.rank}`,
+      width: 32,
+      height: 32,
+      title: `Rank ${rank.rank} glyph`,
+      description: `Validated ${rank.glyphId} vector geometry.`,
+      body: first,
+    })), true);
   }
 });
 

@@ -15,7 +15,7 @@ const RANK_ICON_BODIES = Object.freeze({
   'hero-star': '<polygon class="glyph-line" points="12,2 15,8 22,9 17,14 18,21 12,18 6,21 7,14 2,9 9,8"/><circle class="glyph-fill" cx="12" cy="12" r="2"/>',
   'crossed-blades': '<path class="glyph-line" d="M5 3 11 10 8 13 3 5ZM19 3 13 10 16 13 21 5ZM8 13 4 19M16 13 20 19"/><line class="glyph-line" x1="3" y1="17" x2="7" y2="21"/><line class="glyph-line" x1="17" y1="21" x2="21" y2="17"/>',
   'overlord-tower': '<path class="glyph-line" d="M5 21H19M7 21V9H17V21M6 9V4H10V7H14V4H18V9ZM10 21V16H14V21"/>',
-  'paragon-prism': '<polygon class="glyph-line" points="12,2 21,8 18,20 6,20 3,8"/><polyline class="glyph-line" points="3,8 12,12 21,8M12,2 12,12 18,20M12,12 6,20"/>',
+  'paragon-prism': '<polygon class="glyph-line" points="12,2 21,8 18,20 6,20 3,8"/><path class="glyph-line" d="M3 8 12 12 21 8M12 2 12 12 18 20M12 12 6 20"/>',
   'mythic-eye': '<path class="glyph-line" d="M2 12C5 7 8 5 12 5S19 7 22 12C19 17 16 19 12 19S5 17 2 12Z"/><circle class="glyph-fill" cx="12" cy="12" r="4"/><circle class="glyph-cut" cx="12" cy="12" r="1.5"/>',
   'winged-star': '<polygon class="glyph-fill" points="12,5 14,10 19,10 15,13 17,18 12,15 7,18 9,13 5,10 10,10"/><path class="glyph-line" d="M8 9 3 5 5 12 2 16 8 15M16 9 21 5 19 12 22 16 16 15"/>',
   'immortal-halo': '<ellipse class="glyph-line" cx="12" cy="6" rx="7" ry="3"/><path class="glyph-line" d="M12 9 18 15 12 22 6 15Z"/><circle class="glyph-fill" cx="12" cy="15" r="2"/>',
