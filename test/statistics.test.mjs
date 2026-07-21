@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { eachDay } from '../src/domain/calendar.mjs';
 import { computeStatistics, StatisticsError } from '../src/domain/statistics.mjs';
 
 function range(startDate, endDate) {
@@ -212,6 +213,29 @@ test('activity, streak, peak, trends, and heatmap stay Codex-only', () => {
   assert.equal(stats.trends.monthly.length, 12);
   assert.equal(stats.heatmap.cells.length, 371);
   assert.equal(stats.heatmap.cells.filter((cell) => cell.state === 'active').length, 3);
+});
+
+test('statistics exposes 16 coverage-aware achievements and four representatives', () => {
+  const dates = eachDay('2026-01-01', '2026-05-31');
+  const days = dates
+    .filter((_, index) => (index + 1) % 40 !== 0)
+    .map((date, index) => day(date, {
+      total: index < 7 ? 900_000_000 : 100_000_000,
+    }));
+  const stats = computeStatistics(merged({
+    codexSource: 'profile',
+    days,
+    totals: range('2026-01-01', '2026-05-31'),
+    breakdown: null,
+    sessions: null,
+    codexLifetimeTotalTokens: 19_300_000_000,
+  }), { asOf: '2026-05-31' });
+
+  assert.equal(stats.achievements.length, 16);
+  assert.deepEqual(
+    stats.achievementRepresentatives.map((achievement) => achievement.label),
+    ['Mythic Realm', 'Seven-Day Siege', 'Monthbound', 'Active Centurion'],
+  );
 });
 
 test('a later longer streak is exact even when coverage starts active', () => {

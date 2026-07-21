@@ -11,7 +11,11 @@ import {
   shiftMonthStart,
   trendBuckets,
 } from './calendar.mjs';
-import { computeTokenRank, milestoneState } from './rank.mjs';
+import {
+  evaluateAchievements,
+  selectRepresentativeAchievements,
+} from './achievements.mjs';
+import { computeTokenRank } from './rank.mjs';
 
 const BREAKDOWN_FIELDS = Object.freeze(['input', 'output', 'cacheRead', 'cacheWrite']);
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
@@ -619,38 +623,12 @@ function recordStatistics(input, asOf) {
   };
 }
 
-function achievementStatistics(lifetime, activity, rank) {
-  const peakMetric = {
-    value: activity.peak.totalTokens,
-    coverage: activity.peak.coverage,
-    lowerBound: activity.peak.lowerBound,
+function recordMetric(record) {
+  return {
+    value: record.value,
+    coverage: record.coverage,
+    lowerBound: record.lowerBound,
   };
-  return [
-    {
-      id: 'billion-club',
-      label: 'Billion Club',
-      target: 1_000_000_000,
-      state: milestoneState(lifetime.totalTokens, 1_000_000_000),
-    },
-    {
-      id: 'ten-billion',
-      label: '10B Realm',
-      target: 10_000_000_000,
-      state: milestoneState(lifetime.totalTokens, 10_000_000_000),
-    },
-    {
-      id: 'century-active',
-      label: '100 Active Days',
-      target: 100,
-      state: milestoneState(activity.activeDays, 100),
-    },
-    {
-      id: 'billion-day',
-      label: 'Billion Day',
-      target: 1_000_000_000,
-      state: milestoneState(peakMetric, 1_000_000_000),
-    },
-  ].map((entry) => Object.freeze(entry));
 }
 
 /**
@@ -668,6 +646,19 @@ export function computeStatistics(merged, { asOf } = {}) {
   const lifetime = lifetimeStatistics(input, asOfDate);
   const activity = activityStatistics(input, asOfDate, lifetime.range);
   const rank = computeTokenRank(lifetime.totalTokens);
+  const records = recordStatistics(input, asOfDate);
+  const achievements = evaluateAchievements({
+    lifetime: lifetime.totalTokens,
+    peakDay: {
+      value: activity.peak.totalTokens,
+      coverage: activity.peak.coverage,
+      lowerBound: activity.peak.lowerBound,
+    },
+    best7: recordMetric(records.best7),
+    bestMonth: recordMetric(records.bestMonth),
+    longestStreak: activity.longestStreak,
+    activeDays: activity.activeDays,
+  });
 
   return {
     asOf: asOfDate,
@@ -680,8 +671,9 @@ export function computeStatistics(merged, { asOf } = {}) {
     periods,
     lifetime,
     rank,
-    achievements: achievementStatistics(lifetime, activity, rank),
-    records: recordStatistics(input, asOfDate),
+    achievements,
+    achievementRepresentatives: selectRepresentativeAchievements(achievements),
+    records,
     activity,
     trends: trendStatistics(input, trendBuckets(asOfDate)),
     heatmap: heatmapStatistics(input, asOfDate),
