@@ -309,6 +309,11 @@ test('runner uses shell-free stdio App Server and the required request order', a
     'initialized',
     'account/usage/read',
   ]);
+  assert.deepEqual(requests[0].params.clientInfo, {
+    name: 'codex_renown',
+    title: 'Codex Renown',
+    version: '0.1.0',
+  });
   assert.deepEqual(requests[0].params.capabilities, { experimentalApi: true });
   assert.equal(requests[2].params, null);
   assert.equal(result.summary.lifetimeTokens, 987654321);

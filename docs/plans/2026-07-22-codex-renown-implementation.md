@@ -1,7 +1,5 @@
 # Codex Renown Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Turn the existing six Codex usage cards into the complete Codex Renown product: seven card types, rank and achievement iconography, identity, five static theme families, compatibility-aware renaming, documentation, and a merged GitHub delivery.
 
 **Architecture:** Keep schema v2 and the account-profile/device-fallback data pipeline unchanged. Add shared product and card catalogs, compute the 16 coverage-aware achievements in the domain layer, render all cards from reusable crest/icon/prestige primitives, and publish one canonical GitHub set plus four flat filename theme variants. Preserve fail-closed validation and the stable local config, environment-variable, lock, snapshot, schema, and npm-script contracts.

@@ -1,47 +1,75 @@
-# Agent Card Tracker
+# Codex Renown
 
 [한국어 문서](README.ko.md)
 
-Agent Card Tracker publishes account-wide Codex token usage as six deterministic SVG cards for a GitHub profile. Local jobs collect sanitized data, Git synchronizes it, and GitHub Actions renders the cards. No continuously running personal server is required.
+> Your Codex usage, told through milestones.
 
-The cards describe token activity and personal milestones. They do not rank users or measure productivity, code quality, or engineering impact.
+Codex Renown publishes account-wide Codex token usage as seven deterministic GitHub profile cards. It uses local collection, Git synchronization, and GitHub Actions, so no continuously running personal server is required.
+
+Codex Renown is an unofficial community project. It is not affiliated with or endorsed by OpenAI. Its ranks and achievements are personal usage milestones, not global rankings or measures of productivity, code quality, or engineering impact.
 
 ## Cards
 
-- `overview.svg` — lifetime tokens, exact total, current rank, next-rank progress, today, 7 days, 30 days, and active days
-- `achievements.svg` — crest, 20-rank track, unlocked ranks, and four milestone seals
+Seven card types are available:
+
+- `overview.svg` — lifetime tokens, exact account total, current crest, next-rank progress, today, 7 days, 30 days, and active days
+- `achievements.svg` — current crest, the 20-rank track, and four representative achievements
+- `trophy-case.svg` — all 16 achievements across Renown, Momentum, Consistency, and Journey
 - `records.svg` — peak day, best 7-day and 30-day windows, and best complete calendar month
 - `trends.svg` — compact 30-day, 12-week, and 12-month charts
 - `activity.svg` — a 53×7 heatmap, active days, streaks, and peak usage
-- `compact.svg` — an optional 416×96 rank badge
+- `compact.svg` — an optional 416×96 crest and rank badge
 
-Use this layout in a GitHub profile README:
+Recommended GitHub profile layout:
 
 ```html
 <p>
-  <img width="100%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/overview.svg" alt="Codex player profile">
+  <img width="100%" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/overview.svg" alt="Codex Renown overview">
 </p>
 <p>
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/achievements.svg" alt="Codex achievements">
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/records.svg" alt="Codex personal records">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/achievements.svg" alt="Codex Renown rank achievements">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/records.svg" alt="Codex Renown records">
 </p>
 <p>
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/trends.svg" alt="Codex usage trends">
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/activity.svg" alt="Codex activity">
+  <img width="100%" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/trophy-case.svg" alt="Codex Renown trophy case">
+</p>
+<p>
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/trends.svg" alt="Codex Renown trends">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/activity.svg" alt="Codex Renown activity">
 </p>
 ```
 
-Use `compact.svg` instead when a small badge fits the profile better:
+Use the compact alternative on its own when space is limited:
 
 ```html
-<img width="416" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/compact.svg" alt="Codex rank badge">
+<img width="416" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/compact.svg" alt="Codex Renown compact rank badge">
 ```
 
-Every SVG is self-contained, has light/dark palettes and `<title>/<desc>` accessibility metadata, and uses no external font, image, animation, or gradient. GitHub may cache raw files briefly after an update.
+GitHub may cache raw files briefly after an update.
 
-## Token ranks
+## Themes
 
-The representative rank depends only on lifetime tokens. Progress between two thresholds is linear. It is a project-defined personal milestone, not a global percentile or productivity score.
+Every card has automatic light/dark colors and five static theme families. The canonical filenames use `github`; the other themes add a suffix.
+
+| Theme | Filename example |
+|---|---|
+| `github` | `overview.svg` |
+| `midnight` | `overview-midnight.svg` |
+| `aurora` | `overview-aurora.svg` |
+| `ember` | `overview-ember.svg` |
+| `monochrome` | `overview-monochrome.svg` |
+
+Seven card types × five themes produce exactly 35 SVG files in the flat `cards/` allowlist. To switch themes, change every image URL to the same suffix; for example:
+
+```html
+<img width="100%" src="https://raw.githubusercontent.com/jukrap/codex-renown/main/cards/overview-midnight.svg" alt="Codex Renown midnight overview">
+```
+
+All SVGs are self-contained and deterministic. They include `<title>/<desc>` accessibility metadata and use no external font, image, link, animation, or gradient.
+
+## Ranks, crests, and achievements
+
+Lifetime tokens alone determine the representative rank. Progress between thresholds is linear.
 
 | Rank | Title | Minimum |
 |---:|---|---:|
@@ -66,9 +94,11 @@ The representative rank depends only on lifetime tokens. Progress between two th
 | XIX | Eternal | 250B |
 | XX | Transcendent | 1T |
 
-Ranks I–IV are Common, V–VIII Uncommon, IX–XII Rare, XIII–XVI Epic, and XVII–XX Legendary. Roman numerals and titles remain visible so rarity never depends on color alone.
+Ranks I–IV are Common, V–VIII Uncommon, IX–XII Rare, XIII–XVI Epic, and XVII–XX Legendary. Each rank has a unique glyph; frame silhouette and one-to-four pips reinforce rarity without relying on color.
 
-An exact account lifetime of 19.3B is `Rank XV · Mythic` and 62% of the way from 10B to `Ascendant · 25B`. A local fallback is an observed lower bound, so the cards show `At least Rank …`, `≥…%`, and `≥` totals. Unknown lifetime is `Unranked`; 1T or more is `MAX RANK`.
+An exact lifetime of 19.3B is `Rank XV · Mythic`, about 62% from 10B to `Ascendant · 25B`. A device fallback is an observed lower bound, so cards show `At least Rank …`, `≥…%`, and `≥` totals. Unknown lifetime is `Unranked`; 1T or more is `MAX RANK`.
+
+The 16 achievements cover cumulative renown, peak and rolling momentum, streak consistency, and active-day journey. A locked badge uses an outline; Unknown is dashed; unlocked state also has a visible marker. They are milestones defined by this project, not a percentile.
 
 ## Coverage and records
 
@@ -78,34 +108,28 @@ Missing dates become zero only inside declared coverage. Outside coverage they r
 - `—` and outline-only bars or cells mean Unknown.
 - `0` means an observed zero and is not Unknown.
 
-Normal fully covered values do not carry a technical status pill. Account profile dates use the `Codex account calendar`; device fallback dates use the configured IANA timezone. The two date systems are never added together.
-
-Records consider only fully covered candidates. Missing dates inside that coverage count as zero, ties choose the earlier date, and an incomplete 7-day, 30-day, or calendar-month window is not eligible.
+Account profile dates use the `Codex account calendar`; device fallback dates use the configured IANA timezone. The two date systems are never added together. Records consider only fully covered candidate windows, zero-fill missing dates inside coverage, and choose the earlier range on ties.
 
 ## How it works
 
-1. On each computer, the pinned collector runs `ccusage codex` against that user's local history and reduces it to daily aggregates.
-2. The computer owns one `data/devices/<opaque-device-id>.json` file and may publish one sanitized account profile candidate.
+1. On every computer, the pinned collector runs `ccusage codex` against that user's local history and reduces it to daily aggregates.
+2. Each computer owns one `data/devices/<opaque-device-id>.json` and may publish one sanitized account profile candidate.
 3. `npm run sync` validates and pushes only that computer's device/profile paths.
-4. GitHub Actions merges the public snapshots and deterministically renders all six files under `cards/`.
+4. GitHub Actions merges public snapshots and deterministically renders all 35 allowlisted SVGs.
 
 Git is the synchronization layer. GitHub Actions cannot read local logs or local CLI authentication.
 
-## Requirements
+## Requirements and quick start
 
 - Node.js 24 or newer and npm
 - Git
-- A dedicated clone of `https://github.com/jukrap/agent-card-tracker.git` on every participating computer
-- Push access to `main`, including non-interactive Git authentication for scheduled runs
-- One shared IANA timezone, such as `Asia/Seoul`
-
-Scheduled sync expects the target repository, `main`, an upstream, and a clean tracked worktree. Use a dedicated operational clone, not a development worktree.
-
-## Quick start on every computer
+- a dedicated clone of `https://github.com/jukrap/codex-renown.git` on every participating computer
+- non-interactive push authentication for scheduled runs
+- one shared IANA timezone, such as `Asia/Seoul`
 
 ```console
-git clone https://github.com/jukrap/agent-card-tracker.git
-cd agent-card-tracker
+git clone https://github.com/jukrap/codex-renown.git
+cd codex-renown
 npm ci
 npm run setup -- --timezone Asia/Seoul
 npm run sync
@@ -113,31 +137,26 @@ npm run sync
 
 `setup` generates a different anonymous device ID and private writer key on each computer. Never copy `.agent-card.local.json`; copied identities create ownership conflicts and can double-count copied history.
 
-For unattended collection, follow the [Windows Task Scheduler guide](docs/setup-windows.md) or the [macOS/Linux launchd and cron guide](docs/setup-unix.md).
+The primary executable name is `codex-renown`. The legacy `agent-card` executable remains an alias. Existing npm script names, `.agent-card.local.json`, `AGENT_CARD_CODEX_BIN`, and `.git/agent-card-sync.lock` remain stable during migration.
+
+For unattended collection, follow the [Windows Task Scheduler guide](docs/setup-windows.md) or the [macOS/Linux launchd and cron guide](docs/setup-unix.md). Existing installations should follow the [Codex Renown migration runbook](docs/migration-codex-renown.md) on every clone before resuming schedulers.
 
 ## Account profile and device fallback
 
-`npm run profile` and `npm run sync` start the signed-in Codex CLI App Server with shell-free JSONL stdio, initialize experimental API support, then call `account/usage/read`. This is not screen scraping and does not use an unofficial HTTP endpoint or bearer environment variable.
+`npm run profile` and `npm run sync` start the signed-in Codex CLI App Server with shell-free JSONL stdio, initialize experimental API support, and call `account/usage/read`. This is not screen scraping and does not require a bearer environment variable.
 
-Account-wide collection requires:
-
-- a recent Codex CLI on `PATH`
-- a ChatGPT sign-in for the same operating-system user that runs sync
-
-On Windows, discovery prefers the npm-installed native Codex binary beside the shim before a packaged desktop binary. Set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to an absolute executable path only when automatic discovery is insufficient.
+Account-wide collection requires a recent Codex CLI on `PATH` and a ChatGPT sign-in for the same operating-system user that runs sync. On Windows, discovery prefers the npm-installed native binary. Use the non-secret `AGENT_CARD_CODEX_BIN` absolute-path override only when discovery is insufficient.
 
 Source selection is deterministic:
 
 1. the newest fresh, valid account profile candidate collected within 48 hours; otherwise
-2. the sum of local Codex snapshots from all valid devices.
+2. all devices' local Codex totals.
 
-The merger never adds account profile totals to local totals and never sums several profile candidates. `npm run sync` reports `account profile updated` or `device fallback` explicitly.
+The merger never adds account profile totals to local totals. When the profile is unavailable or stale, rendering falls back to all devices' local Codex totals. `npm run sync` reports `account profile updated` or `device fallback` explicitly.
 
-Authentication failure, missing CLI, unsupported method, timeout, early exit, protocol drift, or malformed output preserves the last valid profile candidate. Once it becomes older than 48 hours, rendering falls back to all devices' local Codex totals. API-key-only users and environments without App Server account usage can still publish cards from local Codex logs.
+Authentication failure, missing CLI, unsupported method, timeout, protocol drift, or malformed output preserves the last valid profile candidate. API-key-only users and App Server environments without account usage can still publish device fallback cards from local logs.
 
-The account payload provides daily totals and an optional exact lifetime total. It does not provide the local session count or token breakdown used here, so those fields are omitted from the primary account card instead of being displayed as zero.
-
-Test profile collection independently with:
+Test account collection independently:
 
 ```console
 npm run profile
@@ -145,57 +164,27 @@ npm run profile
 
 ## Public schema and privacy boundary
 
-Public device snapshots and profile candidates use schema version 2. Device `sources` permits only `codex`; schema v1 and unknown provider fields are rejected.
+Public device snapshots and profile candidates use schema version 2 and permit only the Codex source. Public artifacts may contain opaque device identity, writer-key hash, collection time, timezone, sanitized status, daily token aggregates, optional session counts, account daily totals, lifetime total, and coverage.
 
-Public artifacts contain only:
+They do not contain raw logs, prompts, responses, project names, file paths, session IDs, email, hostname, username, Git credentials, API keys, CLI authentication state, stderr, or App Server response bodies. Exact JSON and 35-card allowlists reject unknown fields and unlisted files; the SVG validator rejects active or external content.
 
-- opaque device ID and one-way writer-key hash
-- collection time, timezone, schema/collector versions, and sanitized status code
-- local daily input, output, cache-read, cache-write, total token, and optional session counts
-- account daily totals, optional lifetime total, and coverage metadata
-
-They do not contain raw logs, prompts, responses, project names, file paths, session IDs, account identity, email, hostname, username, Git credentials, API keys, access tokens, CLI authentication state, stderr, or App Server response bodies. Exact allowlists and repository validation reject unknown fields, active/external SVG resources, and secret- or path-shaped public content.
-
-The aggregate is intentionally public and can reveal token volume, active dates, timezone, collection cadence, and stale-device events. Use a private repository if that metadata is too sensitive, while noting that unauthenticated profile image URLs and Actions billing differ.
-
-Copying the same raw logs to multiple computers can duplicate overlapping days. Keep one authoritative copy of each history or explicitly remove the superseded public snapshot before syncing its replacement.
+The aggregate is intentionally public and can reveal token volume, active dates, timezone, collection cadence, and stale-device events. Use a private repository if that metadata is too sensitive. Git history retains previously committed aggregates.
 
 See [SECURITY.md](SECURITY.md) for reporting and threat boundaries.
 
 ## Automation and recovery
 
-The render workflow runs after data pushes, daily on an off-the-hour schedule, and by manual dispatch. GitHub scheduled workflows are best effort and may be delayed, dropped, or disabled after 60 days without repository activity.
+The render workflow runs after data pushes, daily off the hour, and by manual dispatch. Scheduled workflows are best effort: runs may be delayed or dropped and can disable schedules after 60 days without repository activity.
 
 If cards are stale:
 
 1. run `npm run sync`;
-2. inspect or dispatch **Render usage cards** in GitHub Actions;
-3. if Actions is unavailable, run:
+2. inspect or dispatch **Render Codex Renown cards** in GitHub Actions;
+3. if Actions is unavailable, run `npm run publish-cards -- --as-of YYYY-MM-DD`.
 
-```console
-npm run publish-cards -- --as-of YYYY-MM-DD
-```
+The recovery command renders, validates, and stages only the 35 card paths with bounded conflict handling. Sync never force-pushes. `REMOTE_UPDATE_REQUIRES_RESTART` means upstream code or configuration changed: stop the scheduler, update the clone, run `npm ci --ignore-scripts` and `npm run validate`, then start a fresh sync.
 
-The recovery command renders, validates, and stages only the six card paths with bounded conflict handling.
-
-Sync never force-pushes. Authentication failures preserve a recoverable local commit. `REMOTE_UPDATE_REQUIRES_RESTART` means code, dependencies, workflow, or configuration changed upstream: stop the scheduler, update the dedicated clone, run `npm ci --ignore-scripts` and `npm run validate`, then start a fresh sync.
-
-`sync`, standalone `render`, and `publish-cards` share `.git/agent-card-sync.lock`. On `SYNC_STALE_LOCK`, stop the scheduler and verify that no process is using that exact clone before deleting only that exact lock file. Use the platform guide for the full procedure; never recursively clean `.git`.
-
-## Device lifecycle
-
-To add a computer, use a fresh dedicated clone, install dependencies, run `setup` with the shared timezone, then run `sync`.
-
-To retire one, stop its scheduler first. Keeping its device snapshot preserves history and eventually marks it stale; deleting its device/profile files removes that history. If a replacement has copied local history, resolve overlapping snapshots before syncing a new identity.
-
-## Limitations
-
-- The experimental App Server protocol can change and may report a different scope from local logs.
-- Provider calendar dates are preserved because daily payloads have no time-of-day or timezone.
-- Token totals follow upstream `ccusage` and account-profile semantics; they are not billing records.
-- Device aggregation cannot deduplicate copied logs.
-- Public Git history retains previously committed aggregates.
-- Scheduled Actions are best effort.
+`sync`, `render`, and `publish-cards` share `.git/agent-card-sync.lock`. On `SYNC_STALE_LOCK`, stop the scheduler and prove that no process uses that clone before deleting only that exact lock file. Never recursively clean `.git`.
 
 ## Local commands
 
@@ -205,10 +194,9 @@ npm run profile
 npm run render -- --as-of YYYY-MM-DD
 npm run validate
 npm run check:determinism -- --as-of YYYY-MM-DD
+npm run publish-cards -- --as-of YYYY-MM-DD
 npm run check
 ```
-
-`render` and determinism checks require an explicit date so identical input produces byte-for-byte identical SVG output.
 
 ## License
 

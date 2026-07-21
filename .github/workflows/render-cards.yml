@@ -1,4 +1,4 @@
-name: Render usage cards
+name: Render Codex Renown cards
 
 on:
   schedule:
@@ -72,7 +72,13 @@ jobs:
           set -euo pipefail
 
           stage_cards() {
-            git add -- cards/overview.svg cards/achievements.svg cards/records.svg cards/trends.svg cards/activity.svg cards/compact.svg
+            local -a card_paths
+            mapfile -t card_paths < <(node scripts/list-card-paths.mjs)
+            if [[ "${#card_paths[@]}" -ne 35 ]]; then
+              echo "Card artifact catalog must contain exactly 35 paths." >&2
+              exit 1
+            fi
+            git add -- "${card_paths[@]}"
           }
 
           push_cards() {

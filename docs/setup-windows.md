@@ -1,4 +1,6 @@
-# Windows scheduled sync
+# Codex Renown Windows scheduled sync
+
+Existing Agent Card Tracker installations must complete the [migration runbook](migration-codex-renown.md) before changing scheduler paths.
 
 This guide runs the same `npm run sync` command with Windows Task Scheduler. Use a dedicated clone; scheduled sync refuses a linked worktree, the wrong repository/branch, or unrelated tracked changes.
 
@@ -7,8 +9,8 @@ This guide runs the same `npm run sync` command with Windows Task Scheduler. Use
 Install Git, Node.js 24 or newer, and npm. Clone and initialize this computer with the same IANA timezone used by every other device:
 
 ```powershell
-git clone https://github.com/jukrap/agent-card-tracker.git D:\agent-card-tracker
-Set-Location D:\agent-card-tracker
+git clone https://github.com/jukrap/codex-renown.git D:\codex-renown
+Set-Location D:\codex-renown
 npm ci
 npm run setup -- --timezone Asia/Seoul
 npm run sync
@@ -44,7 +46,7 @@ On **Actions**, create **Start a program** with:
 
 - **Program/script**: the absolute `npm.cmd` path found above
 - **Add arguments**: `run sync`
-- **Start in (optional)**: `D:\agent-card-tracker`
+- **Start in (optional)**: `D:\codex-renown`
 
 The **Start in** value is required in practice: it is the sync working directory containing `.agent-card.local.json`, `package.json`, and the target Git repository. Do not include quotes around the value in that field.
 
@@ -73,14 +75,14 @@ In Task Scheduler, right-click the task and choose **Run**. Confirm:
 1. the task finishes successfully;
 2. `data/devices/` receives only this device's sanitized snapshot change;
 3. the commit reaches `origin/main` or the command reports no change;
-4. the **Render usage cards** GitHub Actions workflow finishes afterward.
+4. the **Render Codex Renown cards** GitHub Actions workflow finishes afterward.
 
 The command output is deliberately limited, but scheduler history and any extra logs still reveal execution times. Restrict their access and retention. Never enable shell tracing around collection or print the scheduled user's environment.
 
 For a manual check from the same working directory and user:
 
 ```powershell
-Set-Location D:\agent-card-tracker
+Set-Location D:\codex-renown
 npm run sync
 npm run validate
 ```
@@ -92,24 +94,24 @@ npm run validate
 - **Dirty working tree:** remove the operational clone's unrelated edits or create a fresh dedicated clone and a fresh device config. Do not copy the old config between computers.
 - **Device/profile ownership collision:** stop every task using the duplicated config, identify the real owner, and create a fresh config for the duplicate device. Resolve overlapping raw logs before syncing.
 - **`REMOTE_UPDATE_REQUIRES_RESTART`:** disable the task, update the dedicated clone from `origin/main` without force-pushing, run `npm ci --ignore-scripts` and `npm run validate`, then launch a fresh sync. If one verified publication commit was preserved, rebase only that commit and abort on any conflict.
-- **Stale card:** run `npm run sync`, then manually dispatch **Render usage cards**. If Actions is unavailable, follow the `npm run publish-cards -- --as-of YYYY-MM-DD` recovery described in the README.
+- **Stale card:** run `npm run sync`, then manually dispatch **Render Codex Renown cards**. If Actions is unavailable, follow the `npm run publish-cards -- --as-of YYYY-MM-DD` recovery described in the README.
 
 ### SYNC_STALE_LOCK
 
 The lock is fail-closed to avoid deleting a lock that another process replaced or reacquired after inspection. Do not remove it merely because its timestamp looks old.
 
 1. In Task Scheduler, end the agent-card task and choose **Disable** so it cannot restart during recovery.
-2. Verify that no `agent-card`, `npm`, or `node` process is running `sync`, `render`, or `publish-cards` for `D:\agent-card-tracker`. Check Task Manager's **Details** and **Command line** columns and the task history. If you cannot prove which clone a remaining process owns, leave the task disabled and do not delete the lock until that process has exited; a reboot with the task still disabled is the conservative fallback.
+2. Verify that no `agent-card`, `npm`, or `node` process is running `sync`, `render`, or `publish-cards` for `D:\codex-renown`. Check Task Manager's **Details** and **Command line** columns and the task history. If you cannot prove which clone a remaining process owns, leave the task disabled and do not delete the lock until that process has exited; a reboot with the task still disabled is the conservative fallback.
 3. Inspect the exact lock file without editing it:
 
    ```powershell
-   Get-Content -LiteralPath 'D:\agent-card-tracker\.git\agent-card-sync.lock'
+   Get-Content -LiteralPath 'D:\codex-renown\.git\agent-card-sync.lock'
    ```
 
 4. Only after the process check is clear, delete that one file:
 
    ```powershell
-   Remove-Item -LiteralPath 'D:\agent-card-tracker\.git\agent-card-sync.lock'
+   Remove-Item -LiteralPath 'D:\codex-renown\.git\agent-card-sync.lock'
    ```
 
 5. Keep the task disabled, rerun the original `npm run sync`, `npm run render -- --as-of YYYY-MM-DD`, or `npm run publish-cards -- --as-of YYYY-MM-DD` command manually, and re-enable the task only after it finishes.
