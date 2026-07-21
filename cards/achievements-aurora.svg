@@ -70,8 +70,8 @@
 <text class="label" x="98" y="63">CURRENT TOKEN RANK</text>
 <text class="value" x="98" y="87">RANK XV · MYTHIC</text>
 <rect class="progress-track" x="98" y="98" width="302" height="8" rx="4"/>
-<rect class="progress-fill" x="98" y="98" width="188.33" height="8" rx="4"/>
-<text class="meta" x="98" y="116">62% to ASCENDANT · 25B</text>
+<rect class="progress-fill" x="98" y="98" width="192.89" height="8" rx="4"/>
+<text class="meta" x="98" y="116">64% to ASCENDANT · 25B</text>
 <rect class="rank-node-unlocked" x="101" y="119" width="8" height="8" rx="2"/>
 <rect class="rank-node-unlocked" x="116.1" y="119" width="8" height="8" rx="2"/>
 <rect class="rank-node-unlocked" x="131.2" y="119" width="8" height="8" rx="2"/>

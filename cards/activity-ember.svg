@@ -368,7 +368,7 @@
 <rect class="heat-cell state-zero level-0 coverage-complete" x="318" y="90" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-1 coverage-complete" x="318" y="97" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-4 coverage-complete" x="325" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-complete" x="325" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="325" y="62" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-4 coverage-complete" x="325" y="69" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-2 coverage-complete" x="325" y="76" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-3 coverage-complete" x="325" y="83" width="5" height="5" rx="1"/>
@@ -382,7 +382,7 @@
 <rect class="heat-cell state-active level-1 coverage-complete" x="332" y="90" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-1 coverage-complete" x="332" y="97" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-1 coverage-complete" x="339" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-complete" x="339" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="339" y="62" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-2 coverage-complete" x="339" y="69" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-2 coverage-complete" x="339" y="76" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-3 coverage-complete" x="339" y="83" width="5" height="5" rx="1"/>
@@ -438,7 +438,7 @@
 <rect class="heat-cell state-active level-4 coverage-complete" x="388" y="90" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-4 coverage-complete" x="388" y="97" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-active level-4 coverage-complete" x="395" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-complete" x="395" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="395" y="62" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-unknown level-0 coverage-unknown" x="395" y="69" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="76" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="83" width="5" height="5" rx="1"/>

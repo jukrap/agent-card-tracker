@@ -67,9 +67,9 @@
 <g class="crest crest-rarity-epic" transform="translate(12 12) scale(0.888889)"><path class="crest-frame crest-frame-epic crest-frame-epic-diamond" d="M36 2 64 20 57 55 36 68 15 55 8 20Z"/><g class="rank-glyph rank-glyph-mythic-eye" transform="translate(22 18) scale(1.166667)"><path class="glyph-line" d="M2 12C5 7 8 5 12 5S19 7 22 12C19 17 16 19 12 19S5 17 2 12Z"/><circle class="glyph-fill" cx="12" cy="12" r="4"/><circle class="glyph-cut" cx="12" cy="12" r="1.5"/></g><circle class="crest-pip" cx="28" cy="64" r="2.5"/><circle class="crest-pip" cx="36" cy="64" r="2.5"/><circle class="crest-pip" cx="44" cy="64" r="2.5"/></g>
 <text class="label" x="88" y="20">CODEX RENOWN · @jukrap</text>
 <text class="small-value" x="88" y="39">RANK XV · MYTHIC</text>
-<text class="rank-title" x="88" y="63">19.4B TOKENS</text>
+<text class="rank-title" x="88" y="63">19.6B TOKENS</text>
 <rect class="progress-track" x="88" y="70" width="312" height="6" rx="3"/>
-<rect class="progress-fill" x="88" y="70" width="194.57" height="6" rx="3"/>
-<text class="meta" x="88" y="88">62% to ASCENDANT · 25B</text>
+<rect class="progress-fill" x="88" y="70" width="199.28" height="6" rx="3"/>
+<text class="meta" x="88" y="88">64% to ASCENDANT · 25B</text>
 <text class="meta" x="400" y="88" text-anchor="end">2026-07-22</text>
 </svg>
