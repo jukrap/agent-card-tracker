@@ -8,13 +8,16 @@ import { GitPublishError, publishChanges } from '../git/publish.mjs';
 
 const CARD_PATHS = Object.freeze([
   'cards/overview.svg',
+  'cards/achievements.svg',
+  'cards/records.svg',
   'cards/trends.svg',
   'cards/activity.svg',
+  'cards/compact.svg',
 ]);
 
 const HELP = `Usage: agent-card publish-cards --as-of YYYY-MM-DD
 
-Render, validate, and publish exactly the three static SVG cards.
+Render, validate, and publish exactly the six static SVG cards.
 Use this only as a recovery path when the GitHub render workflow is unavailable.
 `;
 

@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
 
           stage_cards() {
-            git add -- cards/overview.svg cards/trends.svg cards/activity.svg
+            git add -- cards/overview.svg cards/achievements.svg cards/records.svg cards/trends.svg cards/activity.svg cards/compact.svg
           }
 
           push_cards() {

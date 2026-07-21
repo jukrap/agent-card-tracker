@@ -77,7 +77,7 @@ test('card rendering is bounded, loop-free, and writes only in its render job', 
   const addCommands = [...workflow.matchAll(/^\s*git add\b.*$/gm)]
     .map(([line]) => line.trim());
   assert.deepEqual(addCommands, [
-    'git add -- cards/overview.svg cards/trends.svg cards/activity.svg',
+    'git add -- cards/overview.svg cards/achievements.svg cards/records.svg cards/trends.svg cards/activity.svg cards/compact.svg',
   ]);
   assert.match(workflow, /push origin HEAD:main/);
   assert.doesNotMatch(workflow, /git\s+push[^\r\n]*(?:--force(?:-with-lease)?|\s-f(?:\s|$))/);

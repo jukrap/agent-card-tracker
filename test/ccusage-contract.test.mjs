@@ -15,48 +15,43 @@ import {
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const packagePath = join(projectRoot, 'node_modules', 'ccusage', 'package.json');
 
-test('설치된 ccusage 버전과 빈 HOME daily JSON 계약을 smoke 검증한다', async (t) => {
+test('installed ccusage version and empty Codex home satisfy the pinned contract', async (t) => {
   try {
     await access(packagePath);
   } catch {
-    t.skip('ccusage 의존성이 아직 설치되지 않아 contract smoke를 건너뜁니다');
+    t.skip('ccusage dependency is not installed');
     return;
   }
 
   const installed = JSON.parse(await readFile(packagePath, 'utf8'));
   assert.equal(installed.version, CCUSAGE_VERSION);
 
-  const isolatedHome = await mkdtemp(join(tmpdir(), 'agent-card-ccusage-'));
-  const codexHome = join(isolatedHome, 'codex');
-  const claudeConfig = join(isolatedHome, 'claude');
-  await mkdir(codexHome, { recursive: true });
-  await mkdir(join(claudeConfig, 'projects'), { recursive: true });
+  const isolatedRoot = await mkdtemp(join(tmpdir(), 'agent-card-ccusage-'));
+  const codexRoot = join(isolatedRoot, 'codex');
+  await mkdir(codexRoot, { recursive: true });
 
   try {
     const runner = createCcusageRunner({
       entryPath: join(dirname(packagePath), 'src', 'cli.js'),
       timeoutMs: 20_000,
     });
-    const env = {
+    const environment = {
       ...process.env,
-      HOME: isolatedHome,
-      USERPROFILE: isolatedHome,
-      CODEX_HOME: codexHome,
-      CLAUDE_CONFIG_DIR: claudeConfig,
+      HOME: isolatedRoot,
+      USERPROFILE: isolatedRoot,
+      CODEX_HOME: codexRoot,
     };
 
-    for (const agent of ['claude', 'codex']) {
-      let stdout;
-      try {
-        stdout = await runner(buildCcusageArgs(agent, 'daily', 'UTC'), { env });
-      } catch (error) {
-        assert.fail(`${agent} empty-home contract failed: ${error.code ?? 'UNKNOWN'}`);
-      }
-      const parsed = JSON.parse(stdout);
-      assert.deepEqual(Object.keys(parsed).sort(), ['daily', 'totals']);
-      assert.deepEqual(normalizeCcusageDaily(parsed, { timezone: 'UTC' }), []);
+    let stdout;
+    try {
+      stdout = await runner(buildCcusageArgs('daily', 'UTC'), { env: environment });
+    } catch (error) {
+      assert.fail(`codex empty-home contract failed: ${error.code ?? 'UNKNOWN'}`);
     }
+    const parsed = JSON.parse(stdout);
+    assert.deepEqual(Object.keys(parsed).sort(), ['daily', 'totals']);
+    assert.deepEqual(normalizeCcusageDaily(parsed, { timezone: 'UTC' }), []);
   } finally {
-    await rm(isolatedHome, { force: true, recursive: true });
+    await rm(isolatedRoot, { force: true, recursive: true });
   }
 });

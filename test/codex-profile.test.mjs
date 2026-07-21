@@ -45,7 +45,7 @@ function makeIo() {
 
 function makeExistingCandidate(overrides = {}) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'codex-profile',
     deviceId: DEVICE_ID,
     writerKeyHash: createHash('sha256').update(WRITER_KEY, 'utf8').digest('hex'),
@@ -578,7 +578,7 @@ test('profile command writes a validated candidate without environment credentia
     'utf8',
   ));
   assert.deepEqual(candidate, {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'codex-profile',
     deviceId: DEVICE_ID,
     writerKeyHash: createHash('sha256').update(WRITER_KEY, 'utf8').digest('hex'),

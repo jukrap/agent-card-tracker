@@ -12,7 +12,6 @@ const DEFAULT_CCUSAGE_ENTRY_PATH = fileURLToPath(
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const IANA_TIMEZONE_PATTERN = /^(?:UTC|[A-Za-z0-9_+-]+(?:\/[A-Za-z0-9_.+-]+)+)$/;
 const RFC3339_PATTERN = /^\d{4}-\d{2}-\d{2}T.+(?:Z|[+-]\d{2}:\d{2})$/;
-const AGENTS = new Set(['claude', 'codex']);
 const REPORTS = new Set(['daily', 'session']);
 
 const ERROR_MESSAGES = Object.freeze({
@@ -208,13 +207,13 @@ export function normalizeCcusageDaily(output, { timezone, sessionOutput = null }
   return days.sort((left, right) => left.date.localeCompare(right.date));
 }
 
-export function buildCcusageArgs(agent, report, timezone) {
-  if (!AGENTS.has(agent) || !REPORTS.has(report)) {
+export function buildCcusageArgs(report, timezone) {
+  if (!REPORTS.has(report)) {
     throw collectorError('CCUSAGE_INVALID_ARGUMENT');
   }
   const safeTimezone = assertIanaTimezone(timezone);
   const args = [
-    agent,
+    'codex',
     report,
     '--json',
     '--offline',
@@ -222,9 +221,7 @@ export function buildCcusageArgs(agent, report, timezone) {
     '--timezone',
     safeTimezone,
   ];
-  if (agent === 'codex') {
-    args.push('--speed', 'auto');
-  }
+  args.push('--speed', 'auto');
   return args;
 }
 
@@ -321,7 +318,6 @@ async function runSafely(runner, args, runnerOptions) {
 }
 
 export async function collectCcusage({
-  agent,
   timezone,
   includeSessions = true,
   runner = defaultRunner,
@@ -330,7 +326,7 @@ export async function collectCcusage({
   const safeTimezone = assertIanaTimezone(timezone);
   const dailyOutput = await runSafely(
     runner,
-    buildCcusageArgs(agent, 'daily', safeTimezone),
+    buildCcusageArgs('daily', safeTimezone),
     runnerOptions,
   );
 
@@ -340,7 +336,7 @@ export async function collectCcusage({
     try {
       sessionOutput = await runSafely(
         runner,
-        buildCcusageArgs(agent, 'session', safeTimezone),
+        buildCcusageArgs('session', safeTimezone),
         runnerOptions,
       );
       normalizeCcusageSessions(sessionOutput, { timezone: safeTimezone });

@@ -2,23 +2,8 @@
   "collectorVersion": "0.1.0",
   "deviceId": "device-6d2a813b160e2f9056049ebc9207b760",
   "generatedAt": "2026-07-21T10:06:06.307Z",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sources": {
-    "claude": {
-      "coverage": {
-        "sessions": {
-          "endDate": "2026-07-21",
-          "startDate": "2026-07-21"
-        },
-        "totals": {
-          "endDate": "2026-07-21",
-          "startDate": "2026-07-21"
-        }
-      },
-      "days": [],
-      "lastSuccessfulAt": "2026-07-21T10:06:06.307Z",
-      "status": "ok"
-    },
     "codex": {
       "coverage": {
         "sessions": {

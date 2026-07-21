@@ -1,3 +1,5 @@
+> **Superseded:** The current product is Codex-only, uses public schema v2, and renders six RPG usage cards. Do not use this implementation plan as the active specification.
+
 # Multi-device AI Usage Card Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

@@ -30,8 +30,11 @@ const PROFILE_PATH = `data/profiles/${DEVICE_ID}.json`;
 const OTHER_DEVICE_PATH = `data/devices/device-${'3'.repeat(32)}.json`;
 const CARD_PATHS = [
   'cards/overview.svg',
+  'cards/achievements.svg',
+  'cards/records.svg',
   'cards/trends.svg',
   'cards/activity.svg',
+  'cards/compact.svg',
 ];
 const execFileAsync = promisify(execFile);
 
@@ -366,13 +369,13 @@ function source(days = []) {
 
 function snapshot(writerKeyHash = WRITER_KEY_HASH) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     deviceId: DEVICE_ID,
     writerKeyHash,
     generatedAt: '2026-07-19T00:00:00.000Z',
     timezone: 'Asia/Seoul',
     collectorVersion: '0.1.0',
-    sources: { claude: source(), codex: source() },
+    sources: { codex: source() },
   };
 }
 
@@ -1712,7 +1715,7 @@ test('profile collector가 반환한 invalid candidate는 fallback으로 숨기�
   assert.deepEqual(JSON.parse(await readFile(destination, 'utf8')), snapshot());
 });
 
-test('publish-cards는 render/validate 후 정확히 세 카드만 bounded publisher에 넘긴다', async (t) => {
+test('publish-cards는 render/validate 후 정확히 여섯 카드만 bounded publisher에 넘긴다', async (t) => {
   const cwd = await temporaryRepository(t);
   const order = [];
   let capturedPlan;
@@ -1736,7 +1739,7 @@ test('publish-cards는 render/validate 후 정확히 세 카드만 bounded publi
   assert.deepEqual(order, ['render', 'validate']);
 });
 
-test('publish-cards commit 실패는 세 카드 raw bytes를 모두 복구한다', async (t) => {
+test('publish-cards commit 실패는 여섯 카드 raw bytes를 모두 복구한다', async (t) => {
   const cwd = await temporaryRepository(t);
   const originals = new Map();
   await mkdir(path.join(cwd, 'cards'), { recursive: true });

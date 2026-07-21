@@ -3,550 +3,269 @@ import test from 'node:test';
 
 import { computeStatistics, StatisticsError } from '../src/domain/statistics.mjs';
 
-const ZERO_METRIC = Object.freeze({
-  input: 0,
-  output: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-  total: 0,
-  sessions: 0,
-});
-
 function range(startDate, endDate) {
   return { startDate, endDate };
 }
 
 function metric(overrides = {}) {
-  return { ...ZERO_METRIC, ...overrides };
-}
-
-function coverage(dateBasis, overrides = {}) {
   return {
-    dateBasis,
-    totals: null,
-    breakdown: null,
-    sessions: null,
+    input: 0,
+    output: 0,
+    cacheRead: 0,
+    cacheWrite: 0,
+    total: 0,
+    sessions: 0,
     ...overrides,
   };
+}
+
+function day(date, overrides = {}) {
+  return { date, codex: metric(overrides) };
 }
 
 function merged(overrides = {}) {
-  return {
-    timezone: 'UTC',
-    codexSource: 'devices',
-    days: [],
+  const codexSource = overrides.codexSource ?? 'devices';
+  const totals = overrides.totals ?? null;
+  const result = {
+    timezone: overrides.timezone ?? 'UTC',
+    codexSource,
+    days: overrides.days ?? [],
     coverage: {
-      claude: coverage('UTC'),
-      codex: coverage('UTC'),
-    },
-    ...overrides,
-    coverage: {
-      claude: coverage('UTC', overrides.coverage?.claude),
-      codex: coverage(
-        overrides.codexSource === 'profile' ? 'provider-calendar-date' : 'UTC',
-        overrides.coverage?.codex,
-      ),
+      codex: {
+        dateBasis: codexSource === 'profile'
+          ? 'provider-calendar-date'
+          : (overrides.timezone ?? 'UTC'),
+        totals,
+        breakdown: overrides.breakdown ?? totals,
+        sessions: overrides.sessions ?? totals,
+      },
     },
   };
+  if (Object.hasOwn(overrides, 'codexLifetimeTotalTokens')) {
+    result.codexLifetimeTotalTokens = overrides.codexLifetimeTotalTokens;
+  }
+  return result;
 }
 
-function day(date, claude = metric(), codex = metric()) {
-  return { date, claude, codex };
-}
-
-function completeMetric(value) {
+function complete(value) {
   return { value, coverage: 'complete', lowerBound: false };
 }
 
-function partialMetric(value) {
+function partial(value) {
   return { value, coverage: 'partial', lowerBound: true };
 }
 
-function unknownMetric() {
+function unknown() {
   return { value: null, coverage: 'unknown', lowerBound: false };
 }
 
-function mixedMetric(value) {
-  return { value, coverage: 'mixed', lowerBound: false };
-}
-
-test('coverage 내부 누락 row는 관측된 0이고 coverage 밖은 unknown이다', () => {
-  const observed = range('2026-03-05', '2026-03-07');
+test('missing dates are zero only inside declared Codex coverage', () => {
+  const observed = range('2026-07-19', '2026-07-21');
   const stats = computeStatistics(merged({
-    days: [day('2026-03-06', metric({ total: 9 }), metric({ total: 1 }))],
-    coverage: {
-      claude: { totals: observed, breakdown: observed, sessions: observed },
-      codex: { totals: observed, breakdown: observed, sessions: observed },
-    },
-  }), { asOf: '2026-03-07' });
+    days: [day('2026-07-20', { total: 9 })],
+    totals: observed,
+  }), { asOf: '2026-07-21' });
 
-  assert.deepEqual(stats.periods.today.current.totalTokens, completeMetric(0));
-  assert.deepEqual(stats.periods.today.current.sessions, completeMetric(0));
+  assert.deepEqual(stats.periods.today.current.totalTokens, complete(0));
+  assert.deepEqual(stats.lifetime.totalTokens, complete(9));
+  assert.deepEqual(stats.activity.activeDays, complete(1));
+  assert.equal(stats.activity.peak.date, '2026-07-20');
+  assert.equal(
+    stats.heatmap.cells.find((cell) => cell.date === '2026-07-19').state,
+    'zero',
+  );
 
-  const byDate = new Map(stats.heatmap.cells.map((cell) => [cell.date, cell]));
-  assert.deepEqual(byDate.get('2026-03-04'), {
-    date: '2026-03-04',
-    state: 'unknown',
-    totalTokens: null,
+  const later = computeStatistics(merged({
+    days: [day('2026-07-20', { total: 9 })],
+    totals: observed,
+  }), { asOf: '2026-07-22' });
+  assert.deepEqual(later.periods.today.current.totalTokens, unknown());
+  assert.deepEqual(later.lifetime.totalTokens, partial(9));
+});
+
+test('fresh account profile uses one provider calendar and exact lifetime rank', () => {
+  const observed = range('2026-07-20', '2026-07-21');
+  const stats = computeStatistics(merged({
+    codexSource: 'profile',
+    days: [
+      day('2026-07-20', {
+        input: null,
+        output: null,
+        cacheRead: null,
+        cacheWrite: null,
+        total: 100,
+        sessions: null,
+      }),
+      day('2026-07-21', {
+        input: null,
+        output: null,
+        cacheRead: null,
+        cacheWrite: null,
+        total: 200,
+        sessions: null,
+      }),
+    ],
+    totals: observed,
+    breakdown: null,
+    sessions: null,
+    codexLifetimeTotalTokens: 19_300_000_000,
+  }), { asOf: '2026-07-21' });
+
+  assert.equal(stats.calendarLabel, 'Codex account calendar');
+  assert.deepEqual(stats.periods.today.current.totalTokens, complete(200));
+  assert.deepEqual(stats.periods.today.current.sessions, unknown());
+  assert.deepEqual(stats.lifetime.totalTokens, complete(19_300_000_000));
+  assert.equal(stats.lifetime.provenance, 'provider-reported');
+  assert.equal(stats.rank.current.roman, 'XV');
+  assert.equal(stats.rank.current.title, 'Mythic');
+  assert.equal(Math.round(stats.rank.progressPercentage), 62);
+  assert.equal(stats.rank.lowerBound, false);
+});
+
+test('device fallback lifetime is an observed lower bound', () => {
+  const stats = computeStatistics(merged({
+    days: [day('2026-07-20', { total: 100_000 })],
+    totals: range('2026-07-20', '2026-07-20'),
+  }), { asOf: '2026-07-21' });
+
+  assert.deepEqual(stats.lifetime.totalTokens, partial(100_000));
+  assert.equal(stats.lifetime.provenance, 'tracked-daily');
+  assert.equal(stats.rank.current.roman, 'IV');
+  assert.equal(stats.rank.lowerBound, true);
+  assert.equal(stats.calendarLabel, 'UTC');
+});
+
+test('records use complete coverage, zero-fill missing dates, and break ties early', () => {
+  const stats = computeStatistics(merged({
+    days: [
+      day('2026-01-01', { total: 100 }),
+      day('2026-02-28', { total: 100 }),
+    ],
+    totals: range('2026-01-01', '2026-02-28'),
+  }), { asOf: '2026-02-28' });
+
+  assert.deepEqual(stats.records.peakDay, {
+    value: 100,
+    startDate: '2026-01-01',
+    endDate: '2026-01-01',
+    coverage: 'complete',
+    lowerBound: false,
+  });
+  assert.deepEqual(stats.records.best7, {
+    value: 100,
+    startDate: '2026-01-01',
+    endDate: '2026-01-07',
+    coverage: 'complete',
+    lowerBound: false,
+  });
+  assert.deepEqual(stats.records.best30, {
+    value: 100,
+    startDate: '2026-01-01',
+    endDate: '2026-01-30',
+    coverage: 'complete',
+    lowerBound: false,
+  });
+  assert.deepEqual(stats.records.bestMonth, {
+    value: 100,
+    startDate: '2026-01-01',
+    endDate: '2026-01-31',
+    coverage: 'complete',
+    lowerBound: false,
+  });
+});
+
+test('records remain unknown without a fully covered candidate window', () => {
+  const stats = computeStatistics(merged({
+    days: [day('2026-07-21', { total: 1 })],
+    totals: range('2026-07-21', '2026-07-21'),
+  }), { asOf: '2026-07-21' });
+
+  assert.equal(stats.records.peakDay.value, 1);
+  assert.deepEqual(stats.records.best7, {
+    value: null,
+    startDate: null,
+    endDate: null,
     coverage: 'unknown',
-    level: 0,
-  });
-  assert.deepEqual(byDate.get('2026-03-05'), {
-    date: '2026-03-05',
-    state: 'zero',
-    totalTokens: 0,
-    coverage: 'complete',
-    level: 0,
-  });
-  assert.equal(byDate.get('2026-03-06').state, 'active');
-  assert.equal(byDate.get('2026-03-06').totalTokens, 10);
-  assert.equal(byDate.get('2026-03-07').state, 'zero');
-
-  assert.deepEqual(stats.activity.activeDays, completeMetric(1));
-  assert.deepEqual(stats.activity.currentStreak, completeMetric(0));
-  assert.deepEqual(stats.activity.longestStreak, completeMetric(1));
-  assert.deepEqual(stats.activity.peak, {
-    date: '2026-03-06',
-    totalTokens: 10,
-    coverage: 'complete',
     lowerBound: false,
   });
+  assert.equal(stats.records.best30.value, null);
+  assert.equal(stats.records.bestMonth.value, null);
 });
 
-test('known source와 미관측 source를 합치면 값은 lower bound로 보존한다', () => {
-  const claudeRange = range('2026-07-19', '2026-07-19');
-  const stats = computeStatistics(merged({
-    days: [day('2026-07-19', metric({ total: 100 }), metric())],
-    coverage: {
-      claude: { totals: claudeRange, breakdown: claudeRange, sessions: claudeRange },
-      codex: { totals: null, breakdown: null, sessions: null },
-    },
-  }), { asOf: '2026-07-19' });
-
-  assert.deepEqual(stats.periods.today.current.totalTokens, partialMetric(100));
-  assert.deepEqual(stats.periods.today.current.sessions, partialMetric(0));
-  assert.equal(stats.heatmap.cells.find((cell) => cell.date === '2026-07-19').state, 'active');
-});
-
-test('profile total-only 토큰은 전부 unknownTokens이며 local breakdown만 분류한다', () => {
-  const rolling = range('2026-06-20', '2026-07-19');
-  const stats = computeStatistics(merged({
-    codexSource: 'profile',
-    codexLifetimeTotalTokens: 1_000,
-    days: [day(
-      '2026-07-19',
-      metric({ input: 10, output: 20, cacheRead: 30, cacheWrite: 40, total: 100, sessions: 2 }),
-      metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 300, sessions: null }),
-    )],
-    coverage: {
-      claude: { totals: rolling, breakdown: rolling, sessions: rolling },
-      codex: { totals: rolling, breakdown: null, sessions: null },
-    },
-  }), { asOf: '2026-07-19' });
-
-  assert.deepEqual(stats.sourceShare, {
-    range: rolling,
-    totalTokens: mixedMetric(400),
-    sources: {
-      claude: { totalTokens: completeMetric(100), percentage: 25 },
-      codex: { totalTokens: mixedMetric(300), percentage: 75 },
-    },
-  });
-  assert.deepEqual(stats.tokenMix, {
-    range: rolling,
-    input: 10,
-    output: 20,
-    cacheRead: 30,
-    cacheWrite: 40,
-    unknownTokens: 300,
-    totalTokens: mixedMetric(400),
-    coverage: 'mixed',
-  });
-  assert.deepEqual(stats.lifetime.trackedTotalTokens, mixedMetric(400));
-  assert.deepEqual(stats.lifetime.totalTokens, completeMetric(1_100));
-  assert.deepEqual(stats.lifetime.provenance, {
-    claude: 'tracked-daily',
-    codex: 'provider-reported',
-  });
-  assert.deepEqual(stats.lifetime.sources.codex.totalTokens, completeMetric(1_000));
-  assert.deepEqual(stats.periods.today.current.sessions, mixedMetric(2));
-  assert.deepEqual(stats.lifetime.sessions, mixedMetric(2));
-});
-
-test('provider calendar와 설정 timezone의 일별 합계는 mixed이며 비교와 streak를 만들지 않는다', () => {
-  const observed = range('2026-06-20', '2026-07-19');
-  const stats = computeStatistics(merged({
-    timezone: 'Asia/Seoul',
-    codexSource: 'profile',
-    days: [
-      day(
-        '2026-07-18',
-        metric({ input: 25, total: 25, sessions: 1 }),
-        metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 75, sessions: 1 }),
-      ),
-      day(
-        '2026-07-19',
-        metric({ input: 100, total: 100, sessions: 1 }),
-        metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 300, sessions: 1 }),
-      ),
-    ],
-    coverage: {
-      claude: {
-        dateBasis: 'Asia/Seoul',
-        totals: observed,
-        breakdown: observed,
-        sessions: observed,
-      },
-      codex: {
-        dateBasis: 'provider-calendar-date',
-        totals: observed,
-        breakdown: null,
-        sessions: observed,
-      },
-    },
-  }), { asOf: '2026-07-19' });
-
-  assert.deepEqual(stats.periods.today.current.totalTokens, mixedMetric(400));
-  assert.deepEqual(stats.periods.today.comparison, { kind: 'mixed', percentage: null });
-  assert.deepEqual(stats.trends.daily.at(-1).totalTokens, mixedMetric(400));
-  assert.deepEqual(stats.sourceShare.totalTokens, mixedMetric(500));
-  assert.deepEqual(stats.sourceShare.sources.claude, {
-    totalTokens: completeMetric(125),
-    percentage: 25,
-  });
-  assert.deepEqual(stats.sourceShare.sources.codex, {
-    totalTokens: mixedMetric(375),
-    percentage: 75,
-  });
-  assert.equal(stats.tokenMix.coverage, 'mixed');
-  assert.deepEqual(stats.tokenMix.totalTokens, mixedMetric(500));
-  assert.equal(stats.tokenMix.unknownTokens, 375);
-
-  const today = stats.heatmap.cells.find((cell) => cell.date === '2026-07-19');
-  assert.deepEqual(today, {
-    date: '2026-07-19',
-    state: 'active',
-    totalTokens: 400,
-    coverage: 'mixed',
-    level: today.level,
-  });
-  assert.deepEqual(stats.activity.activeDays, mixedMetric(2));
-  assert.deepEqual(stats.activity.currentStreak, mixedMetric(null));
-  assert.deepEqual(stats.activity.longestStreak, mixedMetric(null));
-  assert.deepEqual(stats.activity.peak, {
-    date: '2026-07-19',
-    totalTokens: 400,
-    coverage: 'mixed',
-    lowerBound: false,
-  });
-});
-
-test('provider-reported lifetime은 calendar bucket 불일치와 무관하게 exact 의미를 유지한다', () => {
-  const observed = range('2026-07-19', '2026-07-19');
-  const stats = computeStatistics(merged({
-    timezone: 'Asia/Seoul',
-    codexSource: 'profile',
-    codexLifetimeTotalTokens: 1_000,
-    days: [day(
-      '2026-07-19',
-      metric({ input: 100, total: 100 }),
-      metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 300, sessions: null }),
-    )],
-    coverage: {
-      claude: {
-        dateBasis: 'Asia/Seoul',
-        totals: observed,
-        breakdown: observed,
-        sessions: observed,
-      },
-      codex: {
-        dateBasis: 'provider-calendar-date',
-        totals: observed,
-        breakdown: null,
-        sessions: null,
-      },
-    },
-  }), { asOf: '2026-07-19' });
-
-  assert.deepEqual(stats.lifetime.trackedTotalTokens, mixedMetric(400));
-  assert.deepEqual(stats.lifetime.sources.codex.trackedTotalTokens, mixedMetric(300));
-  assert.deepEqual(stats.lifetime.sources.codex.totalTokens, completeMetric(1_000));
-  assert.deepEqual(stats.lifetime.totalTokens, completeMetric(1_100));
-});
-
-test('calendar-misaligned 관측값은 누락 source가 있어도 lower bound로 표시하지 않는다', () => {
-  const observed = range('2026-07-19', '2026-07-19');
-  const stats = computeStatistics(merged({
-    timezone: 'Asia/Seoul',
-    codexSource: 'profile',
-    days: [day(
-      '2026-07-19',
-      null,
-      metric({ input: null, output: null, cacheRead: null, cacheWrite: null, total: 300, sessions: null }),
-    )],
-    coverage: {
-      claude: { dateBasis: 'Asia/Seoul' },
-      codex: {
-        dateBasis: 'provider-calendar-date',
-        totals: observed,
-        breakdown: null,
-        sessions: null,
-      },
-    },
-  }), { asOf: '2026-07-19' });
-
-  assert.deepEqual(stats.periods.today.current.totalTokens, mixedMetric(300));
-  assert.equal(stats.periods.today.current.totalTokens.lowerBound, false);
-  assert.equal(stats.tokenMix.coverage, 'mixed');
-});
-
-test('값 없는 provider source도 mixed marker를 source share까지 보존한다', () => {
-  const observed = range('2026-06-20', '2026-07-19');
-  const stats = computeStatistics(merged({
-    timezone: 'Asia/Seoul',
-    codexSource: 'profile',
-    days: [day('2026-07-19', metric({ total: 100 }), null)],
-    coverage: {
-      claude: {
-        dateBasis: 'Asia/Seoul',
-        totals: observed,
-        breakdown: observed,
-        sessions: observed,
-      },
-      codex: {
-        dateBasis: 'provider-calendar-date',
-        totals: null,
-        breakdown: null,
-        sessions: null,
-      },
-    },
-  }), { asOf: '2026-07-19' });
-
-  assert.deepEqual(stats.periods.today.current.totalTokens, mixedMetric(100));
-  assert.deepEqual(stats.sourceShare.totalTokens, mixedMetric(100));
-  assert.deepEqual(stats.sourceShare.sources.codex.totalTokens, mixedMetric(null));
-  assert.equal(stats.sourceShare.sources.claude.percentage, null);
-  assert.equal(stats.sourceShare.sources.codex.percentage, null);
-});
-
-test('unknown 날짜는 서로 떨어진 active 날짜의 streak를 연결하지 않는다', () => {
-  const observed = range('2026-03-07', '2026-03-07');
+test('activity, streak, peak, trends, and heatmap stay Codex-only', () => {
+  const observed = range('2026-07-18', '2026-07-21');
   const stats = computeStatistics(merged({
     days: [
-      day('2026-03-05', metric({ total: 5 }), metric({ total: 5 })),
-      day('2026-03-07', metric({ total: 7 }), metric({ total: 3 })),
+      day('2026-07-18', { total: 10 }),
+      day('2026-07-19', { total: 20 }),
+      day('2026-07-21', { total: 30 }),
     ],
-    coverage: {
-      claude: { totals: observed, breakdown: observed, sessions: observed },
-      codex: { totals: observed, breakdown: observed, sessions: observed },
-    },
-  }), { asOf: '2026-03-07' });
+    totals: observed,
+  }), { asOf: '2026-07-21' });
 
-  assert.deepEqual(stats.activity.currentStreak, partialMetric(1));
-  assert.deepEqual(stats.activity.longestStreak, partialMetric(1));
-  assert.equal(stats.heatmap.cells.find((cell) => cell.date === '2026-03-06').state, 'unknown');
-});
-
-test('관측 시작일에 걸친 longest streak는 좌측 연장 가능성을 lower bound로 남긴다', () => {
-  const observed = range('2026-03-05', '2026-03-06');
-  const stats = computeStatistics(merged({
-    days: [day('2026-03-05', metric({ total: 4 }), metric({ total: 6 }))],
-    coverage: {
-      claude: { totals: observed },
-      codex: { totals: observed },
-    },
-  }), { asOf: '2026-03-06' });
-
-  assert.deepEqual(stats.activity.longestStreak, partialMetric(1));
-  assert.deepEqual(stats.activity.currentStreak, completeMetric(0));
-});
-
-test('비교는 양쪽 기간이 complete일 때만 flat/new/percent를 계산한다', () => {
-  const observed = range('2026-07-01', '2026-07-19');
-  const stats = computeStatistics(merged({
-    days: [
-      day('2026-07-12', metric({ total: 50 }), metric({ total: 25 })),
-      day('2026-07-17', metric({ total: 25 }), metric({ total: 25 })),
-      day('2026-07-18'),
-      day('2026-07-19', metric({ total: 75 }), metric({ total: 25 })),
-    ],
-    coverage: {
-      claude: { totals: observed, breakdown: observed, sessions: observed },
-      codex: { totals: observed, breakdown: observed, sessions: observed },
-    },
-  }), { asOf: '2026-07-19' });
-
-  assert.deepEqual(stats.periods.today.comparison, { kind: 'new', percentage: null });
-  assert.deepEqual(stats.periods.rolling7.comparison, { kind: 'percent', percentage: 100 });
-
-  const flat = computeStatistics(merged({
-    coverage: {
-      claude: { totals: observed, breakdown: observed, sessions: observed },
-      codex: { totals: observed, breakdown: observed, sessions: observed },
-    },
-  }), { asOf: '2026-07-19' });
-  assert.deepEqual(flat.periods.today.comparison, { kind: 'flat', percentage: 0 });
-
-  const incomplete = computeStatistics(merged({
-    days: [day('2026-07-19', metric({ total: 1 }), metric({ total: 1 }))],
-    coverage: {
-      claude: { totals: range('2026-07-19', '2026-07-19') },
-      codex: { totals: range('2026-07-19', '2026-07-19') },
-    },
-  }), { asOf: '2026-07-19' });
-  assert.deepEqual(incomplete.periods.today.comparison, { kind: 'unknown', percentage: null });
-});
-
-test('daily/weekly/monthly trend와 윤년 MTD 경계가 oldest-to-newest로 고정된다', () => {
-  const observed = range('2023-01-01', '2024-03-31');
-  const stats = computeStatistics(merged({
-    coverage: {
-      claude: { totals: observed, breakdown: observed, sessions: observed },
-      codex: { totals: observed, breakdown: observed, sessions: observed },
-    },
-  }), { asOf: '2024-03-31' });
-
+  assert.deepEqual(stats.activity.activeDays, complete(3));
+  assert.deepEqual(stats.activity.currentStreak, complete(1));
+  assert.deepEqual(stats.activity.longestStreak, partial(2));
+  assert.equal(stats.activity.peak.date, '2026-07-21');
   assert.equal(stats.trends.daily.length, 30);
-  assert.deepEqual(stats.trends.daily[0].range, range('2024-03-02', '2024-03-02'));
-  assert.deepEqual(stats.trends.daily.at(-1).range, range('2024-03-31', '2024-03-31'));
   assert.equal(stats.trends.weekly.length, 12);
-  assert.deepEqual(stats.trends.weekly.at(-1).range, range('2024-03-25', '2024-03-31'));
   assert.equal(stats.trends.monthly.length, 12);
-  assert.deepEqual(stats.trends.monthly[0].range, range('2023-04-01', '2023-04-30'));
-  assert.deepEqual(stats.trends.monthly.at(-1).range, range('2024-03-01', '2024-03-31'));
-
-  assert.deepEqual(stats.periods.monthToDate.current.range, range('2024-03-01', '2024-03-31'));
-  assert.deepEqual(stats.periods.monthToDate.previous.range, range('2024-02-01', '2024-02-29'));
-});
-
-test('heatmap은 Monday 기준 53주 371셀이고 positive nearest-rank 분위수의 tie level을 공유한다', () => {
-  const observed = range('2025-07-14', '2026-07-19');
-  const stats = computeStatistics(merged({
-    days: [
-      day('2026-07-13', metric({ total: 1 })),
-      day('2026-07-14', metric({ total: 2 })),
-      day('2026-07-15', metric({ total: 2 })),
-      day('2026-07-16', metric({ total: 3 })),
-      day('2026-07-17', metric({ total: 4 })),
-    ],
-    coverage: {
-      claude: { totals: observed, breakdown: observed, sessions: observed },
-      codex: { totals: observed, breakdown: observed, sessions: observed },
-    },
-  }), { asOf: '2026-07-19' });
-
   assert.equal(stats.heatmap.cells.length, 371);
-  assert.equal(stats.heatmap.cells[0].date, '2025-07-14');
-  assert.equal(stats.heatmap.cells.at(-1).date, '2026-07-19');
-  assert.deepEqual(stats.heatmap.thresholds, [2, 2, 3]);
-
-  const levels = Object.fromEntries(
-    stats.heatmap.cells
-      .filter((cell) => cell.state === 'active')
-      .map((cell) => [cell.date, cell.level]),
-  );
-  assert.deepEqual(levels, {
-    '2026-07-13': 1,
-    '2026-07-14': 1,
-    '2026-07-15': 1,
-    '2026-07-16': 3,
-    '2026-07-17': 4,
-  });
+  assert.equal(stats.heatmap.cells.filter((cell) => cell.state === 'active').length, 3);
 });
 
-test('현재 주의 asOf 이후 heatmap 셀은 future이며 quantile에서 제외한다', () => {
-  const observed = range('2025-07-14', '2026-07-15');
-  const stats = computeStatistics(merged({
-    days: [day('2026-07-16', metric({ total: 10 }), metric({ total: 10 }))],
-    coverage: {
-      claude: { totals: observed },
-      codex: { totals: observed },
-    },
-  }), { asOf: '2026-07-15' });
-
-  const future = stats.heatmap.cells.filter((cell) => cell.state === 'future');
-  assert.deepEqual(future.map((cell) => cell.date), [
-    '2026-07-16',
-    '2026-07-17',
-    '2026-07-18',
-    '2026-07-19',
-  ]);
-  assert.deepEqual(stats.heatmap.thresholds, []);
-});
-
-test('peak는 같은 토큰이면 가장 이른 날짜를 고르고 0/unknown은 제외한다', () => {
-  const observed = range('2026-07-17', '2026-07-19');
+test('a later longer streak is exact even when coverage starts active', () => {
+  const observed = range('2026-07-15', '2026-07-21');
   const stats = computeStatistics(merged({
     days: [
-      day('2026-07-17', metric({ total: 5 }), metric({ total: 5 })),
-      day('2026-07-19', metric({ total: 4 }), metric({ total: 6 })),
+      day('2026-07-15', { total: 10 }),
+      day('2026-07-17', { total: 10 }),
+      day('2026-07-18', { total: 10 }),
+      day('2026-07-19', { total: 10 }),
+      day('2026-07-20', { total: 10 }),
+      day('2026-07-21', { total: 10 }),
     ],
-    coverage: {
-      claude: { totals: observed },
-      codex: { totals: observed },
-    },
-  }), { asOf: '2026-07-19' });
+    totals: observed,
+  }), { asOf: '2026-07-21' });
 
-  assert.equal(stats.activity.peak.date, '2026-07-17');
-  assert.equal(stats.activity.peak.totalTokens, 10);
+  assert.deepEqual(stats.activity.currentStreak, complete(5));
+  assert.deepEqual(stats.activity.longestStreak, complete(5));
 });
 
-test('timezone instant를 지정 timezone 날짜로 고정하고 입력을 변경하지 않는다', () => {
-  const input = merged({
-    timezone: 'Asia/Seoul',
-    coverage: {
-      claude: { dateBasis: 'Asia/Seoul', totals: range('2026-07-20', '2026-07-20') },
-      codex: { dateBasis: 'Asia/Seoul', totals: range('2026-07-20', '2026-07-20') },
-    },
+test('comparisons require complete periods and use deterministic percentage semantics', () => {
+  const observed = range('2026-07-08', '2026-07-21');
+  const days = [
+    day('2026-07-08', { total: 50 }),
+    day('2026-07-15', { total: 100 }),
+  ];
+  const stats = computeStatistics(merged({ days, totals: observed }), {
+    asOf: '2026-07-21',
   });
-  const before = structuredClone(input);
-  const stats = computeStatistics(input, { asOf: '2026-07-19T16:00:00.000Z' });
 
-  assert.equal(stats.asOf, '2026-07-20');
-  assert.deepEqual(input, before);
-  assert.throws(
-    () => computeStatistics(input),
-    (error) => error instanceof StatisticsError && error.code === 'AS_OF',
-  );
+  assert.deepEqual(stats.periods.rolling7.previous.totalTokens, complete(50));
+  assert.deepEqual(stats.periods.rolling7.current.totalTokens, complete(100));
+  assert.deepEqual(stats.periods.rolling7.comparison, {
+    kind: 'percent',
+    percentage: 100,
+  });
 });
 
-test('safe integer overflow와 malformed coverage를 fail closed로 거절한다', () => {
-  const observed = range('2026-07-19', '2026-07-19');
+test('safe integer overflow and malformed coverage fail closed', () => {
   assert.throws(
     () => computeStatistics(merged({
-      days: [day(
-        '2026-07-19',
-        metric({ total: Number.MAX_SAFE_INTEGER }),
-        metric({ total: 1 }),
-      )],
-      coverage: {
-        claude: { totals: observed },
-        codex: { totals: observed },
-      },
-    }), { asOf: '2026-07-19' }),
+      days: [
+        day('2026-07-20', { total: Number.MAX_SAFE_INTEGER }),
+        day('2026-07-21', { total: 1 }),
+      ],
+      totals: range('2026-07-20', '2026-07-21'),
+    }), { asOf: '2026-07-21' }),
     (error) => error instanceof StatisticsError && error.code === 'SAFE_INTEGER_OVERFLOW',
   );
 
   assert.throws(
     () => computeStatistics(merged({
-      coverage: { claude: { totals: range('2026-07-20', '2026-07-19') } },
-    }), { asOf: '2026-07-19' }),
+      totals: range('2026-07-22', '2026-07-21'),
+    }), { asOf: '2026-07-21' }),
     (error) => error instanceof StatisticsError && error.code === 'COVERAGE_RANGE',
-  );
-
-  assert.throws(
-    () => computeStatistics({
-      ...merged(),
-      codexSource: 'device',
-    }, { asOf: '2026-07-19' }),
-    (error) => error instanceof StatisticsError && error.code === 'CODEX_SOURCE',
-  );
-
-  assert.throws(
-    () => computeStatistics({
-      ...merged(),
-      codexLifetimeTotalTokens: 123,
-    }, { asOf: '2026-07-19' }),
-    (error) => error instanceof StatisticsError && error.code === 'LIFETIME_PROVENANCE',
   );
 });

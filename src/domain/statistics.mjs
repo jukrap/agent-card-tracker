@@ -1,14 +1,18 @@
 import {
+  addDays,
   assertIsoDate,
   assertTimeZone,
   dateAtInstant,
+  daysBetween,
   eachDay,
   heatmapRange,
+  monthStart,
   periodRanges,
+  shiftMonthStart,
   trendBuckets,
 } from './calendar.mjs';
+import { computeTokenRank, milestoneState } from './rank.mjs';
 
-const SOURCES = Object.freeze(['claude', 'codex']);
 const BREAKDOWN_FIELDS = Object.freeze(['input', 'output', 'cacheRead', 'cacheWrite']);
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 
@@ -95,8 +99,8 @@ function normalizeRange(value, path) {
   return { startDate, endDate };
 }
 
-function normalizeCoverage(value, source) {
-  const path = `$.coverage.${source}`;
+function normalizeCoverage(value) {
+  const path = '$.coverage.codex';
   if (!isObject(value) || typeof value.dateBasis !== 'string' || value.dateBasis.length === 0) {
     fail('COVERAGE', path);
   }
@@ -167,7 +171,6 @@ function normalizeInput(merged) {
     }
     days.set(date, {
       date,
-      claude: normalizeMetric(value.claude, `${path}.claude`),
       codex: normalizeMetric(value.codex, `${path}.codex`),
     });
   }
@@ -186,10 +189,7 @@ function normalizeInput(merged) {
     timezone,
     codexSource: merged.codexSource,
     days,
-    coverage: {
-      claude: normalizeCoverage(merged.coverage.claude, 'claude'),
-      codex: normalizeCoverage(merged.coverage.codex, 'codex'),
-    },
+    coverage: normalizeCoverage(merged.coverage.codex),
     codexLifetimeTotalTokens,
   };
 }
@@ -217,18 +217,8 @@ function partialMetric(value) {
   return observedMetric(value, 'partial');
 }
 
-function mixedMetric(value) {
-  return observedMetric(value, 'mixed');
-}
-
 function unknownMetric() {
   return observedMetric(null, 'unknown');
-}
-
-function unobservedSourceMetric(input, source) {
-  return input.coverage[source].dateBasis === input.timezone
-    ? unknownMetric()
-    : mixedMetric(null);
 }
 
 function hasKnownSignal(metric) {
@@ -241,42 +231,32 @@ function hasKnownSignal(metric) {
   return BREAKDOWN_FIELDS.some((field) => metric[field] !== null && metric[field] > 0);
 }
 
-function sourceTotalForDate(input, date, source) {
-  const raw = input.days.get(date)?.[source] ?? null;
-  if (inRange(date, input.coverage[source].totals)) {
-    const value = raw?.total ?? 0;
-    return input.coverage[source].dateBasis === input.timezone
-      ? completeMetric(value)
-      : mixedMetric(value);
+function totalForDate(input, date) {
+  const raw = input.days.get(date)?.codex ?? null;
+  if (inRange(date, input.coverage.totals)) {
+    return completeMetric(raw?.total ?? 0);
   }
   if (raw !== null && raw.total > 0) {
-    return input.coverage[source].dateBasis === input.timezone
-      ? partialMetric(raw.total)
-      : mixedMetric(raw.total);
+    return partialMetric(raw.total);
   }
-  return unobservedSourceMetric(input, source);
+  return unknownMetric();
 }
 
-function sourceSessionsForDate(input, date, source) {
-  const raw = input.days.get(date)?.[source] ?? null;
-  if (inRange(date, input.coverage[source].sessions)) {
+function sessionsForDate(input, date) {
+  const raw = input.days.get(date)?.codex ?? null;
+  if (inRange(date, input.coverage.sessions)) {
     if (raw?.sessions === null) {
-      return unobservedSourceMetric(input, source);
+      return unknownMetric();
     }
-    const value = raw === null || raw.sessions === undefined ? 0 : raw.sessions;
-    return input.coverage[source].dateBasis === input.timezone
-      ? completeMetric(value)
-      : mixedMetric(value);
+    return completeMetric(raw?.sessions ?? 0);
   }
   if (raw?.sessions !== null && raw?.sessions !== undefined && hasKnownSignal(raw)) {
-    return input.coverage[source].dateBasis === input.timezone
-      ? partialMetric(raw.sessions)
-      : mixedMetric(raw.sessions);
+    return partialMetric(raw.sessions);
   }
-  return unobservedSourceMetric(input, source);
+  return unknownMetric();
 }
 
-function combineMetrics(metrics, path) {
+function aggregateMetrics(metrics, path) {
   const known = metrics.filter((metric) => metric.value !== null);
   if (known.length === 0) {
     return unknownMetric();
@@ -285,42 +265,6 @@ function combineMetrics(metrics, path) {
     (sum, metric) => safeAdd(sum, metric.value, path),
     0,
   );
-  if (metrics.some((metric) => metric.coverage === 'mixed')) {
-    return mixedMetric(value);
-  }
-  return metrics.every((metric) => metric.coverage === 'complete')
-    ? completeMetric(value)
-    : partialMetric(value);
-}
-
-function totalForDate(input, date) {
-  return combineMetrics(
-    SOURCES.map((source) => sourceTotalForDate(input, date, source)),
-    `$.statistics.days.${date}.totalTokens`,
-  );
-}
-
-function sessionsForDate(input, date) {
-  return combineMetrics(
-    SOURCES.map((source) => sourceSessionsForDate(input, date, source)),
-    `$.statistics.days.${date}.sessions`,
-  );
-}
-
-function aggregateMetrics(metrics, path) {
-  const known = metrics.filter((metric) => metric.value !== null);
-  if (known.length === 0) {
-    return metrics.some((metric) => metric.coverage === 'mixed')
-      ? mixedMetric(null)
-      : unknownMetric();
-  }
-  const value = known.reduce(
-    (sum, metric) => safeAdd(sum, metric.value, path),
-    0,
-  );
-  if (metrics.some((metric) => metric.coverage === 'mixed')) {
-    return mixedMetric(value);
-  }
   return metrics.every((metric) => metric.coverage === 'complete')
     ? completeMetric(value)
     : partialMetric(value);
@@ -345,18 +289,7 @@ function summarizeRange(input, range) {
   };
 }
 
-function sourceRangeTotal(input, range, source) {
-  return aggregateMetrics(
-    eachDay(range.startDate, range.endDate)
-      .map((date) => sourceTotalForDate(input, date, source)),
-    `$.statistics.ranges.${range.startDate}.${range.endDate}.${source}`,
-  );
-}
-
 function comparison(current, previous) {
-  if (current.coverage === 'mixed' || previous.coverage === 'mixed') {
-    return { kind: 'mixed', percentage: null };
-  }
   if (current.coverage !== 'complete' || previous.coverage !== 'complete') {
     return { kind: 'unknown', percentage: null };
   }
@@ -391,11 +324,9 @@ function trackedStartDate(input, asOf) {
       candidates.push(date);
     }
   }
-  for (const source of SOURCES) {
-    const startDate = input.coverage[source].totals?.startDate;
-    if (startDate !== undefined && startDate <= asOf) {
-      candidates.push(startDate);
-    }
+  const coverageStart = input.coverage.totals?.startDate;
+  if (coverageStart !== undefined && coverageStart <= asOf) {
+    candidates.push(coverageStart);
   }
   return candidates.length === 0 ? null : candidates.toSorted()[0];
 }
@@ -406,144 +337,16 @@ function lifetimeStatistics(input, asOf) {
   const tracked = range === null
     ? { totalTokens: unknownMetric(), sessions: unknownMetric() }
     : summarizeRange(input, range);
-  const claudeTracked = range === null
-    ? unknownMetric()
-    : sourceRangeTotal(input, range, 'claude');
-  const codexTracked = range === null
-    ? unknownMetric()
-    : sourceRangeTotal(input, range, 'codex');
   const providerReported = input.codexLifetimeTotalTokens === null
     ? null
     : completeMetric(input.codexLifetimeTotalTokens);
-  const codexTotal = providerReported ?? codexTracked;
-  const totalTokens = combineMetrics(
-    [claudeTracked, codexTotal],
-    '$.statistics.lifetime.totalTokens',
-  );
 
   return {
     range,
     trackedTotalTokens: tracked.totalTokens,
-    totalTokens,
+    totalTokens: providerReported ?? tracked.totalTokens,
     sessions: tracked.sessions,
-    provenance: {
-      claude: 'tracked-daily',
-      codex: providerReported === null ? 'tracked-daily' : 'provider-reported',
-    },
-    sources: {
-      claude: {
-        provenance: 'tracked-daily',
-        totalTokens: claudeTracked,
-      },
-      codex: {
-        provenance: providerReported === null ? 'tracked-daily' : 'provider-reported',
-        totalTokens: codexTotal,
-        trackedTotalTokens: codexTracked,
-      },
-    },
-  };
-}
-
-function sourceShare(input, range) {
-  const claude = sourceRangeTotal(input, range, 'claude');
-  const codex = sourceRangeTotal(input, range, 'codex');
-  const totalTokens = combineMetrics(
-    [claude, codex],
-    '$.statistics.sourceShare.totalTokens',
-  );
-  const canComputeShare = ['complete', 'mixed'].includes(claude.coverage)
-    && ['complete', 'mixed'].includes(codex.coverage)
-    && claude.value !== null
-    && codex.value !== null
-    && totalTokens.value > 0;
-
-  return {
-    range: { ...range },
-    totalTokens,
-    sources: {
-      claude: {
-        totalTokens: claude,
-        percentage: canComputeShare ? (claude.value / totalTokens.value) * 100 : null,
-      },
-      codex: {
-        totalTokens: codex,
-        percentage: canComputeShare ? (codex.value / totalTokens.value) * 100 : null,
-      },
-    },
-  };
-}
-
-function tokenMix(input, range) {
-  const totals = {
-    input: 0,
-    output: 0,
-    cacheRead: 0,
-    cacheWrite: 0,
-    unknownTokens: 0,
-  };
-  let sawKnown = false;
-  let allComplete = true;
-  let sawMixed = false;
-
-  for (const date of eachDay(range.startDate, range.endDate)) {
-    for (const source of SOURCES) {
-      const total = sourceTotalForDate(input, date, source);
-      if (total.coverage === 'mixed') {
-        sawMixed = true;
-      }
-      if (total.value === null) {
-        allComplete = false;
-        continue;
-      }
-      sawKnown = true;
-      if (total.coverage !== 'complete' && total.coverage !== 'mixed') {
-        allComplete = false;
-      }
-
-      const raw = input.days.get(date)?.[source] ?? null;
-      const completeBreakdown = inRange(date, input.coverage[source].breakdown)
-        && (raw === null || BREAKDOWN_FIELDS.every((field) => raw[field] !== null));
-      if (!completeBreakdown) {
-        allComplete = false;
-      }
-
-      let classified = 0;
-      for (const field of BREAKDOWN_FIELDS) {
-        const value = raw?.[field] ?? 0;
-        if (value !== null) {
-          totals[field] = safeAdd(
-            totals[field],
-            value,
-            `$.statistics.tokenMix.${field}`,
-          );
-          classified = safeAdd(classified, value, `$.statistics.tokenMix.${date}.${source}`);
-        }
-      }
-      if (classified > total.value) {
-        fail('BREAKDOWN_EXCEEDS_TOTAL', `$.statistics.tokenMix.${date}.${source}`);
-      }
-      totals.unknownTokens = safeAdd(
-        totals.unknownTokens,
-        total.value - classified,
-        '$.statistics.tokenMix.unknownTokens',
-      );
-    }
-  }
-
-  return {
-    range: { ...range },
-    ...totals,
-    totalTokens: aggregateMetrics(
-      eachDay(range.startDate, range.endDate).map((date) => totalForDate(input, date)),
-      '$.statistics.tokenMix.totalTokens',
-    ),
-    coverage: !sawKnown
-      ? 'unknown'
-      : sawMixed
-        ? 'mixed'
-        : allComplete
-          ? 'complete'
-          : 'partial',
+    provenance: providerReported === null ? 'tracked-daily' : 'provider-reported',
   };
 }
 
@@ -570,18 +373,13 @@ function activityStatistics(input, asOf, lifetimeRange) {
   let longestRun = 0;
   let sawKnown = false;
   let sawUnknown = false;
-  let sawMixed = false;
-  let leftBoundaryActive = false;
+  let leftBoundaryRun = 0;
   let peak = null;
   let peakIncomplete = false;
-  let peakMixed = false;
 
   for (const [index, date] of dates.entries()) {
     const totalTokens = totalForDate(input, date);
     const state = stateForMetric(totalTokens);
-    if (totalTokens.coverage === 'mixed') {
-      sawMixed = true;
-    }
     if (state === 'unknown') {
       sawUnknown = true;
       currentRun = 0;
@@ -591,8 +389,8 @@ function activityStatistics(input, asOf, lifetimeRange) {
 
     sawKnown = true;
     if (state === 'active') {
-      if (index === 0) {
-        leftBoundaryActive = true;
+      if (index === leftBoundaryRun) {
+        leftBoundaryRun += 1;
       }
       activeDays += 1;
       currentRun += 1;
@@ -604,9 +402,7 @@ function activityStatistics(input, asOf, lifetimeRange) {
       ) {
         peak = { date, totalTokens: totalTokens.value };
       }
-      if (totalTokens.coverage === 'mixed') {
-        peakMixed = true;
-      } else if (totalTokens.coverage !== 'complete') {
+      if (totalTokens.coverage !== 'complete') {
         peakIncomplete = true;
       }
     } else {
@@ -616,22 +412,20 @@ function activityStatistics(input, asOf, lifetimeRange) {
 
   const binaryCoverage = !sawKnown
     ? 'unknown'
-    : sawMixed
-      ? 'mixed'
-      : sawUnknown
-        ? 'partial'
-        : 'complete';
+    : sawUnknown
+      ? 'partial'
+      : 'complete';
   const activeDaysMetric = binaryCoverage === 'unknown'
     ? unknownMetric()
     : observedMetric(activeDays, binaryCoverage);
-  const longestCoverage = binaryCoverage === 'complete' && leftBoundaryActive
+  const longestCoverage = binaryCoverage === 'complete'
+    && leftBoundaryRun > 0
+    && leftBoundaryRun === longestRun
     ? 'partial'
     : binaryCoverage;
-  const longestStreakMetric = sawMixed
-    ? mixedMetric(null)
-    : longestCoverage === 'unknown'
-      ? unknownMetric()
-      : observedMetric(longestRun, longestCoverage);
+  const longestStreakMetric = longestCoverage === 'unknown'
+    ? unknownMetric()
+    : observedMetric(longestRun, longestCoverage);
 
   let currentStreak = 0;
   let currentCoverage = 'partial';
@@ -648,15 +442,13 @@ function activityStatistics(input, asOf, lifetimeRange) {
     }
     break;
   }
-  const currentStreakMetric = sawMixed
-    ? mixedMetric(null)
-    : currentCoverage === 'unknown'
-      ? unknownMetric()
-      : observedMetric(currentStreak, currentCoverage);
+  const currentStreakMetric = currentCoverage === 'unknown'
+    ? unknownMetric()
+    : observedMetric(currentStreak, currentCoverage);
 
   const peakCoverage = peak === null
-    ? (sawMixed ? 'mixed' : sawUnknown ? 'unknown' : 'complete')
-    : (peakMixed ? 'mixed' : peakIncomplete ? 'partial' : 'complete');
+    ? (sawUnknown ? 'unknown' : 'complete')
+    : (peakIncomplete ? 'partial' : 'complete');
   return {
     activeDays: activeDaysMetric,
     currentStreak: currentStreakMetric,
@@ -730,9 +522,140 @@ function heatmapStatistics(input, asOf) {
   };
 }
 
+function completeTotalsRange(input, asOf) {
+  const coverage = input.coverage.totals;
+  if (coverage === null || coverage.startDate > asOf) {
+    return null;
+  }
+  const endDate = coverage.endDate < asOf ? coverage.endDate : asOf;
+  return coverage.startDate <= endDate
+    ? { startDate: coverage.startDate, endDate }
+    : null;
+}
+
+function unknownRecord() {
+  return {
+    value: null,
+    startDate: null,
+    endDate: null,
+    coverage: 'unknown',
+    lowerBound: false,
+  };
+}
+
+function completeRecord(value, startDate, endDate) {
+  return {
+    value,
+    startDate,
+    endDate,
+    coverage: 'complete',
+    lowerBound: false,
+  };
+}
+
+function bestWindow(input, asOf, windowDays, path) {
+  const range = completeTotalsRange(input, asOf);
+  if (range === null || daysBetween(range.startDate, range.endDate) + 1 < windowDays) {
+    return unknownRecord();
+  }
+
+  const lastStart = addDays(range.endDate, -(windowDays - 1));
+  let best = null;
+  for (const startDate of eachDay(range.startDate, lastStart)) {
+    const endDate = addDays(startDate, windowDays - 1);
+    const value = eachDay(startDate, endDate).reduce(
+      (sum, date) => safeAdd(
+        sum,
+        input.days.get(date)?.codex?.total ?? 0,
+        `${path}.${startDate}`,
+      ),
+      0,
+    );
+    if (best === null || value > best.value) {
+      best = completeRecord(value, startDate, endDate);
+    }
+  }
+  return best ?? unknownRecord();
+}
+
+function bestCompleteMonth(input, asOf) {
+  const range = completeTotalsRange(input, asOf);
+  if (range === null) {
+    return unknownRecord();
+  }
+
+  let current = monthStart(range.startDate);
+  if (current < range.startDate) {
+    current = shiftMonthStart(current, 1);
+  }
+  let best = null;
+  while (current <= range.endDate) {
+    const endDate = addDays(shiftMonthStart(current, 1), -1);
+    if (endDate > range.endDate) {
+      break;
+    }
+    const value = eachDay(current, endDate).reduce(
+      (sum, date) => safeAdd(
+        sum,
+        input.days.get(date)?.codex?.total ?? 0,
+        `$.statistics.records.bestMonth.${current}`,
+      ),
+      0,
+    );
+    if (best === null || value > best.value) {
+      best = completeRecord(value, current, endDate);
+    }
+    current = shiftMonthStart(current, 1);
+  }
+  return best ?? unknownRecord();
+}
+
+function recordStatistics(input, asOf) {
+  return {
+    peakDay: bestWindow(input, asOf, 1, '$.statistics.records.peakDay'),
+    best7: bestWindow(input, asOf, 7, '$.statistics.records.best7'),
+    best30: bestWindow(input, asOf, 30, '$.statistics.records.best30'),
+    bestMonth: bestCompleteMonth(input, asOf),
+  };
+}
+
+function achievementStatistics(lifetime, activity, rank) {
+  const peakMetric = {
+    value: activity.peak.totalTokens,
+    coverage: activity.peak.coverage,
+    lowerBound: activity.peak.lowerBound,
+  };
+  return [
+    {
+      id: 'billion-club',
+      label: 'Billion Club',
+      target: 1_000_000_000,
+      state: milestoneState(lifetime.totalTokens, 1_000_000_000),
+    },
+    {
+      id: 'ten-billion',
+      label: '10B Realm',
+      target: 10_000_000_000,
+      state: milestoneState(lifetime.totalTokens, 10_000_000_000),
+    },
+    {
+      id: 'century-active',
+      label: '100 Active Days',
+      target: 100,
+      state: milestoneState(activity.activeDays, 100),
+    },
+    {
+      id: 'billion-day',
+      label: 'Billion Day',
+      target: 1_000_000_000,
+      state: milestoneState(peakMetric, 1_000_000_000),
+    },
+  ].map((entry) => Object.freeze(entry));
+}
+
 /**
- * Computes deterministic, coverage-aware card statistics from mergeUsage output.
- * Unknown observations are never silently zero-filled outside their coverage.
+ * Computes deterministic, coverage-aware Codex card statistics.
+ * Missing dates are zero only inside declared coverage.
  */
 export function computeStatistics(merged, { asOf } = {}) {
   const input = normalizeInput(merged);
@@ -742,17 +665,24 @@ export function computeStatistics(merged, { asOf } = {}) {
   const asOfDate = resolveAsOf(asOf, input.timezone);
   const ranges = periodRanges(asOfDate);
   const periods = periodStatistics(input, ranges);
-  const rolling30Range = publicRange(ranges.rolling30.current);
   const lifetime = lifetimeStatistics(input, asOfDate);
+  const activity = activityStatistics(input, asOfDate, lifetime.range);
+  const rank = computeTokenRank(lifetime.totalTokens);
 
   return {
     asOf: asOfDate,
     timezone: input.timezone,
+    dateBasis: input.coverage.dateBasis,
+    calendarLabel: input.coverage.dateBasis === 'provider-calendar-date'
+      ? 'Codex account calendar'
+      : input.timezone,
+    codexSource: input.codexSource,
     periods,
     lifetime,
-    sourceShare: sourceShare(input, rolling30Range),
-    tokenMix: tokenMix(input, rolling30Range),
-    activity: activityStatistics(input, asOfDate, lifetime.range),
+    rank,
+    achievements: achievementStatistics(lifetime, activity, rank),
+    records: recordStatistics(input, asOfDate),
+    activity,
     trends: trendStatistics(input, trendBuckets(asOfDate)),
     heatmap: heatmapStatistics(input, asOfDate),
   };

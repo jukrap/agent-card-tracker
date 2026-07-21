@@ -1,7 +1,7 @@
 {
   "name": "agent-card-tracker",
   "version": "0.1.0",
-  "description": "Serverless multi-device Codex and Claude Code usage cards for GitHub profiles",
+  "description": "Serverless multi-device Codex RPG usage cards for GitHub profiles",
   "type": "module",
   "license": "MIT",
   "engines": {

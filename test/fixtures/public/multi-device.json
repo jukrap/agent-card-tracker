@@ -1,47 +1,13 @@
 {
   "deviceSnapshots": [
     {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "deviceId": "device-11111111111111111111111111111111",
       "writerKeyHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "generatedAt": "2026-07-19T08:00:00.000Z",
       "timezone": "UTC",
       "collectorVersion": "0.1.0",
       "sources": {
-        "claude": {
-          "status": "ok",
-          "lastSuccessfulAt": "2026-07-19T08:00:00.000Z",
-          "days": [
-            {
-              "date": "2026-07-18",
-              "inputTokens": 100,
-              "outputTokens": 200,
-              "cacheReadTokens": 300,
-              "cacheWriteTokens": 400,
-              "totalTokens": 1000,
-              "sessions": 2
-            },
-            {
-              "date": "2026-07-19",
-              "inputTokens": 200,
-              "outputTokens": 300,
-              "cacheReadTokens": 400,
-              "cacheWriteTokens": 500,
-              "totalTokens": 1400,
-              "sessions": 3
-            }
-          ],
-          "coverage": {
-            "totals": {
-              "startDate": "2026-07-18",
-              "endDate": "2026-07-19"
-            },
-            "sessions": {
-              "startDate": "2026-07-18",
-              "endDate": "2026-07-19"
-            }
-          }
-        },
         "codex": {
           "status": "ok",
           "lastSuccessfulAt": "2026-07-19T08:00:00.000Z",
@@ -70,38 +36,13 @@
       }
     },
     {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "deviceId": "device-22222222222222222222222222222222",
       "writerKeyHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "generatedAt": "2026-07-19T09:00:00.000Z",
       "timezone": "UTC",
       "collectorVersion": "0.1.0",
       "sources": {
-        "claude": {
-          "status": "ok",
-          "lastSuccessfulAt": "2026-07-19T09:00:00.000Z",
-          "days": [
-            {
-              "date": "2026-07-19",
-              "inputTokens": 10,
-              "outputTokens": 20,
-              "cacheReadTokens": 30,
-              "cacheWriteTokens": 40,
-              "totalTokens": 100,
-              "sessions": 1
-            }
-          ],
-          "coverage": {
-            "totals": {
-              "startDate": "2026-07-19",
-              "endDate": "2026-07-19"
-            },
-            "sessions": {
-              "startDate": "2026-07-19",
-              "endDate": "2026-07-19"
-            }
-          }
-        },
         "codex": {
           "status": "ok",
           "lastSuccessfulAt": "2026-07-19T09:00:00.000Z",

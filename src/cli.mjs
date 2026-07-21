@@ -20,7 +20,7 @@ Usage:
 
 Commands:
   setup          Create ignored local device configuration
-  collect        Collect sanitized Codex and Claude Code usage
+  collect        Collect sanitized local Codex usage
   profile        Collect the experimental Codex account profile
   render         Render static SVG cards
   validate       Validate public data and cards

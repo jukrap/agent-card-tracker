@@ -14,7 +14,7 @@ async function read(relativePath) {
   return readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8');
 }
 
-test('public documentation covers the supported serverless multi-device flow', async () => {
+test('public documentation covers the Codex-only serverless flow', async () => {
   const [english, korean] = await Promise.all([
     read('README.md'),
     read('README.ko.md'),
@@ -32,53 +32,60 @@ test('public documentation covers the supported serverless multi-device flow', a
     }
 
     assert.match(document, /Node(?:\.js)? 24/i);
+    assert.match(document, /ccusage codex/i);
     assert.match(document, /App Server/i);
     assert.match(document, /account\/usage\/read/);
     assert.match(document, /AGENT_CARD_CODEX_BIN/);
-    assert.match(document, /npm.{0,80}native Codex binary/is);
     assert.match(document, /account profile updated/i);
     assert.match(document, /device fallback/i);
     assert.match(document, /ChatGPT/);
     assert.match(document, /API[- ]key/i);
     assert.match(document, /profile candidate/i);
-    assert.match(document, /Claude Code/i);
+    assert.match(document, /schema (?:version )?2/i);
+    assert.match(document, /Rank XV/i);
+    assert.match(document, /Mythic/i);
+    assert.match(document, /Ascendant/i);
     assert.match(document, /raw (?:logs?|prompts?)/i);
     assert.match(document, /session IDs?/i);
-    assert.match(document, /(?:same|동일).{0,80}(?:raw )?logs?.{0,100}(?:duplicate|중복)/is);
     assert.match(document, /60 days|60일/i);
     assert.match(document, /delayed|지연/i);
     assert.match(document, /dropped|누락/i);
-    assert.match(document, /public repositor(?:y|ies)|공개 저장소/i);
+    assert.match(document, /public|공개/i);
     assert.match(document, /Unknown/);
     assert.match(document, /Partial/);
+    assert.doesNotMatch(document, /Claude Code/i);
+    assert.doesNotMatch(document, /Mixed|≈/);
   }
 
-  assert.match(english, /newest fresh.{0,100}profile candidate/is);
-  assert.match(english, /never (?:adds?|sums?).{0,80}(?:profile|local Codex)/is);
-  assert.match(english, /falls back.{0,120}all devices.{0,80}local Codex/is);
-  assert.match(korean, /가장 최신.{0,100}profile candidate/is);
-  assert.match(korean, /(?:절대|결코).{0,80}(?:합산|더하지)/is);
+  assert.match(english, /newest.{0,20}valid account profile candidate.{0,80}within 48 hours/is);
+  assert.match(english, /never adds account profile totals to local totals/is);
+  assert.match(english, /falls back to all devices' local Codex totals/is);
+  assert.match(korean, /48시간 안에 수집된 가장 최신.{0,80}account profile candidate/is);
+  assert.match(korean, /절대 더하지 않으며/is);
   assert.match(korean, /모든 기기의 로컬 Codex 합계로 자동 fallback/is);
 });
 
-test('README files contain the full-width and paired 49 percent GitHub layout', async () => {
+test('README files contain the six-card GitHub layout and compact alternative', async () => {
   const documents = await Promise.all([read('README.md'), read('README.ko.md')]);
   for (const document of documents) {
     for (const [card, width] of [
       ['overview', '100%'],
+      ['achievements', '49%'],
+      ['records', '49%'],
       ['trends', '49%'],
       ['activity', '49%'],
+      ['compact', '416'],
     ]) {
       const rawUrl = `https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/${card}.svg`;
       assert.match(
         document,
-        new RegExp(`<img width="${width.replace('%', '\\%')}" src="${rawUrl.replaceAll('.', '\\.')}"`),
+        new RegExp(`<img width="${width.replace('%', '\\%')}" src="${rawUrl.replaceAll('.', '\\.')}`),
       );
     }
   }
 });
 
-test('scheduler guides use the same sync command and local App Server prerequisites', async () => {
+test('scheduler guides use sync and document local App Server prerequisites', async () => {
   const windows = await read('docs/setup-windows.md');
   const unix = await read('docs/setup-unix.md');
 
@@ -88,10 +95,9 @@ test('scheduler guides use the same sync command and local App Server prerequisi
   assert.match(windows, /codex\.exe/i);
   assert.match(windows, /ChatGPT/);
   assert.match(windows, /AGENT_CARD_CODEX_BIN/);
-  assert.match(windows, /npm.{0,80}native binary/is);
   assert.match(windows, /account profile updated/i);
   assert.match(windows, /device fallback/i);
-  assert.match(windows, /device totals|local Codex/i);
+  assert.match(windows, /local Codex|Codex aggregates/i);
   assert.match(windows, /secret|credential|authentication/i);
 
   assert.match(unix, /launchd/);
@@ -104,14 +110,16 @@ test('scheduler guides use the same sync command and local App Server prerequisi
   assert.match(unix, /AGENT_CARD_CODEX_BIN/);
   assert.match(unix, /local Codex fallback/i);
   assert.match(unix, /secret|credential|authentication/i);
+  assert.doesNotMatch(windows + unix, /Claude Code|CLAUDE_CONFIG_DIR/i);
 });
 
-test('security policy provides private reporting and App Server privacy boundaries', async () => {
+test('security policy documents schema v2 and App Server privacy boundaries', async () => {
   const security = await read('SECURITY.md');
   assert.match(security, /private vulnerability reporting/i);
   assert.match(security, /supported/i);
   assert.match(security, /current `main`/i);
   assert.match(security, /coordinated disclosure/i);
+  assert.match(security, /schema-version 2/i);
   assert.match(security, /raw logs/i);
   assert.match(security, /public.{0,80}aggregate/is);
   assert.match(security, /App Server response bodies/i);
@@ -119,14 +127,12 @@ test('security policy provides private reporting and App Server privacy boundari
   assert.match(security, /AGENT_CARD_CODEX_BIN/);
 });
 
-test('legacy bearer environment example is removed', async () => {
+test('legacy bearer environment and unofficial endpoint guidance are absent', async () => {
   await assert.rejects(
     read('.env.example'),
     (error) => error?.code === 'ENOENT',
   );
-});
 
-test('public docs omit the retired bearer and unofficial endpoint guidance', async () => {
   const combined = (await Promise.all(PUBLIC_DOCS.map(read))).join('\n');
   assert.doesNotMatch(combined, /\.ai-agent-playbook|archive\/|archive\\/i);
   assert.doesNotMatch(combined, /Authorization:\s*Bearer\s+\S+/i);
@@ -135,23 +141,20 @@ test('public docs omit the retired bearer and unofficial endpoint guidance', asy
   assert.doesNotMatch(combined, /unofficial (?:profile )?endpoint/i);
 });
 
-test('README files explain mixed calendar observations without calling them lower bounds', async () => {
+test('README files explain one calendar basis and lower-bound fallback', async () => {
   const [english, korean] = await Promise.all([
     read('README.md'),
     read('README.ko.md'),
   ]);
 
   for (const document of [english, korean]) {
-    assert.match(document, /Mixed/);
-    assert.match(document, /≈/);
-    assert.match(document, /provider calendar date/i);
+    assert.match(document, /Codex account calendar/);
+    assert.match(document, /IANA timezone/i);
+    assert.match(document, /At least Rank/);
+    assert.match(document, /≥/);
+    assert.match(document, /records?/i);
   }
 
-  assert.match(english, /not a lower bound/i);
-  assert.match(english, /comparisons? and streaks?.{0,80}unavailable/is);
-  assert.match(english, /provider-reported lifetime.{0,100}(?:exact|unaffected)/is);
-
-  assert.match(korean, /하한이 아닙니다/);
-  assert.match(korean, /비교와 연속 활동.{0,80}표시하지 않습니다/is);
-  assert.match(korean, /provider가 보고한 lifetime.{0,100}(?:정확|영향받지)/is);
+  assert.match(english, /two date systems are never added together/i);
+  assert.match(korean, /서로 다른 날짜 체계를 더하지 않습니다/);
 });

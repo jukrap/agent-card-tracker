@@ -1,42 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="416" height="190" viewBox="0 0 416 190" role="img" aria-labelledby="usage-activity-title usage-activity-desc">
-<title id="usage-activity-title">AI usage activity</title>
-<desc id="usage-activity-desc">A 53 by 7 activity heatmap with active days, current and longest streaks, and peak usage through 2026-07-21. Unknown days are outlined; partial and mixed observations use dashed borders and text markers.</desc>
-<style>:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#0969da;--accent-soft:#ddf4ff;--claude:#9a6700;--codex:#0969da;--mixed:#8250df;--unknown:#57606a;--zero:#eaeef2;--on-accent:#ffffff;--on-partial:#ffffff;--on-mixed:#ffffff;--on-unknown:#ffffff;--heat-1:#b6e3ff;--heat-2:#54aeff;--heat-3:#218bff;--heat-4:#0969da}
-@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8c959f;--accent:#58a6ff;--accent-soft:#1f3b57;--claude:#d29922;--codex:#58a6ff;--mixed:#bc8cff;--unknown:#8c959f;--zero:#21262d;--on-accent:#0d1117;--on-partial:#0d1117;--on-mixed:#0d1117;--on-unknown:#0d1117;--heat-1:#0e4429;--heat-2:#006d32;--heat-3:#26a641;--heat-4:#39d353}}
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="190" viewBox="0 0 416 190" role="img" aria-labelledby="codex-activity-title codex-activity-desc">
+<title id="codex-activity-title">Codex activity</title>
+<desc id="codex-activity-desc">A 53 by 7 Codex activity heatmap with active days, streaks, and peak usage through 2026-07-21. Unknown days are outlined and partial observations are dashed.</desc>
+<style>:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#0969da;--accent-strong:#0550ae;--accent-soft:#ddf4ff;--common:#57606a;--uncommon:#1a7f37;--rare:#0969da;--epic:#8250df;--legendary:#9a6700;--on-rarity:#ffffff;--zero:#eaeef2;--unknown:#57606a;--heat-1:#b6e3ff;--heat-2:#54aeff;--heat-3:#218bff;--heat-4:#0969da}
+@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8c959f;--accent:#58a6ff;--accent-strong:#79c0ff;--accent-soft:#1f3b57;--common:#8c959f;--uncommon:#3fb950;--rare:#58a6ff;--epic:#bc8cff;--legendary:#d29922;--on-rarity:#0d1117;--zero:#21262d;--unknown:#8c959f;--heat-1:#0e4429;--heat-2:#006d32;--heat-3:#26a641;--heat-4:#39d353}}
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
-.heading{fill:var(--text);font-family:system-ui,sans-serif;font-size:14px;font-weight:600}
+.heading{fill:var(--text);font-family:system-ui,sans-serif;font-size:14px;font-weight:700}
 .subheading{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px}
-.label{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px;font-weight:600}
-.value{fill:var(--text);font-family:system-ui,sans-serif;font-size:17px;font-weight:600}
-.small-value{fill:var(--text);font-family:system-ui,sans-serif;font-size:11px;font-weight:600}
+.label{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px;font-weight:700;letter-spacing:.3px}
+.value{fill:var(--text);font-family:system-ui,sans-serif;font-size:17px;font-weight:700}
+.small-value{fill:var(--text);font-family:system-ui,sans-serif;font-size:11px;font-weight:700}
+.hero{fill:var(--text);font-family:system-ui,sans-serif;font-size:38px;font-weight:800;letter-spacing:-1.2px}
+.rank-title{fill:var(--text);font-family:system-ui,sans-serif;font-size:22px;font-weight:800;letter-spacing:.4px}
+.rank-roman{fill:var(--on-rarity);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:22px;font-weight:800}
+.rarity-label{fill:var(--on-rarity);font-family:system-ui,sans-serif;font-size:8px;font-weight:700}
+.exact{fill:var(--muted);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:9px}
 .meta{fill:var(--muted);font-family:system-ui,sans-serif;font-size:8px}
 .divider{stroke:var(--border);stroke-width:1}
-.bar-track{fill:var(--surface);stroke:var(--border);stroke-width:1}
-.source-claude{fill:var(--claude)}
-.source-codex{fill:var(--codex)}
-.mix-input{fill:#1a7f37}
-.mix-output{fill:#cf222e}
-.mix-cache-read{fill:#bf8700}
-.mix-cache-write{fill:#8250df}
-.mix-unknown{fill:var(--unknown)}
+.panel{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.progress-track{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.progress-fill{fill:var(--accent)}
 .trend-bar{fill:var(--accent)}
 .state-zero{fill:var(--zero)}
-.state-partial{fill:var(--accent);stroke:var(--claude);stroke-width:1;stroke-dasharray:2 2}
-.state-mixed{fill:var(--accent);stroke:var(--mixed);stroke-width:1;stroke-dasharray:4 2}
+.state-partial{fill:var(--accent);stroke:var(--legendary);stroke-width:1;stroke-dasharray:2 2}
 .state-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
 .state-future{fill:none;stroke:var(--border);stroke-width:1}
-.heat-cell{stroke:var(--border);stroke-width:0.5}
+.heat-cell{stroke:var(--border);stroke-width:.5}
 .level-1{fill:var(--heat-1)}
 .level-2{fill:var(--heat-2)}
 .level-3{fill:var(--heat-3)}
 .level-4{fill:var(--heat-4)}
-.coverage-partial{stroke:var(--claude);stroke-width:1;stroke-dasharray:1 1}
-.coverage-mixed{stroke:var(--mixed);stroke-width:1;stroke-dasharray:3 1}
-.coverage-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}</style>
+.coverage-partial{stroke:var(--legendary);stroke-width:1;stroke-dasharray:1 1}
+.coverage-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.rarity-common{fill:var(--common)}
+.rarity-uncommon{fill:var(--uncommon)}
+.rarity-rare{fill:var(--rare)}
+.rarity-epic{fill:var(--epic)}
+.rarity-legendary{fill:var(--legendary)}
+.rank-node{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.rank-node-unlocked{fill:var(--accent);stroke:var(--accent);stroke-width:1}
+.rank-node-current{fill:var(--bg);stroke:var(--epic);stroke-width:2}
+.seal-unlocked{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
+.seal-locked{fill:none;stroke:var(--border);stroke-width:1}
+.seal-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}</style>
 <rect class="card-bg" x="0.5" y="0.5" width="415" height="189" rx="6"/>
-<text class="heading" x="16" y="27">AI activity</text>
-<text class="subheading" x="16" y="43">53 weeks · through 2026-07-21 · ≈ mixed calendars</text>
+<text class="heading" x="16" y="27">Codex Activity</text>
+<text class="subheading" x="16" y="43">53 weeks · through 2026-07-21 · Monday start</text>
 <text class="meta" x="25" y="60" text-anchor="end">M</text>
 <text class="meta" x="25" y="67" text-anchor="end">T</text>
 <text class="meta" x="25" y="74" text-anchor="end">W</text>
@@ -254,162 +263,162 @@
 <rect class="heat-cell state-unknown level-0 coverage-unknown" x="234" y="83" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-unknown level-0 coverage-unknown" x="234" y="90" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-unknown level-0 coverage-unknown" x="234" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="241" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="241" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="241" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="241" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="241" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="241" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="241" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="248" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="248" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="248" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="248" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="248" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="248" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="248" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="255" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="255" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="255" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="255" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="255" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="255" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="255" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="262" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="262" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="262" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="262" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="262" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="262" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="262" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="269" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="269" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="269" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="269" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="269" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="269" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="269" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="276" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="276" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="276" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="276" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="276" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="276" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="276" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="283" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="283" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="283" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="283" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="283" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="283" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="283" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="290" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="290" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="290" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="290" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="290" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="290" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="290" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="297" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="297" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="297" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="297" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="297" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="297" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="297" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="304" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="304" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="304" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="304" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="304" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="304" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="304" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="311" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="311" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="311" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="311" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="311" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="311" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="311" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="318" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="318" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="318" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="318" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="318" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="318" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="318" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="325" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="325" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="325" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="325" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="325" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-zero level-0 coverage-mixed" x="325" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="325" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="332" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="332" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="332" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="332" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="332" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="332" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="332" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="339" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="339" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="339" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="339" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="339" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="339" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="339" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="346" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="346" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="346" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="346" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="346" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="346" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="346" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="353" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="353" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="353" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="353" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="353" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="353" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="353" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="360" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="360" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="360" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="360" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="360" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="360" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="360" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="367" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="367" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="367" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="367" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="367" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="367" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-1 coverage-mixed" x="367" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="374" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="374" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="374" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="374" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="374" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="374" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="374" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="381" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="381" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="381" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="381" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="381" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="381" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="381" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="388" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="388" y="62" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="388" y="69" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="388" y="76" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-3 coverage-mixed" x="388" y="83" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="388" y="90" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="388" y="97" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-4 coverage-mixed" x="395" y="55" width="5" height="5" rx="1"/>
-<rect class="heat-cell state-active level-2 coverage-mixed" x="395" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="241" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="241" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="241" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="241" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="241" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="241" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="241" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="248" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="248" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="248" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="248" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="248" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="248" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="248" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="255" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="255" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="255" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="255" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="255" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="255" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="255" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="262" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="262" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="262" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="262" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="262" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="262" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="262" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="269" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="269" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="269" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="269" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="269" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="269" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="269" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="276" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="276" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="276" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="276" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="276" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="276" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="276" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="283" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="283" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="283" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="283" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="283" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="283" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="283" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="290" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="290" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="290" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="290" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="290" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="290" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="290" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="297" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="297" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="297" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="297" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="297" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="297" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="297" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="304" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="304" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="304" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="304" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="304" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="304" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="304" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="311" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="311" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="311" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="311" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="311" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="311" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="311" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="318" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="318" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="318" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="318" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="318" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="318" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="318" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="325" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="325" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="325" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="325" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="325" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-zero level-0 coverage-complete" x="325" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="325" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="332" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="332" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="332" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="332" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="332" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="332" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="332" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="339" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="339" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="339" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="339" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="339" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="339" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="339" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="346" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="346" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="346" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="346" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="346" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="346" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="346" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="353" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="353" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="353" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="353" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="353" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="353" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="353" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="360" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="360" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="360" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="360" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="360" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="360" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="360" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="367" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="367" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="367" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="367" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="367" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="367" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-1 coverage-complete" x="367" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="374" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="374" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="374" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="374" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="374" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="374" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="374" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="381" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="381" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="381" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="381" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="381" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="381" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="381" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="388" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="388" y="62" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="388" y="69" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="388" y="76" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-3 coverage-complete" x="388" y="83" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="388" y="90" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="388" y="97" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-4 coverage-complete" x="395" y="55" width="5" height="5" rx="1"/>
+<rect class="heat-cell state-active level-2 coverage-complete" x="395" y="62" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="69" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="76" width="5" height="5" rx="1"/>
 <rect class="heat-cell state-future level-0 coverage-unknown" x="395" y="83" width="5" height="5" rx="1"/>
@@ -418,16 +427,13 @@
 <text class="meta" x="31" y="117">2025-07-21</text>
 <text class="meta" x="400" y="117" text-anchor="end">2026-07-26</text>
 <line class="divider" x1="16" y1="127" x2="400" y2="127"/>
-<text class="label" x="16" y="145">Active days</text>
-<text class="value" x="16" y="166">≈127</text>
-<text class="meta" x="16" y="180">Mixed</text>
-<text class="label" x="112" y="145">Current streak</text>
-<text class="value" x="112" y="166">—</text>
-<text class="meta" x="112" y="180">Mixed</text>
-<text class="label" x="208" y="145">Longest streak</text>
-<text class="value" x="208" y="166">—</text>
-<text class="meta" x="208" y="180">Mixed</text>
-<text class="label" x="304" y="145">Peak</text>
-<text class="value" x="304" y="166">≈1.82B</text>
-<text class="meta" x="304" y="180">Mixed</text>
+<text class="label" x="16" y="145">ACTIVE DAYS</text>
+<text class="value" x="16" y="166">127</text>
+<text class="label" x="112" y="145">CURRENT STREAK</text>
+<text class="value" x="112" y="166">66</text>
+<text class="label" x="208" y="145">LONGEST STREAK</text>
+<text class="value" x="208" y="166">66</text>
+<text class="label" x="304" y="145">PEAK</text>
+<text class="value" x="304" y="166">1.82B</text>
+<text class="meta" x="304" y="180">07-20</text>
 </svg>

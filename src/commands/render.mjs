@@ -15,12 +15,22 @@ import {
 } from '../domain/schema.mjs';
 import { computeStatistics } from '../domain/statistics.mjs';
 import { withRepositoryLock as defaultWithRepositoryLock } from '../git/repository.mjs';
+import { renderAchievements } from '../render/achievements.mjs';
 import { renderActivity } from '../render/activity.mjs';
+import { renderCompact } from '../render/compact.mjs';
 import { renderOverview } from '../render/overview.mjs';
+import { renderRecords } from '../render/records.mjs';
 import { validateSvgDocument } from '../render/svg-validator.mjs';
 import { renderTrends } from '../render/trends.mjs';
 
-const CARD_NAMES = Object.freeze(['overview', 'trends', 'activity']);
+const CARD_NAMES = Object.freeze([
+  'overview',
+  'achievements',
+  'records',
+  'trends',
+  'activity',
+  'compact',
+]);
 const HELP = `Render deterministic static SVG cards
 
 Usage:
@@ -200,7 +210,7 @@ async function stageCards({
 
 /**
  * Loads all sanitized public snapshots, computes coverage-aware statistics, and
- * atomically replaces the three deterministic card files after every SVG has
+ * atomically replaces the six deterministic card files after every SVG has
  * passed validation.
  */
 export async function renderCards({
@@ -232,11 +242,13 @@ export async function renderCards({
   const statistics = computeStatistics(merged, { asOf: asOfDate });
   const cards = {
     overview: renderOverview(statistics, {
-      codexSource: merged.codexSource,
       staleDeviceCount: merged.diagnostics.staleDeviceCount,
     }),
+    achievements: renderAchievements(statistics),
+    records: renderRecords(statistics),
     trends: renderTrends(statistics),
     activity: renderActivity(statistics),
+    compact: renderCompact(statistics),
   };
   const resolvedOutputDirectory = path.resolve(cwd, outputDirectory);
   await stageCards({
@@ -316,7 +328,7 @@ export async function run(
         asOfInstant: options.asOfInstant,
       }),
     );
-    write(io.stdout, `Rendered 3 cards as of ${result.asOf}.`);
+    write(io.stdout, `Rendered 6 cards as of ${result.asOf}.`);
     return 0;
   } catch (error) {
     const code = error instanceof RenderCommandError

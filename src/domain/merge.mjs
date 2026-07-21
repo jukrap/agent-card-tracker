@@ -110,21 +110,21 @@ function profileMetric(total) {
   };
 }
 
-function aggregateLocalSource(deviceSnapshots, sourceName) {
+function aggregateLocalSource(deviceSnapshots) {
   const byDate = new Map();
   let dayRecordCount = 0;
   let knownSessionRecordCount = 0;
   let unknownSessionRecordCount = 0;
 
   for (const snapshot of deviceSnapshots) {
-    for (const day of snapshot.sources[sourceName].days) {
+    for (const day of snapshot.sources.codex.days) {
       dayRecordCount += 1;
       const current = byDate.get(day.date) ?? emptyLocalAccumulator();
       for (const [inputField, outputField] of LOCAL_METRIC_FIELDS) {
         current[outputField] = safeAdd(
           current[outputField],
           day[inputField],
-          `$.days.${day.date}.${sourceName}.${outputField}`,
+          `$.days.${day.date}.codex.${outputField}`,
         );
       }
 
@@ -135,7 +135,7 @@ function aggregateLocalSource(deviceSnapshots, sourceName) {
         current.sessionTotal = safeAdd(
           current.sessionTotal,
           day.sessions,
-          `$.days.${day.date}.${sourceName}.sessions`,
+          `$.days.${day.date}.codex.sessions`,
         );
         knownSessionRecordCount += 1;
       }
@@ -164,8 +164,8 @@ function sessionCoverage(aggregate) {
   return 'partial';
 }
 
-function intersectCoverage(devices, sourceName, field) {
-  const ranges = devices.map((snapshot) => snapshot.sources[sourceName].coverage[field]);
+function intersectCoverage(devices, field) {
+  const ranges = devices.map((snapshot) => snapshot.sources.codex.coverage[field]);
   if (ranges.length === 0 || ranges.some((range) => range === null)) {
     return null;
   }
@@ -181,13 +181,13 @@ function intersectCoverage(devices, sourceName, field) {
   return startDate <= endDate ? { startDate, endDate } : null;
 }
 
-function localSourceCoverage(devices, sourceName, timezone) {
-  const totals = intersectCoverage(devices, sourceName, 'totals');
+function localSourceCoverage(devices, timezone) {
+  const totals = intersectCoverage(devices, 'totals');
   return {
     dateBasis: timezone,
     totals,
     breakdown: totals === null ? null : { ...totals },
-    sessions: intersectCoverage(devices, sourceName, 'sessions'),
+    sessions: intersectCoverage(devices, 'sessions'),
   };
 }
 
@@ -295,21 +295,6 @@ function selectProfileCandidates(profileCandidates, asOfMs, freshnessMs, futureC
   };
 }
 
-function combinedTokenMixCoverage(claudeAggregate, codexAggregate, selectedProfile) {
-  const hasClaude = claudeAggregate.dayRecordCount > 0;
-  const hasCodex = selectedProfile === null
-    ? codexAggregate.dayRecordCount > 0
-    : selectedProfile.daily.length > 0;
-
-  if (!hasClaude && !hasCodex) {
-    return 'none';
-  }
-  if (selectedProfile !== null && hasCodex) {
-    return hasClaude ? 'partial' : 'unavailable';
-  }
-  return 'complete';
-}
-
 /**
  * Deterministically merges sanitized, public usage snapshots.
  *
@@ -357,13 +342,12 @@ export function mergeUsage({
   );
   const selectedProfile = profileSelection.selected;
 
-  const claudeAggregate = aggregateLocalSource(devices, 'claude');
-  const localCodexAggregate = aggregateLocalSource(devices, 'codex');
+  const localCodexAggregate = aggregateLocalSource(devices);
   const profileByDate = new Map(
     selectedProfile?.daily.map((day) => [day.date, day.totalTokens]) ?? [],
   );
 
-  const dates = new Set(claudeAggregate.byDate.keys());
+  const dates = new Set();
   if (selectedProfile === null) {
     for (const date of localCodexAggregate.byDate.keys()) {
       dates.add(date);
@@ -376,7 +360,6 @@ export function mergeUsage({
 
   const days = [...dates].toSorted().map((date) => ({
     date,
-    claude: localMetric(claudeAggregate.byDate.get(date)),
     codex: selectedProfile === null
       ? localMetric(localCodexAggregate.byDate.get(date))
       : profileMetric(profileByDate.get(date) ?? 0),
@@ -391,13 +374,8 @@ export function mergeUsage({
     : Math.max(0, asOfMs - Date.parse(selectedProfile.collectedAt)) / HOUR_MS;
   const codexSource = selectedProfile === null ? 'devices' : 'profile';
 
-  const claudeCoverage = localSourceCoverage(
-    devices,
-    'claude',
-    mergedTimezone,
-  );
   const codexCoverage = selectedProfile === null
-    ? localSourceCoverage(devices, 'codex', mergedTimezone)
+    ? localSourceCoverage(devices, mergedTimezone)
     : profileCoverage(selectedProfile);
 
   const result = {
@@ -405,7 +383,6 @@ export function mergeUsage({
     timezone: mergedTimezone,
     days,
     coverage: {
-      claude: claudeCoverage,
       codex: codexCoverage,
     },
     diagnostics: {
@@ -424,15 +401,10 @@ export function mergeUsage({
           ? 'provider-reported'
           : 'unavailable',
       dateBasis: {
-        claude: claudeCoverage.dateBasis,
         codex: codexCoverage.dateBasis,
         profileDatesPreserved: selectedProfile !== null,
       },
       breakdownCoverage: {
-        claude: {
-          tokens: claudeAggregate.dayRecordCount === 0 ? 'none' : 'complete',
-          sessions: sessionCoverage(claudeAggregate),
-        },
         codex: selectedProfile === null
           ? {
               tokens: localCodexAggregate.dayRecordCount === 0 ? 'none' : 'complete',
@@ -442,11 +414,6 @@ export function mergeUsage({
               tokens: selectedProfile.daily.length === 0 ? 'none' : 'unavailable',
               sessions: selectedProfile.daily.length === 0 ? 'none' : 'unavailable',
             },
-        combinedTokenMix: combinedTokenMixCoverage(
-          claudeAggregate,
-          localCodexAggregate,
-          selectedProfile,
-        ),
       },
     },
   };

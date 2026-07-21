@@ -38,7 +38,14 @@ if (asOf === null || invalid) {
 } else {
   const firstRoot = await mkdtemp(path.join(os.tmpdir(), 'agent-card-determinism-a-'));
   const secondRoot = await mkdtemp(path.join(os.tmpdir(), 'agent-card-determinism-b-'));
-  const names = ['overview', 'trends', 'activity'];
+  const names = [
+    'overview',
+    'achievements',
+    'records',
+    'trends',
+    'activity',
+    'compact',
+  ];
 
   try {
     await renderCards({

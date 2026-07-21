@@ -29,22 +29,19 @@ function emptySource() {
 
 function validDeviceSnapshot() {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     deviceId: DEVICE_ID,
     writerKeyHash: WRITER_KEY_HASH,
     generatedAt: '2026-07-19T00:00:00.000Z',
     timezone: 'Asia/Seoul',
     collectorVersion: '0.1.0',
-    sources: {
-      claude: emptySource(),
-      codex: emptySource(),
-    },
+    sources: { codex: emptySource() },
   };
 }
 
 function validProfileCandidate() {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: 'codex-profile',
     deviceId: DEVICE_ID,
     writerKeyHash: WRITER_KEY_HASH,

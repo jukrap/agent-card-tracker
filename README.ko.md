@@ -2,66 +2,106 @@
 
 [English](README.md)
 
-Agent Card Tracker는 여러 컴퓨터의 Codex 및 Claude Code 사용량을 GitHub 프로필용 정적 SVG 카드 세 장으로 게시합니다. 각 컴퓨터가 자기 로컬 사용량을 수집하고, Git에는 익명 일별 집계만 저장하며, GitHub Actions가 전체 결과를 렌더링합니다. 계속 실행되는 개인 서버는 필요하지 않습니다.
+Agent Card Tracker는 Codex 계정 토큰 사용량을 GitHub 프로필용 정적 SVG 카드 6종으로 게시합니다. 로컬 작업이 정제된 데이터를 수집하고, Git으로 동기화한 뒤 GitHub Actions가 카드를 렌더링합니다. 계속 운영할 개인 서버는 필요하지 않습니다.
 
-이 카드는 토큰 활동을 보여줄 뿐 작업 품질이나 생산성을 측정하지 않습니다. 공개 저장소에서 사용하기 전에 [공개 범위와 개인정보](#공개-범위와-개인정보)를 확인하세요.
+카드의 칭호와 배지는 개인 milestone입니다. 사용자 간 순위, 생산성, 코드 품질, 개발 성과를 뜻하지 않습니다.
 
 ## 카드 구성
 
-- `overview.svg`: 오늘, 최근 7일/30일, 이번 달, lifetime 합계, source 비율, token mix
-- `trends.svg`: 최근 30일, 월요일 기준 12주, 최근 12개월 추세
-- `activity.svg`: 53주 heatmap, 활동일, 연속 활동, peak day
+- `overview.svg` — 누적 토큰, 정확한 전체 숫자, 현재 칭호, 다음 등급 진행률, 오늘·7일·30일·활동일
+- `achievements.svg` — crest, 20단계 rank track, 해제 등급 수, milestone seal 4개
+- `records.svg` — peak day, 최고 7일·30일 구간, 최고 완전한 달
+- `trends.svg` — 30일·12주·12개월 micro chart
+- `activity.svg` — 53×7 heatmap, 활동일, current/longest streak, peak
+- `compact.svg` — 선택형 416×96 rank badge
 
-GitHub 프로필 README에는 아래 HTML 배치를 사용합니다. overview는 전체 폭을 사용하고, trends와 activity는 다음 줄에서 각각 49%로 나란히 표시됩니다.
+GitHub 프로필 README의 기본 배치는 다음과 같습니다.
 
 ```html
 <p>
-  <img width="100%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/overview.svg" alt="AI usage overview">
+  <img width="100%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/overview.svg" alt="Codex player profile">
 </p>
 <p>
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/trends.svg" alt="AI usage trends">
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/activity.svg" alt="AI usage activity">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/achievements.svg" alt="Codex achievements">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/records.svg" alt="Codex personal records">
+</p>
+<p>
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/trends.svg" alt="Codex usage trends">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/activity.svg" alt="Codex activity">
 </p>
 ```
 
-SVG는 외부 리소스가 없는 단일 파일이며 light/dark palette와 접근성 메타데이터를 포함합니다. GitHub raw 콘텐츠 캐시 때문에 새 카드가 모든 화면에 반영되기까지 잠시 걸릴 수 있습니다.
+작은 배지가 더 어울리면 `compact.svg`만 사용할 수 있습니다.
 
-### 관측 상태 읽는 법
+```html
+<img width="416" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/compact.svg" alt="Codex rank badge">
+```
 
-누락된 관측값을 조용히 0으로 바꾸지 않습니다.
+SVG는 외부 font·image·animation·gradient 없이 한 파일로 완결됩니다. light/dark palette와 접근성 `<title>/<desc>`도 포함합니다. GitHub raw cache 때문에 갱신 직후에는 잠시 이전 이미지가 보일 수 있습니다.
 
-- **Complete**: 표시 구간에 필요한 모든 source가 완전히 관측됐습니다.
-- **Partial**: 구간 일부 또는 source 하나가 누락되어 현재 값이 하한입니다. 카드에서 `≥`와 점선 표현을 사용합니다.
-- **Mixed**: 하나 이상의 bucket이 설정 IANA timezone으로 정확히 대응할 수 없는 provider calendar date를 사용합니다. 표시 합계는 근삿값이며 하한이 아닙니다. 카드에서 `≈`와 별도의 점선 표현을 사용합니다.
-- **Unknown**: 신뢰할 수 있는 관측값이 없습니다. 카드에서 `—` 또는 테두리만 있는 cell/bar로 표시합니다.
-- `0`: 실제로 관측했고 사용량이 0입니다. Unknown과 다릅니다.
+## 토큰 칭호
 
-Mixed 관측이 포함된 구간에서는 날짜 경계가 일치한다고 보장할 수 없어 비교와 연속 활동을 표시하지 않습니다. source 비율, token mix, 추세 bar, heatmap cell, 활동일 수, peak day는 근삿값임을 명시합니다. provider가 보고한 lifetime 합계는 calendar bucket으로 계산하지 않으므로 이 불일치에 영향받지 않고 정확한 값으로 유지되지만, 일별 추적 lifetime은 Mixed일 수 있습니다.
+대표 등급은 lifetime token만으로 정합니다. 두 threshold 사이 진행률은 선형입니다.
 
-stale source 표시는 기기 snapshot 중 하나 이상이 72시간보다 오래됐다는 뜻입니다. 과거 값은 계속 포함됩니다. 계정 profile이 token 종류별 breakdown 없이 Codex 합계만 제공하면 해당 토큰은 Claude 사용량으로 오인되지 않도록 **Unknown mix**에 표시됩니다.
+| Rank | 칭호 | 최소 토큰 |
+|---:|---|---:|
+| I | Novice | 0 |
+| II | Initiate | 10K |
+| III | Apprentice | 50K |
+| IV | Adept | 100K |
+| V | Scout | 500K |
+| VI | Adventurer | 1M |
+| VII | Knight | 5M |
+| VIII | Veteran | 10M |
+| IX | Elite | 50M |
+| X | Champion | 100M |
+| XI | Hero | 500M |
+| XII | Warlord | 1B |
+| XIII | Overlord | 2.5B |
+| XIV | Paragon | 5B |
+| XV | Mythic | 10B |
+| XVI | Ascendant | 25B |
+| XVII | Immortal | 50B |
+| XVIII | Sovereign | 100B |
+| XIX | Eternal | 250B |
+| XX | Transcendent | 1T |
+
+Rank I–IV는 Common, V–VIII는 Uncommon, IX–XII는 Rare, XIII–XVI는 Epic, XVII–XX는 Legendary입니다. 색상만으로 상태를 구분하지 않도록 Roman numeral과 칭호를 항상 함께 표시합니다.
+
+계정 lifetime이 정확히 19.3B라면 `Rank XV · Mythic`이며 `Ascendant · 25B`까지 약 62%입니다. 로컬 fallback 합계는 관측된 하한이므로 `At least Rank …`, `≥…%`, `≥` total로 표시합니다. lifetime이 없으면 `Unranked`, 1T 이상이면 `MAX RANK`입니다.
+
+## Coverage와 기록
+
+누락 날짜는 선언된 coverage 안에서만 0으로 취급합니다. coverage 밖은 Unknown입니다.
+
+- `≥`와 점선은 알려진 하한인 Partial을 뜻합니다.
+- `—`와 outline-only bar/cell은 Unknown을 뜻합니다.
+- `0`은 실제로 관측된 0이며 Unknown과 다릅니다.
+
+정상적인 완전 관측 값에는 기술적인 상태 pill을 표시하지 않습니다. 계정 profile은 `Codex account calendar`를, device fallback은 설정한 IANA timezone을 사용합니다. 서로 다른 날짜 체계를 더하지 않습니다.
+
+Records는 coverage가 완전한 후보만 비교합니다. 그 안의 누락 날짜는 0이며, 동률이면 더 이른 날짜를 선택합니다. 일부만 관측된 7일·30일·달력 월은 후보가 아닙니다.
 
 ## 동작 구조
 
-1. 각 컴퓨터에서 고정 버전의 `ccusage`가 로컬 Codex와 Claude Code 기록을 읽고 일별 합계로 축약합니다.
-2. 컴퓨터마다 `data/devices/<opaque-device-id>.json` 하나를 덮어쓰며, 선택적으로 정제된 Codex profile candidate 하나를 게시합니다.
-3. `npm run sync`는 해당 컴퓨터의 집계 경로만 검증하고 Git으로 push합니다. 카드 파일은 게시하지 않습니다.
-4. GitHub Actions가 공개 데이터를 모두 검증·병합한 뒤 `cards/` 아래 SVG 세 장을 결정론적으로 생성합니다. `npm run publish-cards`는 명시적인 로컬 복구 경로입니다.
+1. 각 컴퓨터의 고정 collector가 로컬 기록에 `ccusage codex`를 실행하고 일별 집계로 축약합니다.
+2. 컴퓨터마다 `data/devices/<opaque-device-id>.json` 하나를 소유하며 정제된 account profile candidate 하나를 게시할 수 있습니다.
+3. `npm run sync`는 그 컴퓨터의 device/profile 경로만 검증하고 push합니다.
+4. GitHub Actions가 공개 snapshot을 병합해 `cards/` 아래 SVG 6종을 결정론적으로 생성합니다.
 
-Git이 동기화 계층이고 GitHub Actions가 renderer입니다. GitHub Actions나 다른 컴퓨터는 한 기기에 남아 있는 로컬 로그를 읽을 수 없습니다.
+Git은 동기화 계층입니다. GitHub Actions는 로컬 로그나 로컬 CLI 인증 상태를 읽을 수 없습니다.
 
 ## 요구 사항
 
 - Node.js 24 이상과 npm
 - Git
-- 참여하는 컴퓨터마다 `https://github.com/jukrap/agent-card-tracker.git`의 전용 clone
-- `main` push 권한과 예약 실행 계정에서 사용할 수 있는 비대화형 Git 인증
-- 모든 기기에 동일하게 설정할 `Asia/Seoul` 같은 IANA timezone
+- 참여 컴퓨터마다 `https://github.com/jukrap/agent-card-tracker.git` 전용 clone
+- 예약 실행에서도 동작하는 `main` push 인증
+- 모든 기기에서 같은 IANA timezone(예: `Asia/Seoul`)
 
-sync 안전 검사는 대상 저장소, 기본 `main` branch, upstream, 깨끗한 tracked working tree를 요구합니다. 개발 worktree나 다른 수정이 섞인 clone을 예약 수집에 쓰지 마세요.
+예약 sync는 올바른 저장소·`main`·upstream·깨끗한 tracked worktree를 요구합니다. 개발용 worktree가 아닌 전용 운영 clone을 사용하세요.
 
-## 모든 컴퓨터에서 빠른 시작
-
-아래 흐름을 컴퓨터마다 따로 실행합니다. `setup`은 각 기기에 서로 다른 익명 device ID와 비공개 writer key를 생성합니다.
+## 컴퓨터마다 시작하기
 
 ```console
 git clone https://github.com/jukrap/agent-card-tracker.git
@@ -71,130 +111,105 @@ npm run setup -- --timezone Asia/Seoul
 npm run sync
 ```
 
-모든 기기에서 같은 timezone을 사용하세요. 서로 다른 timezone이 섞이면 잘못된 일별 합계를 만들지 않고 병합이 실패합니다. `.agent-card.local.json`을 다른 컴퓨터에 복사하지 마세요. 복사된 config는 두 기기를 같은 writer로 보이게 하므로 지원하지 않습니다.
+`setup`은 컴퓨터마다 서로 다른 익명 device ID와 private writer key를 만듭니다. `.agent-card.local.json`을 다른 컴퓨터에 복사하지 마세요. 같은 identity를 재사용하면 ownership conflict와 중복 집계가 생길 수 있습니다.
 
-자동 실행은 [Windows Task Scheduler 설정](docs/setup-windows.md) 또는 [macOS launchd/Linux cron 설정](docs/setup-unix.md)을 참고하세요. 모두 전용 clone을 working directory로 삼아 같은 `npm run sync`를 호출합니다.
+자동 실행은 [Windows Task Scheduler 안내](docs/setup-windows.md) 또는 [macOS/Linux launchd·cron 안내](docs/setup-unix.md)를 따르세요.
 
-## Source 선택과 이중 집계 방지
+## 계정 profile과 device fallback
 
-Claude Code는 항상 모든 유효한 기기 snapshot의 합계를 사용합니다.
+`npm run profile`과 `npm run sync`는 로그인된 Codex CLI App Server를 shell 없이 JSONL stdio로 시작합니다. experimental API를 initialize한 뒤 `account/usage/read`를 호출합니다. 화면 scraping이나 비공식 HTTP endpoint, bearer 환경변수는 사용하지 않습니다.
 
-Codex는 아래 둘 중 정확히 하나만 사용합니다.
-
-1. 가장 최신이면서 유효 기간 안에 있는 profile candidate
-2. 그런 candidate가 없을 때 모든 유효한 기기의 로컬 Codex 합계
-
-profile과 로컬 Codex 값은 절대 서로 더하거나 합산하지 않습니다. 여러 컴퓨터가 만든 profile candidate도 합치지 않고 가장 최신 유효 candidate 하나만 고릅니다. profile candidate 유효 기간은 48시간이며, 없거나 잘못됐거나 만료됐거나 오래됐으면 결정론적으로 로컬 값으로 fallback합니다.
-
-session count를 얻을 수 있을 때는 session IDs 원문을 버리고 마지막 활동 시각이 속하는 설정 timezone 날짜별 unique session 수만 셉니다. session 조회 실패는 유효한 token 합계를 버리지 않고 session만 Unknown으로 둡니다.
-
-## 실험적 Codex 계정 profile
-
-`ccusage`는 현재 컴퓨터에 존재하는 로그만 읽습니다. 계정 전체 Codex 합계를 얻기 위해 `npm run profile`과 `npm run sync`는 로그인된 Codex CLI의 실험적 App Server를 로컬 JSONL stdio로 실행하고, experimental API를 활성화해 초기화한 뒤 `account/usage/read`를 호출합니다. Codex 앱 화면을 긁는 방식도 아니고 비공식 HTTP endpoint를 직접 호출하는 방식도 아닙니다.
-
-계정 전체 수집에는 다음이 필요합니다.
+계정 전체 수집 전제는 다음과 같습니다.
 
 - `PATH`에서 찾을 수 있는 최신 Codex CLI
-- 명령을 실행하는 동일한 OS 사용자로 완료된 ChatGPT 로그인
+- 명령을 실행하는 같은 OS 사용자 계정의 ChatGPT 로그인
 
-Windows에서는 `codex` shim 옆에 있는 npm 설치 native Codex binary를 패키지 앱의 `codex.exe`보다 우선합니다. 데스크톱 앱과 npm CLI가 함께 설치됐을 때 WindowsApps 실행 파일 충돌을 피하기 위한 동작입니다. 예약 실행 환경의 `PATH`에서 실행 파일을 찾을 수 없거나 설치 구조가 다르다면 비밀값이 아닌 `AGENT_CARD_CODEX_BIN` 환경변수에 절대 경로를 지정할 수 있습니다. 실행 파일 경로를 CLI argument로 받지 않으며, 계정 credential이나 endpoint override도 읽지 않습니다.
+Windows에서는 desktop package보다 npm으로 설치된 shim 옆 native Codex binary를 우선 탐색합니다. 자동 탐색이 부족한 경우에만 비밀값이 아닌 `AGENT_CARD_CODEX_BIN`에 실행 파일 절대 경로를 지정하세요.
 
-`npm run sync`는 계정 전체 수집에 성공하면 `account profile updated`, 로컬 로그 합계를 게시하면 `device fallback`을 출력합니다.
+Source 선택은 항상 하나입니다.
 
-API key만 사용하는 경우, 구버전 CLI, App Server 계정 사용량을 지원하지 않는 환경에서도 로컬 로그 기반 Codex·Claude Code 카드는 계속 동작합니다. 인증 실패, CLI 미설치, 미지원 method, timeout, 조기 종료, protocol 변경, 잘못된 응답이 발생하면 마지막 유효 profile candidate를 보존합니다. 그 candidate가 48시간보다 오래되면 모든 기기의 로컬 Codex 합계로 자동 fallback합니다. GitHub Actions는 App Server를 실행하지 않으며 로컬 CLI 로그인 상태도 전달받지 않습니다.
+1. 48시간 안에 수집된 가장 최신의 유효한 account profile candidate
+2. 그런 candidate가 없으면 모든 기기의 로컬 Codex 합계로 자동 fallback
 
-계정 전체 수집만 따로 확인하려면 다음을 실행합니다.
+계정 profile과 로컬 합계를 절대 더하지 않으며 여러 profile candidate도 합산하지 않습니다. `npm run sync` 출력은 `account profile updated` 또는 `device fallback`을 명시합니다.
+
+인증 실패, CLI 미설치, 미지원 method, timeout, 조기 종료, protocol 변경, 잘못된 응답이 발생하면 마지막 유효 profile candidate를 보존합니다. 48시간이 지나면 device fallback을 사용합니다. API key만 쓰거나 App Server account usage를 지원하지 않는 환경도 로컬 Codex 로그 카드 기능은 계속 사용할 수 있습니다.
+
+계정 응답에는 일별 total과 선택적인 정확한 lifetime total만 있습니다. 로컬 session 수와 token breakdown은 account profile에 없으므로 주 카드에서 0으로 표시하지 않고 제외합니다.
+
+계정 수집만 확인하려면 다음을 실행합니다.
 
 ```console
 npm run profile
 ```
 
-공개 schema는 version 1을 유지합니다. 정제된 일별 token 합계, 선택적 provider lifetime 합계, coverage metadata만 저장하며 App Server의 streak, peak, turn duration, identity, 원본 응답 필드는 게시하지 않습니다. provider calendar date는 설정 IANA timezone의 날짜로 가장하지 않고 그대로 유지하며, input/output/cache breakdown과 session 수가 없으면 Unknown입니다.
+## 공개 schema와 개인정보 경계
 
-## 공개 범위와 개인정보
+공개 device snapshot과 profile candidate는 schema version 2입니다. device `sources`에는 `codex`만 허용하며 schema v1과 알 수 없는 provider field는 거부합니다.
 
-공개 snapshot에 허용되는 값은 다음뿐입니다.
+공개 artifact에는 다음만 들어갑니다.
 
-- hostname과 무관한 random device ID 및 writer key의 one-way hash
-- 수집 시각, 설정 timezone, schema/collector version, 정제된 상태 코드
-- 일별 input, output, cache-read, cache-write, total token 및 선택적 session 수
-- profile candidate의 정제된 일별 합계, 제공되는 경우 lifetime 합계, coverage metadata
+- 무작위 device ID와 writer key의 단방향 hash
+- 수집 시각, timezone, schema/collector version, 정제된 상태 code
+- 로컬 일별 input/output/cache-read/cache-write/total token 및 선택적인 session count
+- 계정 일별 total, 선택적인 lifetime total, coverage metadata
 
-raw logs, raw prompts나 responses, project 이름, 파일 경로, session IDs, 계정 identity, email, hostname, username, Git credential, API key, access token, CLI 인증 상태, App Server 원본 응답은 저장하지 않습니다. exact allowlist와 repository validator가 알 수 없는 필드 및 secret/path 형태의 공개 콘텐츠를 거절합니다.
+raw logs, prompts, responses, project name, file path, session ID, account identity, email, hostname, username, Git credential, API key, access token, CLI authentication state, stderr, App Server response body는 공개하지 않습니다. 정확한 allowlist와 repository validator가 unknown field, active/external SVG resource, secret/path 형태 값을 거부합니다.
 
-집계 데이터 자체는 의도적으로 공개됩니다. token 양, 활동 날짜, timezone, session 수, 수집 freshness로 작업 패턴을 유추할 수 있습니다. 이 metadata가 민감하다면 private repository를 사용해야 하지만, private repository의 GitHub Actions 비용 조건은 다르며 여기의 공개 profile URL도 비로그인 독자에게 동작하지 않습니다.
+집계 데이터 자체는 공개이며 token volume, active date, timezone, collection cadence, stale-device event를 드러낼 수 있습니다. 이 metadata가 민감하면 private repository를 사용해야 하지만 unauthenticated profile image URL과 Actions billing 조건은 달라집니다.
 
-동일한 raw logs를 여러 컴퓨터에 복사하면 collector가 같은 이벤트임을 증명할 수 없어 해당 날짜가 중복 집계될 수 있습니다. 각 로그 이력은 한 기기만 authoritative source로 유지하거나, 교체된 기기의 snapshot을 새 기기 sync 전에 제거하세요.
+같은 raw logs를 여러 컴퓨터에 복사하면 겹치는 날짜가 중복될 수 있습니다. log history마다 authoritative copy 하나를 유지하거나 대체된 공개 snapshot을 명시적으로 제거하세요.
 
-보안 경계와 비공개 취약점 제보 방법은 [SECURITY.md](SECURITY.md)를 확인하세요.
+보안 제보와 위협 경계는 [SECURITY.md](SECURITY.md)를 참고하세요.
 
-## 자동화와 비용
+## 자동화와 복구
 
-이 저장소는 공개 저장소의 standard GitHub-hosted runner를 사용합니다. 현재 [GitHub Actions billing 문서](https://docs.github.com/en/actions/concepts/billing-and-usage)에 따르면 이 조건의 runner 사용은 무료입니다. private repository, larger runner, 제3자 서비스, 네트워크 사용료, 향후 GitHub 정책 변경은 개인 서버 비용 없음이라는 범위에 포함되지 않습니다.
+Render workflow는 data push, 매일 off-the-hour schedule, 수동 dispatch에서 실행됩니다. GitHub 예약 workflow는 best effort이므로 지연·누락되거나 저장소 활동이 60일 없으면 비활성화될 수 있습니다.
 
-render workflow는 data push, 매일 정각을 피한 schedule, 수동 dispatch로 실행됩니다. GitHub 공식 문서에 따르면 scheduled workflow는 높은 부하에서 지연되거나 dropped(누락)될 수 있고, 공개 저장소에 60일 동안 활동이 없으면 자동 비활성화될 수 있습니다. 자세한 내용은 [Events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)를 참고하세요. schedule은 best effort로 취급해야 합니다.
+카드가 오래됐다면 다음 순서로 확인합니다.
 
-카드가 없거나 오래됐다면 다음 순서로 복구합니다.
-
-1. 기기에서 `npm run sync`를 실행해 공개 snapshot을 갱신합니다.
-2. 저장소 Actions 탭에서 **Render usage cards** 상태를 확인하거나 수동 실행합니다.
-3. Actions를 계속 사용할 수 없으면 로컬에서 검증된 결정론적 카드를 게시합니다.
+1. `npm run sync` 실행
+2. GitHub Actions의 **Render usage cards** 확인 또는 수동 실행
+3. Actions를 쓸 수 없으면 다음 local recovery 실행
 
 ```console
 npm run publish-cards -- --as-of YYYY-MM-DD
 ```
 
-`YYYY-MM-DD`에는 기준 calendar date를 넣습니다. 복구 명령은 render와 validation을 수행하고 카드 세 경로만 stage하며 sync와 같은 제한적 충돌 처리를 사용합니다.
+복구 명령은 SVG 6종만 렌더·검증·stage하며 conflict retry 범위도 제한합니다.
 
-## 기기 수명주기와 복구
+Sync는 force-push하지 않습니다. 인증 실패 시 복구 가능한 local commit을 보존합니다. `REMOTE_UPDATE_REQUIRES_RESTART`는 upstream의 code·dependency·workflow·config가 바뀌었다는 뜻입니다. scheduler를 멈추고 전용 clone을 갱신한 뒤 `npm ci --ignore-scripts`와 `npm run validate`를 실행하고 새 sync를 시작하세요.
 
-### 기기 추가
+`sync`, standalone `render`, `publish-cards`는 `.git/agent-card-sync.lock`을 공유합니다. `SYNC_STALE_LOCK`이면 scheduler를 멈추고 해당 clone을 사용하는 process가 없음을 확인한 뒤 정확히 그 lock file 하나만 삭제하세요. 자세한 절차는 OS별 안내를 따르고 `.git` 전체를 재귀 삭제하지 마세요.
 
-새 전용 clone을 만들고 `npm ci`, 같은 timezone의 `setup`, `sync` 순서로 실행합니다. 다른 기기의 local config를 재사용하지 않습니다.
+## 기기 수명주기
 
-### 기기 교체 또는 폐기
+기기를 추가할 때는 새 전용 clone에서 dependency를 설치하고 같은 timezone으로 `setup`한 뒤 `sync`합니다.
 
-local config를 교체하거나 기기를 대체하기 전에 먼저 해당 scheduler를 중단합니다. 기기 JSON을 유지하면 과거 사용량도 유지되고 시간이 지나 stale로 표시됩니다. device/profile JSON을 제거하면 그 기기의 과거 기여분도 합계에서 사라집니다.
+기기를 폐기할 때는 scheduler부터 멈춥니다. device snapshot을 남기면 history를 보존하고 나중에 stale로 표시하며, device/profile 파일을 지우면 이후 카드에서 그 history도 제거됩니다. 대체 컴퓨터가 기존 local history를 복사했다면 새 identity를 sync하기 전에 겹치는 snapshot을 정리하세요.
 
-교체 컴퓨터나 새 config가 같은 raw log 이력을 사용한다면 이전 snapshot과 새 snapshot을 함께 두지 마세요. 겹치는 날짜가 두 번 합산됩니다. 새 identity를 sync하기 전에 이전 device/profile snapshot과 겹치는 이력을 명시적으로 정리합니다. 새 컴퓨터가 새 로그로만 시작한다면 이전 snapshot은 과거 이력용으로 유지하고 새 config를 만듭니다. config를 잃었지만 같은 로그를 유지하는 경우에도 같은 중복 기준으로 판단해야 합니다. `setup`은 기존 config를 덮어쓰지 않으며, 이를 임의로 재구성하거나 복사하면 안 됩니다.
+## 제한 사항
 
-### Push 또는 ownership 충돌
-
-sync는 먼저 fetch하고, 자신의 device/profile 경로가 원격에서 바뀌지 않은 경우에만 non-fast-forward push를 최대 세 번 재시도합니다. force push나 conflict side 자동 선택은 하지 않습니다. 인증 실패라면 예약 실행 사용자에게 보이는 Git credential을 고치고 sync를 다시 실행하세요. path ownership/collision 오류라면 해당 config를 쓰는 모든 writer를 중단하고 실제 소유 기기를 정한 다음, 중복 기기에 새 config를 만들고 겹치는 로그를 정리한 뒤 재시도합니다.
-
-`REMOTE_UPDATE_REQUIRES_RESTART`는 가져온 branch에서 공개 snapshot/card 외의 코드, 의존성, workflow, 설정이 바뀌었다는 뜻입니다. scheduler를 중지하고 force push 없이 전용 clone을 `origin/main`으로 갱신한 뒤 `npm ci --ignore-scripts`, `npm run validate`를 실행하고 새 `npm run sync` process를 시작하세요. 실패한 실행이 게시 commit 하나를 보존했다면 검증된 그 commit만 `origin/main` 위로 rebase하고, conflict가 발생하면 한쪽을 자동 선택하지 말고 abort한 뒤 원인을 확인하세요.
-
-그 밖의 push 실패에서도 복구 가능한 local commit은 보존됩니다. 전용 clone을 깨끗하게 유지하고 `main` 최신 상태를 반영한 뒤 `npm run validate`와 `npm run sync`를 다시 실행하세요. 복구를 위해 force push하지 마세요.
-
-### 오래된 저장소 lock
-
-`sync`, 단독 `render`, `publish-cards`는 정확히 `.git/agent-card-sync.lock` 파일 하나를 공유합니다. `SYNC_STALE_LOCK`은 의도적인 fail-closed 오류입니다. 확인과 삭제 사이에 다른 process가 lock을 교체하거나 다시 획득할 수 있으므로 명령이 오래돼 보이는 lock을 자동 삭제하지 않습니다.
-
-다음 순서를 지키세요. 먼저 해당 clone의 scheduler를 중지하고 비활성화합니다. 그 정확한 clone에서 `sync`, `render`, `publish-cards`를 실행 중인 `agent-card`, `npm`, `node` process가 하나도 없는지 확인합니다. `.git/agent-card-sync.lock` 내용을 점검하고 그 파일 하나만 삭제한 뒤 원래 명령을 다시 실행합니다. wildcard, 재귀 삭제, 광범위한 `.git` 정리를 사용하지 마세요. 정확한 명령은 [Windows 가이드](docs/setup-windows.md#sync_stale_lock) 또는 [macOS/Linux 가이드](docs/setup-unix.md#sync_stale_lock)를 따르세요.
-
-## 한계
-
-- 실험적 App Server 계정 사용량 method의 안정성은 보장되지 않으며 로컬 로그와 집계 범위가 다를 수 있습니다.
-- provider calendar date에는 시각/timezone 정보가 없어 timezone 변환하지 않습니다.
-- token 종류와 합계는 upstream `ccusage`/profile 의미를 따르며 billing 기록이 아닙니다.
-- token 수, session, streak, activity는 생산성, 정확성, engineering impact를 측정하지 않습니다.
-- 기기별 집계만으로 여러 기기에 복사된 로그를 deduplicate할 수 없습니다.
-- 공개 Git 저장소는 commit된 집계와 그 history를 모두 노출합니다.
-- scheduled Actions는 best effort이므로 local scheduler와 `publish-cards` 복구 경로가 필요합니다.
+- experimental App Server protocol은 바뀔 수 있고 local log와 범위가 다를 수 있습니다.
+- provider 일별 payload에 시각/timezone이 없어 calendar date를 그대로 보존합니다.
+- token total은 upstream `ccusage`와 account profile 의미를 따르며 billing record가 아닙니다.
+- device aggregation은 복사된 log를 deduplicate할 수 없습니다.
+- public Git history에는 과거 aggregate가 남습니다.
+- scheduled Actions는 best effort입니다.
 
 ## 로컬 명령
 
 ```console
 npm run collect
+npm run profile
 npm run render -- --as-of YYYY-MM-DD
 npm run validate
 npm run check:determinism -- --as-of YYYY-MM-DD
 npm run check
 ```
 
-`render`와 결정론 검사는 명시적인 `--as-of` 날짜를 요구하므로 입력이 같으면 byte-for-byte 같은 SVG를 생성합니다.
-단독 `render`는 `sync`, `publish-cards`와 같은 저장소 lock을 사용하며, 이미 그 lock을 보유한 호출자를 위한 programmatic renderer는 lock을 다시 획득하지 않습니다.
+`render`와 determinism 검사는 명시적인 날짜를 요구하므로 같은 입력에서 byte-for-byte 같은 SVG가 나옵니다.
 
 ## 라이선스
 
-MIT. [LICENSE](LICENSE)와 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 확인하세요.
+MIT. [LICENSE](LICENSE)와 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 참고하세요.

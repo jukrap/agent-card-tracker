@@ -44,11 +44,11 @@ test('explicit as-of instant controls freshness while the date controls statisti
   await renderCards({ cwd, asOf: AS_OF, asOfInstant: AS_OF_INSTANT });
   const explicit = await readFile(path.join(cwd, 'cards', 'overview.svg'), 'utf8');
   assert.match(explicit, /As of 2026-07-20 · Asia\/Seoul/);
-  assert.doesNotMatch(explicit, /stale source/);
+  assert.doesNotMatch(explicit, /stale device/);
 
   await renderCards({ cwd, asOf: AS_OF });
   const implicit = await readFile(path.join(cwd, 'cards', 'overview.svg'), 'utf8');
-  assert.match(implicit, /1 stale source/);
+  assert.match(implicit, /1 stale device/);
 });
 
 test('explicit instant must be canonical UTC and belong to the configured timezone date', async (t) => {

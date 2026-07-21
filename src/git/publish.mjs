@@ -24,8 +24,11 @@ const UNSAFE_ATTRIBUTES = Object.freeze([
   'ident',
 ]);
 const SAFE_REMOTE_CARD_PATHS = new Set([
+  'cards/achievements.svg',
   'cards/activity.svg',
+  'cards/compact.svg',
   'cards/overview.svg',
+  'cards/records.svg',
   'cards/trends.svg',
 ]);
 const SAFE_REMOTE_DATA_PATH_PATTERN = /^data\/(?:devices|profiles)\/device-[0-9a-f]{32}\.json$/u;

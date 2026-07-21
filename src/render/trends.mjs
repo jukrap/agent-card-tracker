@@ -11,9 +11,6 @@ function metricState(metric) {
   if (metric.coverage === 'partial') {
     return 'partial';
   }
-  if (metric.coverage === 'mixed') {
-    return 'mixed';
-  }
   return metric.value === 0 ? 'zero' : 'active';
 }
 
@@ -23,7 +20,6 @@ function chart(statistics, name, label, y) {
     .map((bucket) => bucket.totalTokens.value)
     .filter((value) => value !== null);
   const maximum = Math.max(0, ...knownValues);
-  const hasMixedCalendars = buckets.some((bucket) => bucket.totalTokens.coverage === 'mixed');
   const hasPartial = buckets.some((bucket) => bucket.totalTokens.coverage === 'partial');
   const plotX = 118;
   const plotWidth = 282;
@@ -43,7 +39,7 @@ function chart(statistics, name, label, y) {
     return `<rect class="trend-bar state-${state}" x="${x}" y="${baseline - height}" width="${barWidth}" height="${height}" rx="1"/>`;
   });
   const peak = knownValues.length === 0 ? '—' : formatCompactNumber(maximum);
-  const qualifier = hasMixedCalendars ? '≈' : hasPartial ? '≥' : '';
+  const qualifier = hasPartial ? '≥' : '';
 
   return [
     `<text class="label" x="16" y="${y + 11}">${escapeXml(label)}</text>`,
@@ -61,23 +57,23 @@ export function renderTrends(statistics) {
   ];
   const empty = allBuckets.every((bucket) => bucket.totalTokens.value === null);
   const body = [
-    '<text class="heading" x="16" y="27">Usage trends</text>',
-    `<text class="subheading" x="16" y="43">As of ${escapeXml(statistics.asOf)}${empty ? ' · No observed usage yet' : ''}</text>`,
-    '<text class="meta" x="400" y="43" text-anchor="end">≥ partial · ≈ mixed · dashed unknown</text>',
-    chart(statistics, 'daily', '30 days', 55),
+    '<text class="heading" x="16" y="27">Codex Usage Trends</text>',
+    `<text class="subheading" x="16" y="43">As of ${escapeXml(statistics.asOf)} · ${escapeXml(statistics.calendarLabel)}${empty ? ' · No observed usage yet' : ''}</text>`,
+    '<text class="meta" x="400" y="43" text-anchor="end">≥ partial · dashed unknown</text>',
+    chart(statistics, 'daily', '30 DAYS', 55),
     '<line class="divider" x1="16" y1="92" x2="400" y2="92"/>',
-    chart(statistics, 'weekly', '12 weeks', 98),
+    chart(statistics, 'weekly', '12 WEEKS', 98),
     '<line class="divider" x1="16" y1="135" x2="400" y2="135"/>',
-    chart(statistics, 'monthly', '12 months', 141),
+    chart(statistics, 'monthly', '12 MONTHS', 141),
     '<text class="meta" x="400" y="184" text-anchor="end">Monday weeks · calendar months</text>',
   ].join('\n');
 
   return cardDocument({
-    id: 'usage-trends',
+    id: 'codex-usage-trends',
     width: 416,
     height: 190,
-    title: 'AI usage trends',
-    description: `Daily, weekly, and monthly token micro charts as of ${statistics.asOf}. Partial bars are dashed, mixed calendar bars use an approximate marker, and unknown bars are outlines.`,
+    title: 'Codex usage trends',
+    description: `Daily, weekly, and monthly Codex token charts as of ${statistics.asOf}. Partial bars are dashed and unknown bars are outlines.`,
     body,
   });
 }

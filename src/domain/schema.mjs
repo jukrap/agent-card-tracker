@@ -1,6 +1,6 @@
 import { stableStringify } from '../lib/atomic-file.mjs';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const DEVICE_ID_PATTERN = /^device-[0-9a-f]{32}$/;
 const WRITER_KEY_HASH_PATTERN = /^[0-9a-f]{64}$/;
@@ -345,8 +345,7 @@ export function validateDeviceSnapshot(snapshot) {
     fail('COLLECTOR_VERSION', '$.collectorVersion');
   }
 
-  assertExactKeys(snapshot.sources, ['claude', 'codex'], [], '$.sources');
-  validateSource(snapshot.sources.claude, '$.sources.claude');
+  assertExactKeys(snapshot.sources, ['codex'], [], '$.sources');
   validateSource(snapshot.sources.codex, '$.sources.codex');
   return snapshot;
 }

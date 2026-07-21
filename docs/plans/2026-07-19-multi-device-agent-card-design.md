@@ -1,3 +1,5 @@
+> **Superseded:** The current product is Codex-only, uses public schema v2, and renders six RPG usage cards. This document remains historical context.
+
 # Multi-device AI usage card design
 
 ## Purpose

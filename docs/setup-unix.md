@@ -1,6 +1,6 @@
 # macOS and Linux scheduled sync
 
-Both examples run the same `npm run sync` command from a dedicated clone. Use `launchd` on macOS and a user `cron` entry on Linux. Run the scheduler as the user whose local Codex/Claude Code logs and Git credentials should be used.
+Both examples run the same `npm run sync` command from a dedicated clone. Use `launchd` on macOS and a user `cron` entry on Linux. Run the scheduler as the user whose local Codex logs, ChatGPT sign-in, and Git credentials should be used.
 
 ## 1. Prepare the dedicated clone
 
@@ -67,7 +67,7 @@ Create `io.github.jukrap.agent-card-tracker.plist` under your user LaunchAgents 
 </plist>
 ```
 
-This `ProgramArguments` array is the non-shell form of `npm run sync`; `WorkingDirectory` must be the clone root. The `PATH` must contain the directory of the resolved `node` executable. If local history uses a customized `CODEX_HOME` or `CLAUDE_CONFIG_DIR`, add only the required non-secret path to `EnvironmentVariables` in this private local plist.
+This `ProgramArguments` array is the non-shell form of `npm run sync`; `WorkingDirectory` must be the clone root. The `PATH` must contain the directories of the resolved `node` and Codex CLI executables. If local history uses a customized `CODEX_HOME`, add only that required non-secret path to `EnvironmentVariables` in this private local plist.
 
 Protect and load the file:
 
@@ -108,7 +108,7 @@ Git authentication must work without a prompt for the scheduler's user. Prefer a
 
 For account-wide Codex totals, install a recent Codex CLI and complete its ChatGPT sign-in as the same user that owns the launchd job or crontab. Background jobs often have a smaller `PATH`; add the CLI directory to the private scheduler environment or set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to the executable's absolute path.
 
-Do not copy CLI authentication files or place credentials in a plist, crontab, repository file, shell history, wrapper, or log. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex and Claude Code aggregates and rendering uses the all-device local Codex fallback. GitHub Actions neither starts the App Server nor receives local CLI authentication state.
+Do not copy CLI authentication files or place credentials in a plist, crontab, repository file, shell history, wrapper, or log. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex aggregates and rendering uses the all-device local Codex fallback. GitHub Actions neither starts the App Server nor receives local CLI authentication state.
 
 ## Verify and recover
 
@@ -128,7 +128,7 @@ npm run validate
 ```
 
 - On a missing npm/node error, fix the absolute executable and `PATH`; do not rely on `.profile`, `.zshrc`, or `.bashrc`.
-- On missing local usage, confirm the scheduler user and its `HOME`, `CODEX_HOME`, or `CLAUDE_CONFIG_DIR` without printing private paths into public logs.
+- On missing local usage, confirm the scheduler user and its `HOME` or `CODEX_HOME` without printing private paths into public logs.
 - On Git authentication failure, repair the scheduled user's credential and rerun. A recoverable local commit is preserved; never force-push.
 - On a device/profile ownership collision, stop duplicate writers, give the duplicate computer a fresh setup, and resolve any overlapping raw logs before retrying.
 - On `REMOTE_UPDATE_REQUIRES_RESTART`, unload/disable the scheduler, update the dedicated clone from `origin/main` without force-pushing, run `npm ci --ignore-scripts` and `npm run validate`, then launch a fresh sync. If one verified publication commit was preserved, rebase only that commit and abort on any conflict.

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="846" height="210" viewBox="0 0 846 210" role="img" aria-labelledby="codex-player-profile-title codex-player-profile-desc">
-<title id="codex-player-profile-title">Codex player profile</title>
-<desc id="codex-player-profile-desc">All-time Codex tokens, lifetime-based rank, next rank progress, and recent account activity as of 2026-07-21.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="96" viewBox="0 0 416 96" role="img" aria-labelledby="codex-rank-badge-title codex-rank-badge-desc">
+<title id="codex-rank-badge-title">Codex rank badge</title>
+<desc id="codex-rank-badge-desc">Compact Codex lifetime token total and lifetime-based rank as of 2026-07-21.</desc>
 <style>:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#0969da;--accent-strong:#0550ae;--accent-soft:#ddf4ff;--common:#57606a;--uncommon:#1a7f37;--rare:#0969da;--epic:#8250df;--legendary:#9a6700;--on-rarity:#ffffff;--zero:#eaeef2;--unknown:#57606a;--heat-1:#b6e3ff;--heat-2:#54aeff;--heat-3:#218bff;--heat-4:#0969da}
 @media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8c959f;--accent:#58a6ff;--accent-strong:#79c0ff;--accent-soft:#1f3b57;--common:#8c959f;--uncommon:#3fb950;--rare:#58a6ff;--epic:#bc8cff;--legendary:#d29922;--on-rarity:#0d1117;--zero:#21262d;--unknown:#8c959f;--heat-1:#0e4429;--heat-2:#006d32;--heat-3:#26a641;--heat-4:#39d353}}
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
@@ -43,31 +43,13 @@
 .seal-unlocked{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
 .seal-locked{fill:none;stroke:var(--border);stroke-width:1}
 .seal-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}</style>
-<rect class="card-bg" x="0.5" y="0.5" width="845" height="209" rx="6"/>
-<text class="heading" x="16" y="27">Codex Player Profile</text>
-<text class="subheading" x="16" y="44">As of 2026-07-21 · Codex account calendar</text>
-<text class="label" x="830" y="27" text-anchor="end">ACCOUNT-WIDE CODEX</text>
-<line class="divider" x1="16" y1="54" x2="830" y2="54"/>
-<text class="label" x="16" y="72">ALL-TIME CODEX USAGE</text>
-<text class="hero" x="16" y="111">19.3B TOKENS PROCESSED</text>
-<text class="exact" x="16" y="132">19.3 billion · 19,312,231,461 account total</text>
-<line class="divider" x1="510" y1="64" x2="510" y2="145"/>
-<text class="label" x="532" y="72">TOKEN RANK</text>
-<rect class="rarity-epic" x="532" y="82" width="8" height="24" rx="2"/>
-<text class="rank-title" x="551" y="103">RANK XV · MYTHIC</text>
-<rect class="progress-track" x="532" y="118" width="298" height="8" rx="4"/>
-<rect class="progress-fill" x="532" y="118" width="185" height="8" rx="4"/>
-<text class="meta" x="532" y="143">62% to Rank XVI · ASCENDANT · 25B</text>
-<line class="divider" x1="16" y1="156" x2="830" y2="156"/>
-<line class="divider" x1="204" y1="166" x2="204" y2="200"/>
-<line class="divider" x1="408" y1="166" x2="408" y2="200"/>
-<line class="divider" x1="612" y1="166" x2="612" y2="200"/>
-<text class="label" x="16" y="174">TODAY SO FAR</text>
-<text class="value" x="16" y="199">33.2M</text>
-<text class="label" x="220" y="174">LAST 7 DAYS</text>
-<text class="value" x="220" y="199">5.41B</text>
-<text class="label" x="424" y="174">LAST 30 DAYS</text>
-<text class="value" x="424" y="199">10.7B</text>
-<text class="label" x="628" y="174">ACTIVE DAYS</text>
-<text class="value" x="628" y="199">127</text>
+<rect class="card-bg" x="0.5" y="0.5" width="415" height="95" rx="6"/>
+<rect class="rarity-epic" x="16" y="16" width="62" height="64" rx="6"/>
+<text class="rank-roman" x="47" y="54" text-anchor="middle">XV</text>
+<text class="label" x="94" y="25">CODEX · RANK XV MYTHIC</text>
+<text class="rank-title" x="94" y="52">19.3B TOKENS</text>
+<rect class="progress-track" x="94" y="63" width="304" height="7" rx="3"/>
+<rect class="progress-fill" x="94" y="63" width="188.73" height="7" rx="3"/>
+<text class="meta" x="94" y="84">62% to ASCENDANT · 25B</text>
+<text class="meta" x="400" y="84" text-anchor="end">Updated 2026-07-21</text>
 </svg>

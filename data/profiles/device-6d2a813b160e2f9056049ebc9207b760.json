@@ -519,6 +519,6 @@
   "deviceId": "device-6d2a813b160e2f9056049ebc9207b760",
   "kind": "codex-profile",
   "lifetimeTotalTokens": 19312231461,
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "writerKeyHash": "47cd594495ddc37c2c09eace93acdf6d1a6938d89a079a7834197347c9420b24"
 }

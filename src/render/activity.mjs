@@ -39,7 +39,7 @@ export function renderActivity(statistics) {
     const level = Number.isInteger(cell.level) && cell.level >= 0 && cell.level <= 4
       ? cell.level
       : 0;
-    const coverage = ['complete', 'partial', 'mixed'].includes(cell.coverage)
+    const coverage = ['complete', 'partial'].includes(cell.coverage)
       ? cell.coverage
       : 'unknown';
     return `<rect class="heat-cell state-${state} level-${level} coverage-${coverage}" x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="1"/>`;
@@ -48,13 +48,7 @@ export function renderActivity(statistics) {
     `<text class="meta" x="25" y="${originY + index * (cellSize + gap) + 5}" text-anchor="end">${label}</text>`
   ));
   const empty = statistics.heatmap.cells.every((cell) => cell.state !== 'active');
-  const hasMixedCalendars = statistics.heatmap.cells.some((cell) => cell.coverage === 'mixed')
-    || [
-      statistics.activity.activeDays,
-      statistics.activity.currentStreak,
-      statistics.activity.longestStreak,
-    ].some((metric) => metric.coverage === 'mixed')
-    || statistics.activity.peak.coverage === 'mixed';
+  const hasPartial = statistics.heatmap.cells.some((cell) => cell.coverage === 'partial');
   const peakMetric = {
     value: statistics.activity.peak.totalTokens,
     coverage: statistics.activity.peak.coverage,
@@ -65,25 +59,25 @@ export function renderActivity(statistics) {
     : statistics.activity.peak.date.slice(5);
 
   const body = [
-    '<text class="heading" x="16" y="27">AI activity</text>',
-    `<text class="subheading" x="16" y="43">53 weeks · through ${escapeXml(statistics.asOf)}${empty ? ' · No observed usage yet' : hasMixedCalendars ? ' · ≈ mixed calendars' : ' · Monday start'}</text>`,
+    '<text class="heading" x="16" y="27">Codex Activity</text>',
+    `<text class="subheading" x="16" y="43">53 weeks · through ${escapeXml(statistics.asOf)}${empty ? ' · No observed usage yet' : hasPartial ? ' · partial coverage' : ' · Monday start'}</text>`,
     ...weekdayLabels,
     ...cells,
     `<text class="meta" x="31" y="117">${escapeXml(statistics.heatmap.startDate)}</text>`,
     `<text class="meta" x="400" y="117" text-anchor="end">${escapeXml(statistics.heatmap.endDate)}</text>`,
     '<line class="divider" x1="16" y1="127" x2="400" y2="127"/>',
-    metricBlock('Active days', statistics.activity.activeDays, STAT_X[0]),
-    metricBlock('Current streak', statistics.activity.currentStreak, STAT_X[1]),
-    metricBlock('Longest streak', statistics.activity.longestStreak, STAT_X[2]),
-    metricBlock('Peak', peakMetric, STAT_X[3], peakDate),
+    metricBlock('ACTIVE DAYS', statistics.activity.activeDays, STAT_X[0]),
+    metricBlock('CURRENT STREAK', statistics.activity.currentStreak, STAT_X[1]),
+    metricBlock('LONGEST STREAK', statistics.activity.longestStreak, STAT_X[2]),
+    metricBlock('PEAK', peakMetric, STAT_X[3], peakDate),
   ].join('\n');
 
   return cardDocument({
-    id: 'usage-activity',
+    id: 'codex-activity',
     width: 416,
     height: 190,
-    title: 'AI usage activity',
-    description: `A 53 by 7 activity heatmap with active days, current and longest streaks, and peak usage through ${statistics.asOf}. Unknown days are outlined; partial and mixed observations use dashed borders and text markers.`,
+    title: 'Codex activity',
+    description: `A 53 by 7 Codex activity heatmap with active days, streaks, and peak usage through ${statistics.asOf}. Unknown days are outlined and partial observations are dashed.`,
     body,
   });
 }

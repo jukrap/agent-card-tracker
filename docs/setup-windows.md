@@ -64,7 +64,7 @@ For account-wide Codex totals, install a recent Codex CLI and complete its ChatG
 
 Successful sync output says `account profile updated` when account-wide usage was collected and `device fallback` when only local-log totals were published.
 
-Do not copy CLI authentication files or place credentials in **Add arguments**, a PowerShell command string, exported task XML, repository files, wrappers, or captured logs. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex and Claude Code aggregates and rendering falls back to device totals. Git credentials must remain available non-interactively to the task's user.
+Do not copy CLI authentication files or place credentials in **Add arguments**, a PowerShell command string, exported task XML, repository files, wrappers, or captured logs. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex aggregates and rendering falls back to device totals. Git credentials must remain available non-interactively to the task's user.
 
 ## 5. Test and monitor
 

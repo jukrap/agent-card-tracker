@@ -2,66 +2,106 @@
 
 [한국어 문서](README.ko.md)
 
-Agent Card Tracker publishes Codex and Claude Code usage as three static SVG cards for a GitHub profile. Each computer collects its own local usage, Git stores only anonymous daily aggregates, and GitHub Actions renders the shared result. No continuously running personal server is required.
+Agent Card Tracker publishes account-wide Codex token usage as six deterministic SVG cards for a GitHub profile. Local jobs collect sanitized data, Git synchronizes it, and GitHub Actions renders the cards. No continuously running personal server is required.
 
-The cards report token activity, not work quality or productivity. Read [Privacy boundary](#privacy-boundary) before using this project in a public repository.
+The cards describe token activity and personal milestones. They do not rank users or measure productivity, code quality, or engineering impact.
 
 ## Cards
 
-- `overview.svg`: today, rolling 7/30 days, month to date, lifetime totals, source share, and token mix
-- `trends.svg`: 30 daily, 12 Monday-based weekly, and 12 monthly buckets
-- `activity.svg`: a 53-week heatmap, active days, streaks, and peak day
+- `overview.svg` — lifetime tokens, exact total, current rank, next-rank progress, today, 7 days, 30 days, and active days
+- `achievements.svg` — crest, 20-rank track, unlocked ranks, and four milestone seals
+- `records.svg` — peak day, best 7-day and 30-day windows, and best complete calendar month
+- `trends.svg` — compact 30-day, 12-week, and 12-month charts
+- `activity.svg` — a 53×7 heatmap, active days, streaks, and peak usage
+- `compact.svg` — an optional 416×96 rank badge
 
-Use this HTML layout in your GitHub profile README. The overview uses the full row; trends and activity share the next row at 49% each:
+Use this layout in a GitHub profile README:
 
 ```html
 <p>
-  <img width="100%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/overview.svg" alt="AI usage overview">
+  <img width="100%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/overview.svg" alt="Codex player profile">
 </p>
 <p>
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/trends.svg" alt="AI usage trends">
-  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/activity.svg" alt="AI usage activity">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/achievements.svg" alt="Codex achievements">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/records.svg" alt="Codex personal records">
+</p>
+<p>
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/trends.svg" alt="Codex usage trends">
+  <img width="49%" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/activity.svg" alt="Codex activity">
 </p>
 ```
 
-The SVG files are self-contained and include light/dark palettes and accessibility metadata. GitHub may cache raw content, so a newly rendered card can take a short time to appear everywhere.
+Use `compact.svg` instead when a small badge fits the profile better:
 
-### Reading coverage states
+```html
+<img width="416" src="https://raw.githubusercontent.com/jukrap/agent-card-tracker/main/cards/compact.svg" alt="Codex rank badge">
+```
 
-The renderer does not silently turn missing observations into zero:
+Every SVG is self-contained, has light/dark palettes and `<title>/<desc>` accessibility metadata, and uses no external font, image, animation, or gradient. GitHub may cache raw files briefly after an update.
 
-- **Complete**: the displayed interval is fully covered by all required sources.
-- **Partial**: a known value is a lower bound because part of the interval or one source is unavailable. The card prefixes the value with `≥` and uses a dashed treatment.
-- **Mixed**: at least one bucket uses a provider calendar date that cannot be mapped exactly to the configured IANA timezone. The displayed sum is approximate, not a lower bound; the card prefixes it with `≈` and uses a distinct dashed treatment.
-- **Unknown**: no reliable value is available. The card shows `—` or an outlined cell/bar.
-- `0`: usage was observed and was actually zero; it is different from Unknown.
+## Token ranks
 
-Comparisons and streaks are unavailable when Mixed observations participate because calendar-day boundaries may not align. Source shares, token mix, trend bars, heatmap cells, active-day counts, and peak days remain visibly approximate. A provider-reported lifetime total is unaffected and stays exact because it is not calculated from calendar buckets; a tracked-daily lifetime can still be Mixed.
+The representative rank depends only on lifetime tokens. Progress between two thresholds is linear. It is a project-defined personal milestone, not a global percentile or productivity score.
 
-A stale-source label means at least one device snapshot is older than 72 hours. Historical values remain included. When the account profile supplies Codex totals without a token breakdown, those tokens appear as **Unknown mix**, not as Claude-only usage.
+| Rank | Title | Minimum |
+|---:|---|---:|
+| I | Novice | 0 |
+| II | Initiate | 10K |
+| III | Apprentice | 50K |
+| IV | Adept | 100K |
+| V | Scout | 500K |
+| VI | Adventurer | 1M |
+| VII | Knight | 5M |
+| VIII | Veteran | 10M |
+| IX | Elite | 50M |
+| X | Champion | 100M |
+| XI | Hero | 500M |
+| XII | Warlord | 1B |
+| XIII | Overlord | 2.5B |
+| XIV | Paragon | 5B |
+| XV | Mythic | 10B |
+| XVI | Ascendant | 25B |
+| XVII | Immortal | 50B |
+| XVIII | Sovereign | 100B |
+| XIX | Eternal | 250B |
+| XX | Transcendent | 1T |
+
+Ranks I–IV are Common, V–VIII Uncommon, IX–XII Rare, XIII–XVI Epic, and XVII–XX Legendary. Roman numerals and titles remain visible so rarity never depends on color alone.
+
+An exact account lifetime of 19.3B is `Rank XV · Mythic` and 62% of the way from 10B to `Ascendant · 25B`. A local fallback is an observed lower bound, so the cards show `At least Rank …`, `≥…%`, and `≥` totals. Unknown lifetime is `Unranked`; 1T or more is `MAX RANK`.
+
+## Coverage and records
+
+Missing dates become zero only inside declared coverage. Outside coverage they remain Unknown:
+
+- `≥` and dashed outlines mean Partial, known lower-bound data.
+- `—` and outline-only bars or cells mean Unknown.
+- `0` means an observed zero and is not Unknown.
+
+Normal fully covered values do not carry a technical status pill. Account profile dates use the `Codex account calendar`; device fallback dates use the configured IANA timezone. The two date systems are never added together.
+
+Records consider only fully covered candidates. Missing dates inside that coverage count as zero, ties choose the earlier date, and an incomplete 7-day, 30-day, or calendar-month window is not eligible.
 
 ## How it works
 
-1. On each computer, the pinned `ccusage` collector reads local Codex and Claude Code history and reduces it to daily totals.
-2. That computer overwrites one `data/devices/<opaque-device-id>.json` file and may publish one sanitized Codex profile candidate.
-3. `npm run sync` validates and pushes only that computer's aggregate paths through Git. It does not publish card files.
-4. GitHub Actions validates all public data, merges devices, and deterministically writes the three files under `cards/`. `npm run publish-cards` is the explicit local recovery path.
+1. On each computer, the pinned collector runs `ccusage codex` against that user's local history and reduces it to daily aggregates.
+2. The computer owns one `data/devices/<opaque-device-id>.json` file and may publish one sanitized account profile candidate.
+3. `npm run sync` validates and pushes only that computer's device/profile paths.
+4. GitHub Actions merges the public snapshots and deterministically renders all six files under `cards/`.
 
-Git is the synchronization layer and GitHub Actions is the renderer; neither GitHub Actions nor another computer can read logs that remain on a device.
+Git is the synchronization layer. GitHub Actions cannot read local logs or local CLI authentication.
 
 ## Requirements
 
 - Node.js 24 or newer and npm
 - Git
 - A dedicated clone of `https://github.com/jukrap/agent-card-tracker.git` on every participating computer
-- Push access to `main`, with non-interactive Git authentication available to scheduled runs
-- One shared IANA timezone, such as `Asia/Seoul`, configured on every device
+- Push access to `main`, including non-interactive Git authentication for scheduled runs
+- One shared IANA timezone, such as `Asia/Seoul`
 
-The sync safety checks expect the target repository, its default `main` branch, an upstream, and a clean tracked working tree. Do not use a development worktree or a clone containing unrelated edits for scheduled collection.
+Scheduled sync expects the target repository, `main`, an upstream, and a clean tracked worktree. Use a dedicated operational clone, not a development worktree.
 
 ## Quick start on every computer
-
-Run the complete flow separately on each computer. `setup` generates a different anonymous device ID and private writer key on each one.
 
 ```console
 git clone https://github.com/jukrap/agent-card-tracker.git
@@ -71,129 +111,104 @@ npm run setup -- --timezone Asia/Seoul
 npm run sync
 ```
 
-Use the same timezone on every device; mixed timezones fail closed instead of producing misleading daily totals. Do not copy `.agent-card.local.json` to another computer. A copied config makes two machines look like the same writer and is unsupported.
+`setup` generates a different anonymous device ID and private writer key on each computer. Never copy `.agent-card.local.json`; copied identities create ownership conflicts and can double-count copied history.
 
-For unattended updates, follow [Windows Task Scheduler setup](docs/setup-windows.md) or [launchd/cron setup for macOS and Linux](docs/setup-unix.md). Both call the same `npm run sync` command from the dedicated clone.
+For unattended collection, follow the [Windows Task Scheduler guide](docs/setup-windows.md) or the [macOS/Linux launchd and cron guide](docs/setup-unix.md).
 
-## Source selection and double-counting protection
+## Account profile and device fallback
 
-Claude Code always uses the sum of all valid device snapshots.
-
-Codex uses exactly one source:
-
-1. the newest fresh, valid account profile candidate; or
-2. if no such candidate exists, the sum of local Codex values from all valid device snapshots.
-
-The merger never adds a profile total to local Codex totals. It also never sums profile candidates from several computers. A profile candidate is fresh for 48 hours; missing, malformed, expired, or stale candidates cause the deterministic local fallback.
-
-Session counts, when available, are unique sessions assigned to the configured timezone date of their last activity. A failed session query makes the count Unknown without discarding valid token totals.
-
-## Experimental Codex account profile
-
-`ccusage` reads only the logs present on one computer. For account-wide Codex totals, `npm run profile` and `npm run sync` start the signed-in Codex CLI's experimental App Server over local JSONL stdio, initialize it with experimental API support, and read `account/usage/read`. This is a local CLI protocol call, not a screen scrape of the Codex app and not a direct unofficial HTTP request.
+`npm run profile` and `npm run sync` start the signed-in Codex CLI App Server with shell-free JSONL stdio, initialize experimental API support, then call `account/usage/read`. This is not screen scraping and does not use an unofficial HTTP endpoint or bearer environment variable.
 
 Account-wide collection requires:
 
-- a recent Codex CLI available on `PATH`
-- an existing ChatGPT sign-in for the same operating-system user that runs the command
+- a recent Codex CLI on `PATH`
+- a ChatGPT sign-in for the same operating-system user that runs sync
 
-On Windows, an npm-installed native Codex binary beside the `codex` shim is preferred before the packaged app's `codex.exe`. This avoids a WindowsApps executable collision when the desktop app and npm CLI are both installed. If the executable is not on the scheduler's `PATH` or uses a custom layout, set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to its absolute path. The project does not accept an executable path as a CLI argument and does not read an account credential or endpoint override.
+On Windows, discovery prefers the npm-installed native Codex binary beside the shim before a packaged desktop binary. Set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to an absolute executable path only when automatic discovery is insufficient.
 
-`npm run sync` reports `account profile updated` when account-wide collection succeeded and `device fallback` when it published local-log totals instead.
+Source selection is deterministic:
 
-API-key-only users, older CLI versions, and environments without App Server account usage support still get the local-log Codex and Claude Code cards. An authentication failure, missing CLI, unsupported method, timeout, early exit, protocol drift, or invalid response preserves the last valid profile candidate. After that candidate is older than 48 hours, rendering automatically falls back to the sum of all devices' local Codex totals. GitHub Actions never starts the App Server and never receives local CLI authentication state.
+1. the newest fresh, valid account profile candidate collected within 48 hours; otherwise
+2. the sum of local Codex snapshots from all valid devices.
 
-To test account-wide collection independently:
+The merger never adds account profile totals to local totals and never sums several profile candidates. `npm run sync` reports `account profile updated` or `device fallback` explicitly.
+
+Authentication failure, missing CLI, unsupported method, timeout, early exit, protocol drift, or malformed output preserves the last valid profile candidate. Once it becomes older than 48 hours, rendering falls back to all devices' local Codex totals. API-key-only users and environments without App Server account usage can still publish cards from local Codex logs.
+
+The account payload provides daily totals and an optional exact lifetime total. It does not provide the local session count or token breakdown used here, so those fields are omitted from the primary account card instead of being displayed as zero.
+
+Test profile collection independently with:
 
 ```console
 npm run profile
 ```
 
-The public schema remains version 1. Only sanitized daily token totals, an optional provider lifetime total, and coverage metadata are written. App Server streak, peak, turn-duration, identity, and raw response fields are not published. Provider calendar dates are preserved rather than pretending they belong to the configured IANA timezone; missing input/output/cache breakdown and session counts remain Unknown.
+## Public schema and privacy boundary
 
-## Privacy boundary
+Public device snapshots and profile candidates use schema version 2. Device `sources` permits only `codex`; schema v1 and unknown provider fields are rejected.
 
-Public snapshots contain only:
+Public artifacts contain only:
 
-- an opaque random device ID and a one-way writer-key hash
-- collection time, configured timezone, schema/collector versions, and sanitized status codes
-- daily input, output, cache-read, cache-write, total token, and optional session counts
-- for a profile candidate, sanitized daily totals, optional provider lifetime total, and coverage metadata
+- opaque device ID and one-way writer-key hash
+- collection time, timezone, schema/collector versions, and sanitized status code
+- local daily input, output, cache-read, cache-write, total token, and optional session counts
+- account daily totals, optional lifetime total, and coverage metadata
 
-They do **not** contain raw logs, raw prompts or responses, project names, file paths, session IDs, account identity, email, hostname, username, Git credentials, API keys, access tokens, CLI authentication state, or App Server response bodies. Exact allowlists and repository validation reject unknown fields and secret/path-shaped public content.
+They do not contain raw logs, prompts, responses, project names, file paths, session IDs, account identity, email, hostname, username, Git credentials, API keys, access tokens, CLI authentication state, stderr, or App Server response bodies. Exact allowlists and repository validation reject unknown fields, active/external SVG resources, and secret- or path-shaped public content.
 
-The aggregate data itself is intentionally public. Token volume, active dates, timezone, session counts, and collection freshness can reveal working patterns. Use a private repository instead if that metadata is too sensitive, but note that private-repository GitHub Actions billing differs and this repository's public-profile URLs will not work for unauthenticated readers.
+The aggregate is intentionally public and can reveal token volume, active dates, timezone, collection cadence, and stale-device events. Use a private repository if that metadata is too sensitive, while noting that unauthenticated profile image URLs and Actions billing differ.
 
-Copying the same raw logs to multiple computers can duplicate those days because the collectors cannot prove that two local records represent the same event. Keep one authoritative copy of each log history or remove the superseded snapshot before syncing the replacement.
+Copying the same raw logs to multiple computers can duplicate overlapping days. Keep one authoritative copy of each history or explicitly remove the superseded public snapshot before syncing its replacement.
 
-See [SECURITY.md](SECURITY.md) for threat boundaries and private vulnerability reporting.
+See [SECURITY.md](SECURITY.md) for reporting and threat boundaries.
 
-## Automation and cost
+## Automation and recovery
 
-The repository uses standard GitHub-hosted runners in a public repository. Under the current [GitHub Actions billing documentation](https://docs.github.com/en/actions/concepts/billing-and-usage), that runner usage is free. Private repositories, larger runners, third-party services, network access, and future GitHub policy changes are outside this no-personal-server-cost claim.
+The render workflow runs after data pushes, daily on an off-the-hour schedule, and by manual dispatch. GitHub scheduled workflows are best effort and may be delayed, dropped, or disabled after 60 days without repository activity.
 
-The render workflow runs on data pushes, a daily off-the-hour schedule, and manual dispatch. GitHub documents that scheduled workflows can be delayed or dropped during high load and are automatically disabled after 60 days without repository activity; see [Events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). Treat the schedule as best effort.
+If cards are stale:
 
-If cards are missing or stale:
-
-1. run `npm run sync` on a device to refresh its public snapshot;
-2. inspect or manually dispatch **Render usage cards** in the repository's Actions tab;
-3. if Actions remains unavailable, publish the locally validated deterministic cards:
+1. run `npm run sync`;
+2. inspect or dispatch **Render usage cards** in GitHub Actions;
+3. if Actions is unavailable, run:
 
 ```console
 npm run publish-cards -- --as-of YYYY-MM-DD
 ```
 
-Use the intended calendar date in place of `YYYY-MM-DD`. The recovery command renders, validates, stages only the three card paths, and uses the same bounded conflict handling as sync.
+The recovery command renders, validates, and stages only the six card paths with bounded conflict handling.
 
-## Device lifecycle and recovery
+Sync never force-pushes. Authentication failures preserve a recoverable local commit. `REMOTE_UPDATE_REQUIRES_RESTART` means code, dependencies, workflow, or configuration changed upstream: stop the scheduler, update the dedicated clone, run `npm ci --ignore-scripts` and `npm run validate`, then start a fresh sync.
 
-### Add a device
+`sync`, standalone `render`, and `publish-cards` share `.git/agent-card-sync.lock`. On `SYNC_STALE_LOCK`, stop the scheduler and verify that no process is using that exact clone before deleting only that exact lock file. Use the platform guide for the full procedure; never recursively clean `.git`.
 
-Create a fresh dedicated clone, run `npm ci`, run `setup` with the shared timezone, and then run `sync`. Never reuse another device's local config.
+## Device lifecycle
 
-### Replace or retire a device
+To add a computer, use a fresh dedicated clone, install dependencies, run `setup` with the shared timezone, then run `sync`.
 
-Stop its scheduler before rotating or replacing its local config. Keeping its device JSON preserves historical usage and eventually marks it stale. Removing its device and profile JSON removes that device's historical contribution too.
-
-If a replacement computer or new config receives the same raw log history, do not keep both the old and new snapshots: their overlapping days will be counted twice. Resolve the old device/profile snapshot and overlapping history explicitly before syncing the new identity. If the replacement starts with new logs only, keep the old snapshot for history and create a new config for the new computer. Losing a config while retaining the same logs requires the same overlap decision; `setup` will not overwrite an existing config, and you must not reconstruct or copy it casually.
-
-### Push or ownership conflict
-
-Sync fetches first and retries a non-fast-forward push up to three times only while its own device/profile paths are unchanged remotely. It does not force-push or auto-select conflict sides. On an authentication failure, repair the Git credential available to that scheduled user and rerun sync. On a path ownership/collision error, stop all writers using that device config, determine which machine owns it, create a fresh config for the duplicate machine, and resolve any overlapping logs before retrying.
-
-`REMOTE_UPDATE_REQUIRES_RESTART` means the fetched branch changed code, dependencies, workflows, or configuration rather than only public snapshots/cards. Stop the scheduler, update the dedicated clone from `origin/main` without a force push, run `npm ci --ignore-scripts` and `npm run validate`, then start a new `npm run sync` process. If the failed run preserved one publication commit, rebase only that verified commit onto `origin/main`; abort and inspect any conflict instead of choosing a side automatically.
-
-Other failures preserve recoverable local commits. Keep the dedicated clone clean, update it from `main`, validate with `npm run validate`, and rerun `npm run sync`. Never use a force push as recovery.
-
-### Stale repository lock
-
-`sync`, standalone `render`, and `publish-cards` share the exact lock file `.git/agent-card-sync.lock`. A `SYNC_STALE_LOCK` error is intentionally fail-closed: the command does not auto-delete a stale-looking lock because another process could replace or reacquire it between inspection and deletion.
-
-Recover in this order: stop and disable the clone's scheduler; verify that no `agent-card`, `npm`, or `node` process is running `sync`, `render`, or `publish-cards` for that exact clone; inspect `.git/agent-card-sync.lock`; delete only that exact file; then rerun the original command. Never use a wildcard, recursive deletion, or a broad `.git` cleanup. Follow the exact platform steps in the [Windows guide](docs/setup-windows.md#sync_stale_lock) or [macOS/Linux guide](docs/setup-unix.md#sync_stale_lock).
+To retire one, stop its scheduler first. Keeping its device snapshot preserves history and eventually marks it stale; deleting its device/profile files removes that history. If a replacement has copied local history, resolve overlapping snapshots before syncing a new identity.
 
 ## Limitations
 
-- The experimental App Server account usage method has no stability guarantee and may report a different scope from local logs.
-- Provider calendar dates are not timezone-converted because the upstream payload has no time-of-day or timezone.
-- Token categories and totals follow upstream `ccusage`/profile semantics; they are not billing records.
-- Token count, sessions, streaks, and activity are not measures of productivity, correctness, or engineering impact.
-- Device-level aggregation cannot deduplicate logs copied between devices.
-- A public Git repository exposes every committed aggregate and its history.
-- Scheduled Actions are best effort, so the local scheduler and `publish-cards` recovery path remain necessary.
+- The experimental App Server protocol can change and may report a different scope from local logs.
+- Provider calendar dates are preserved because daily payloads have no time-of-day or timezone.
+- Token totals follow upstream `ccusage` and account-profile semantics; they are not billing records.
+- Device aggregation cannot deduplicate copied logs.
+- Public Git history retains previously committed aggregates.
+- Scheduled Actions are best effort.
 
 ## Local commands
 
 ```console
 npm run collect
+npm run profile
 npm run render -- --as-of YYYY-MM-DD
 npm run validate
 npm run check:determinism -- --as-of YYYY-MM-DD
 npm run check
 ```
 
-`render` and determinism checks require an explicit `--as-of` date so identical input produces byte-for-byte identical SVG files.
-Standalone `render` uses the same repository lock as `sync` and `publish-cards`; the programmatic renderer remains lock-free for callers that already hold that lock.
+`render` and determinism checks require an explicit date so identical input produces byte-for-byte identical SVG output.
 
 ## License
 

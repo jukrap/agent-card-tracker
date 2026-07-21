@@ -78,8 +78,8 @@ function safeErrorCode(error) {
   return 'COLLECTION_FAILED';
 }
 
-function previousSource(existing, agent) {
-  return existing?.sources?.[agent] ?? {
+function previousSource(existing) {
+  return existing?.sources?.codex ?? {
     lastSuccessfulAt: null,
     days: [],
     coverage: { totals: null, sessions: null },
@@ -98,7 +98,6 @@ function dateInTimezone(instant, timezone) {
 }
 
 async function collectSource({
-  agent,
   timezone,
   collectedAt,
   existing,
@@ -108,7 +107,6 @@ async function collectSource({
 }) {
   try {
     const result = await collectUsage({
-      agent,
       timezone,
       includeSessions: true,
       runner,
@@ -129,7 +127,7 @@ async function collectSource({
       },
     };
   } catch (error) {
-    const previous = previousSource(existing, agent);
+    const previous = previousSource(existing);
     return {
       status: 'error',
       errorCode: safeErrorCode(error),
@@ -174,8 +172,7 @@ export async function collectDeviceUsage({
     collectUsage,
     cwd,
   };
-  const claude = await collectSource({ agent: 'claude', ...sourceOptions });
-  const codex = await collectSource({ agent: 'codex', ...sourceOptions });
+  const codex = await collectSource(sourceOptions);
 
   const snapshot = {
     schemaVersion: SCHEMA_VERSION,
@@ -184,7 +181,7 @@ export async function collectDeviceUsage({
     generatedAt: collectedAt,
     timezone: config.timezone,
     collectorVersion,
-    sources: { claude, codex },
+    sources: { codex },
   };
 
   validateDeviceSnapshot(snapshot);
@@ -252,7 +249,7 @@ export async function run(
     });
     write(
       io.stdout,
-      `${snapshot.deviceId} claude=${snapshot.sources.claude.status} days=${snapshot.sources.claude.days.length} codex=${snapshot.sources.codex.status} days=${snapshot.sources.codex.days.length}`,
+      `${snapshot.deviceId} codex=${snapshot.sources.codex.status} days=${snapshot.sources.codex.days.length}`,
     );
     return 0;
   } catch (error) {
