@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import {
@@ -20,6 +21,12 @@ import {
   cardFilename,
 } from '../src/card-catalog.mjs';
 import { CARD_THEMES } from '../src/render/themes.mjs';
+import { LOCAL_CONFIG_FILENAME } from '../src/config.mjs';
+
+const packageManifest = JSON.parse(await readFile(
+  new URL('../package.json', import.meta.url),
+  'utf8',
+));
 
 test('Codex Renown product identity is fixed and repository-derived', () => {
   assert.equal(PRODUCT_NAME, 'Codex Renown');
@@ -88,4 +95,25 @@ test('every theme defines immutable light and dark token sets', () => {
       assert.ok(Object.values(theme[scheme]).every((value) => /^#[0-9a-f]{6}$/u.test(value)));
     }
   }
+});
+test('package and local compatibility names follow the progressive rename contract', () => {
+  assert.equal(packageManifest.name, 'codex-renown');
+  assert.deepEqual(packageManifest.bin, {
+    'codex-renown': './src/cli.mjs',
+    'agent-card': './src/cli.mjs',
+  });
+  assert.equal(LOCAL_CONFIG_FILENAME, '.agent-card.local.json');
+  assert.deepEqual(Object.keys(packageManifest.scripts), [
+    'test',
+    'check:syntax',
+    'check:determinism',
+    'check',
+    'setup',
+    'collect',
+    'profile',
+    'render',
+    'validate',
+    'sync',
+    'publish-cards',
+  ]);
 });

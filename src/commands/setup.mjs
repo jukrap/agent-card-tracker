@@ -9,8 +9,9 @@ import {
   validateLocalConfig,
 } from '../config.mjs';
 import { stableStringify } from '../lib/atomic-file.mjs';
+import { CLI_NAME } from '../product.mjs';
 
-const HELP = `Usage: agent-card setup [--timezone IANA_TIMEZONE]
+const HELP = `Usage: ${CLI_NAME} setup [--timezone IANA_TIMEZONE]
 
 Create an ignored, private local configuration for this device.
 Copying this configuration to another computer is unsupported.

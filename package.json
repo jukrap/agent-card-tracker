@@ -1,5 +1,5 @@
 {
-  "name": "agent-card-tracker",
+  "name": "codex-renown",
   "version": "0.1.0",
   "description": "Serverless multi-device Codex RPG usage cards for GitHub profiles",
   "type": "module",
@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "bin": {
+    "codex-renown": "./src/cli.mjs",
     "agent-card": "./src/cli.mjs"
   },
   "scripts": {

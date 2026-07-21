@@ -5,6 +5,7 @@ import process from 'node:process';
 
 import { assertIsoDate } from '../domain/calendar.mjs';
 import { GitPublishError, publishChanges } from '../git/publish.mjs';
+import { CLI_NAME } from '../product.mjs';
 
 const CARD_PATHS = Object.freeze([
   'cards/overview.svg',
@@ -15,7 +16,7 @@ const CARD_PATHS = Object.freeze([
   'cards/compact.svg',
 ]);
 
-const HELP = `Usage: agent-card publish-cards --as-of YYYY-MM-DD
+const HELP = `Usage: ${CLI_NAME} publish-cards --as-of YYYY-MM-DD
 
 Render, validate, and publish exactly the six static SVG cards.
 Use this only as a recovery path when the GitHub render workflow is unavailable.

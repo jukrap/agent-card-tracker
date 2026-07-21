@@ -7,6 +7,7 @@ import { collectCcusage } from '../collectors/ccusage.mjs';
 import { LOCAL_CONFIG_FILENAME, loadLocalConfig } from '../config.mjs';
 import { SCHEMA_VERSION, validateDeviceSnapshot } from '../domain/schema.mjs';
 import { writeJsonAtomic } from '../lib/atomic-file.mjs';
+import { CLI_NAME } from '../product.mjs';
 
 export const COLLECTOR_VERSION = '0.1.0';
 
@@ -228,7 +229,7 @@ export async function run(
 ) {
   const options = parseArgs(args);
   if (options.help) {
-    write(io.stdout, 'Usage: agent-card collect [--config PATH]');
+    write(io.stdout, `Usage: ${CLI_NAME} collect [--config PATH]`);
     return 0;
   }
   if (options.invalid) {

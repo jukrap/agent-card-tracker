@@ -5,7 +5,9 @@ import * as defaultFileSystem from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-export const TARGET_REPOSITORY = 'jukrap/agent-card-tracker';
+import { TARGET_REPOSITORY } from '../product.mjs';
+
+export { TARGET_REPOSITORY };
 export const DEFAULT_GIT_TIMEOUT_MS = 30_000;
 export const DEFAULT_GIT_MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 export const DEFAULT_SYNC_LOCK_STALE_MS = 30 * 60 * 1_000;

@@ -14,13 +14,14 @@ import {
 } from '../domain/schema.mjs';
 import { GitPublishError, publishChanges } from '../git/publish.mjs';
 import { stableStringify, writeJsonAtomic } from '../lib/atomic-file.mjs';
+import { CLI_NAME, TARGET_REPOSITORY } from '../product.mjs';
 
 const DEVICE_ID_PATTERN = /^device-[0-9a-f]{32}$/;
 const TEMP_PREFIX = 'agent-card-sync-';
-const HELP = `Usage: agent-card sync
+const HELP = `Usage: ${CLI_NAME} sync
 
 Collect and publish only this device's sanitized usage snapshots.
-Run this command from a dedicated clone of jukrap/agent-card-tracker.
+Run this command from a dedicated clone of ${TARGET_REPOSITORY}.
 `;
 
 const ERROR_MESSAGES = Object.freeze({

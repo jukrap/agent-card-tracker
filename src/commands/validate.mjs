@@ -11,6 +11,7 @@ import {
   validateProfileCandidate,
 } from '../domain/schema.mjs';
 import { stableStringify } from '../lib/atomic-file.mjs';
+import { CLI_NAME } from '../product.mjs';
 import { validateSvgDocument } from '../render/svg-validator.mjs';
 
 const defaultExecFile = promisify(execFileCallback);
@@ -929,7 +930,7 @@ export async function run(
 ) {
   const options = parseArgs(args);
   if (options.help) {
-    write(io.stdout, 'Usage: agent-card validate');
+    write(io.stdout, `Usage: ${CLI_NAME} validate`);
     return 0;
   }
   if (options.invalid) {

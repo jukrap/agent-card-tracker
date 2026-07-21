@@ -77,7 +77,7 @@ test('sync command reports account profile and device fallback success explicitl
 
 function repositoryRunner({
   cwd,
-  remoteUrl = 'https://github.com/jukrap/agent-card-tracker.git',
+  remoteUrl = 'https://github.com/jukrap/codex-renown.git',
   fetchUrls = [remoteUrl],
   pushUrls = [remoteUrl],
   advertisedBranch = 'main',
@@ -163,7 +163,7 @@ function publicationRunner({
     }
     if (command === 'remote\0get-url\0--all\0origin'
       || command === 'remote\0get-url\0--push\0--all\0origin') {
-      return ok('https://github.com/jukrap/agent-card-tracker.git');
+      return ok('https://github.com/jukrap/codex-renown.git');
     }
     if (command === 'ls-remote\0--symref\0origin\0HEAD') {
       return ok(`ref: refs/heads/main\tHEAD\n${'a'.repeat(40)}\tHEAD`);
@@ -463,16 +463,16 @@ test('전용 clone, target repository identity, upstream/default branch, clean t
   assert.ok(success.calls.every(({ args }) => Array.isArray(args)));
 
   for (const [options, code] of [
-    [{ remoteUrl: 'https://github.com/attacker/agent-card-tracker.git' }, 'REPOSITORY_IDENTITY_MISMATCH'],
-    [{ remoteUrl: 'https://secret@github.com/jukrap/agent-card-tracker.git' }, 'REPOSITORY_IDENTITY_MISMATCH'],
+    [{ remoteUrl: 'https://github.com/attacker/codex-renown.git' }, 'REPOSITORY_IDENTITY_MISMATCH'],
+    [{ remoteUrl: 'https://secret@github.com/jukrap/codex-renown.git' }, 'REPOSITORY_IDENTITY_MISMATCH'],
     [{ fetchUrls: [
-      'https://github.com/jukrap/agent-card-tracker.git',
-      'https://github.com/attacker/agent-card-tracker.git',
+      'https://github.com/jukrap/codex-renown.git',
+      'https://github.com/attacker/codex-renown.git',
     ] }, 'REPOSITORY_IDENTITY_MISMATCH'],
-    [{ pushUrls: ['https://github.com/attacker/agent-card-tracker.git'] }, 'REPOSITORY_IDENTITY_MISMATCH'],
+    [{ pushUrls: ['https://github.com/attacker/codex-renown.git'] }, 'REPOSITORY_IDENTITY_MISMATCH'],
     [{ pushUrls: [
-      'https://github.com/jukrap/agent-card-tracker.git',
-      'https://github.com/attacker/agent-card-tracker.git',
+      'https://github.com/jukrap/codex-renown.git',
+      'https://github.com/attacker/codex-renown.git',
     ] }, 'REPOSITORY_IDENTITY_MISMATCH'],
     [{ advertisedBranch: 'develop' }, 'DEFAULT_BRANCH_MISMATCH'],
     [{ gitDirectory: path.join(cwd, '.git', 'worktrees', 'linked') }, 'DEDICATED_CLONE_REQUIRED'],
@@ -505,7 +505,7 @@ test('실제 Git CLI로 만든 독립 clone 형태도 동일한 repository 계�
     '-c', 'user.email=sync-test@invalid',
     'commit', '-m', 'fixture', '--', 'README.md',
   ]);
-  await git(['remote', 'add', 'origin', 'https://github.com/jukrap/agent-card-tracker.git']);
+  await git(['remote', 'add', 'origin', 'https://github.com/jukrap/codex-renown.git']);
   const { stdout } = await git(['rev-parse', 'HEAD']);
   await git(['update-ref', 'refs/remotes/origin/main', stdout.trim()]);
   await git(['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main']);
@@ -606,7 +606,7 @@ test('실제 rebase는 updateRefs 설정이 켜져 있어도 다른 local branch
   await git(['commit', '-m', 'remote data']);
   const remoteOid = (await git(['rev-parse', 'HEAD'])).stdout.trim();
   await git(['switch', 'main']);
-  await git(['remote', 'add', 'origin', 'https://github.com/jukrap/agent-card-tracker.git']);
+  await git(['remote', 'add', 'origin', 'https://github.com/jukrap/codex-renown.git']);
   await git(['update-ref', 'refs/remotes/origin/main', remoteOid]);
   await git(['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main']);
   await git(['branch', '--set-upstream-to=origin/main', 'main']);

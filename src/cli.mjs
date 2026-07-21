@@ -3,6 +3,8 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
+import { CLI_ALIASES, CLI_NAME, PRODUCT_NAME } from './product.mjs';
+
 const COMMANDS = new Map([
   ['setup', './commands/setup.mjs'],
   ['collect', './commands/collect.mjs'],
@@ -13,10 +15,10 @@ const COMMANDS = new Map([
   ['publish-cards', './commands/publish-cards.mjs'],
 ]);
 
-const HELP = `agent-card - publish private-safe AI usage cards
+const HELP = `${CLI_NAME} - ${PRODUCT_NAME} usage milestone cards
 
 Usage:
-  agent-card <command> [options]
+  ${CLI_NAME} <command> [options]
 
 Commands:
   setup          Create ignored local device configuration
@@ -27,7 +29,8 @@ Commands:
   sync           Publish this device's sanitized snapshots
   publish-cards  Publish rendered cards as a local recovery path
 
-Run agent-card <command> --help for command-specific options.
+Compatibility alias: ${CLI_ALIASES.join(', ')}
+Run ${CLI_NAME} <command> --help for command-specific options.
 `;
 
 function write(stream, value) {
@@ -48,7 +51,7 @@ export async function main(
   const modulePath = COMMANDS.get(command);
   if (!modulePath) {
     write(io.stderr, `Unknown command: ${command}`);
-    write(io.stderr, 'Run agent-card --help for usage.');
+    write(io.stderr, `Run ${CLI_NAME} --help for usage.`);
     return 2;
   }
 

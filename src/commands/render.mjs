@@ -15,6 +15,7 @@ import {
 } from '../domain/schema.mjs';
 import { computeStatistics } from '../domain/statistics.mjs';
 import { withRepositoryLock as defaultWithRepositoryLock } from '../git/repository.mjs';
+import { CLI_NAME } from '../product.mjs';
 import { renderAchievements } from '../render/achievements.mjs';
 import { renderActivity } from '../render/activity.mjs';
 import { renderCompact } from '../render/compact.mjs';
@@ -34,7 +35,7 @@ const CARD_NAMES = Object.freeze([
 const HELP = `Render deterministic static SVG cards
 
 Usage:
-  agent-card render --as-of YYYY-MM-DD [--as-of-instant ISO_UTC_INSTANT]
+  ${CLI_NAME} render --as-of YYYY-MM-DD [--as-of-instant ISO_UTC_INSTANT]
 
 The optional instant controls freshness checks. Without it, freshness uses the
 deterministic end of the as-of date in the configured timezone.
@@ -304,7 +305,7 @@ export async function run(
   if (options.invalid) {
     write(
       io.stderr,
-      'Usage: agent-card render --as-of YYYY-MM-DD [--as-of-instant ISO_UTC_INSTANT]',
+      `Usage: ${CLI_NAME} render --as-of YYYY-MM-DD [--as-of-instant ISO_UTC_INSTANT]`,
     );
     return 2;
   }
