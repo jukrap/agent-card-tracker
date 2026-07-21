@@ -85,6 +85,7 @@ test('every theme defines immutable light and dark token sets', () => {
   const required = [
     'bg', 'surface', 'border', 'text', 'muted', 'accent', 'accentStrong',
     'accentSoft', 'zero', 'unknown', 'heat1', 'heat2', 'heat3', 'heat4',
+    'common', 'uncommon', 'rare', 'epic', 'legendary', 'onRarity',
   ];
   assert.deepEqual(Object.keys(CARD_THEMES), THEME_NAMES);
   for (const theme of Object.values(CARD_THEMES)) {
