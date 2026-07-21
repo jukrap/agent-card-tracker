@@ -59,3 +59,12 @@ export function renderCrest(rank, { x = 0, y = 0, size = 72 } = {}) {
     '</g>',
   ].join('');
 }
+export function renderUnrankedCrest({ x = 0, y = 0, size = 72 } = {}) {
+  assertGeometry({ x, y, size });
+  return [
+    `<g class="crest crest-unranked" transform="translate(${fixedNumber(x)} ${fixedNumber(y)}) scale(${fixedNumber(size / 72)})">`,
+    '<circle class="crest-frame crest-frame-unranked" cx="36" cy="34" r="27"/>',
+    '<path class="unranked-glyph" d="M28 25C29 18 43 18 44 27 45 34 36 34 36 42M36 50V51"/>',
+    '</g>',
+  ].join('');
+}

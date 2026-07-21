@@ -80,6 +80,11 @@ const BASE_CARD_STYLE = `
 .icon-line{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .icon-fill{fill:var(--accent)}
 .prestige-corner{fill:none;stroke:var(--border);stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.badge-label{fill:var(--text);font-family:system-ui,sans-serif;font-size:7px;font-weight:700}
+.crest-frame-unranked{fill:var(--surface);stroke:var(--unknown);stroke-width:2;stroke-dasharray:3 3}
+.unranked-glyph{fill:none;stroke:var(--unknown);stroke-width:2;stroke-linecap:round}
+.achievement-state-locked{opacity:.55}
+.achievement-state-unknown{opacity:.55}
 `.trim();
 
 function themeDeclarations(tokens) {

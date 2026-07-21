@@ -2,6 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+import { CARD_NAMES } from '../src/card-catalog.mjs';
 import { assertIsoDate, assertIsoUtcInstant } from '../src/domain/calendar.mjs';
 import { renderCards } from '../src/commands/render.mjs';
 
@@ -38,14 +39,6 @@ if (asOf === null || invalid) {
 } else {
   const firstRoot = await mkdtemp(path.join(os.tmpdir(), 'agent-card-determinism-a-'));
   const secondRoot = await mkdtemp(path.join(os.tmpdir(), 'agent-card-determinism-b-'));
-  const names = [
-    'overview',
-    'achievements',
-    'records',
-    'trends',
-    'activity',
-    'compact',
-  ];
 
   try {
     await renderCards({
@@ -61,14 +54,14 @@ if (asOf === null || invalid) {
       outputDirectory: path.join(secondRoot, 'cards'),
     });
 
-    for (const name of names) {
+    for (const name of CARD_NAMES) {
       const first = await readFile(path.join(firstRoot, 'cards', `${name}.svg`));
       const second = await readFile(path.join(secondRoot, 'cards', `${name}.svg`));
       if (!first.equals(second)) {
         throw new Error(`${name}.svg is not deterministic`);
       }
     }
-    process.stdout.write(`Deterministic SVG OK (${names.length} cards, as-of ${asOf})\n`);
+    process.stdout.write(`Deterministic SVG OK (${CARD_NAMES.length} cards, as-of ${asOf})\n`);
   } finally {
     await Promise.all([
       rm(firstRoot, { recursive: true, force: true }),

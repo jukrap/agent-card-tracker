@@ -1,3 +1,5 @@
+import { PUBLIC_HANDLE } from '../product.mjs';
+import { renderContainedPrestige } from './prestige.mjs';
 import {
   cardDocument,
   escapeXml,
@@ -49,7 +51,10 @@ function chart(statistics, name, label, y) {
   ].join('\n');
 }
 
-export function renderTrends(statistics) {
+export function renderTrends(statistics, {
+  theme = 'github',
+  identity = PUBLIC_HANDLE,
+} = {}) {
   const allBuckets = [
     ...statistics.trends.daily,
     ...statistics.trends.weekly,
@@ -57,8 +62,9 @@ export function renderTrends(statistics) {
   ];
   const empty = allBuckets.every((bucket) => bucket.totalTokens.value === null);
   const body = [
-    '<text class="heading" x="16" y="27">Codex Usage Trends</text>',
-    `<text class="subheading" x="16" y="43">As of ${escapeXml(statistics.asOf)} · ${escapeXml(statistics.calendarLabel)}${empty ? ' · No observed usage yet' : ''}</text>`,
+    renderContainedPrestige({ width: 416, height: 190 }),
+    `<text class="heading" x="16" y="27">CODEX RENOWN · ${escapeXml(identity)}</text>`,
+    `<text class="subheading" x="16" y="43">USAGE TRENDS · ${escapeXml(statistics.asOf)} · ${escapeXml(statistics.calendarLabel)}${empty ? ' · No observed usage yet' : ''}</text>`,
     '<text class="meta" x="400" y="43" text-anchor="end">≥ partial · dashed unknown</text>',
     chart(statistics, 'daily', '30 DAYS', 55),
     '<line class="divider" x1="16" y1="92" x2="400" y2="92"/>',
@@ -69,10 +75,11 @@ export function renderTrends(statistics) {
   ].join('\n');
 
   return cardDocument({
-    id: 'codex-usage-trends',
+    id: 'codex-renown-trends',
     width: 416,
     height: 190,
-    title: 'Codex usage trends',
+    theme,
+    title: `Codex Renown usage trends for ${identity}`,
     description: `Daily, weekly, and monthly Codex token charts as of ${statistics.asOf}. Partial bars are dashed and unknown bars are outlines.`,
     body,
   });

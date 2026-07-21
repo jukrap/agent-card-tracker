@@ -2,6 +2,7 @@ import * as defaultFileSystem from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
+import { CARD_NAMES } from '../card-catalog.mjs';
 import {
   assertIsoDate,
   assertIsoUtcInstant,
@@ -23,15 +24,9 @@ import { renderOverview } from '../render/overview.mjs';
 import { renderRecords } from '../render/records.mjs';
 import { validateSvgDocument } from '../render/svg-validator.mjs';
 import { renderTrends } from '../render/trends.mjs';
+import { renderTrophyCase } from '../render/trophy-case.mjs';
 
-const CARD_NAMES = Object.freeze([
-  'overview',
-  'achievements',
-  'records',
-  'trends',
-  'activity',
-  'compact',
-]);
+
 const HELP = `Render deterministic static SVG cards
 
 Usage:
@@ -211,7 +206,7 @@ async function stageCards({
 
 /**
  * Loads all sanitized public snapshots, computes coverage-aware statistics, and
- * atomically replaces the six deterministic card files after every SVG has
+ * atomically replaces the seven deterministic card files after every SVG has
  * passed validation.
  */
 export async function renderCards({
@@ -246,6 +241,7 @@ export async function renderCards({
       staleDeviceCount: merged.diagnostics.staleDeviceCount,
     }),
     achievements: renderAchievements(statistics),
+    'trophy-case': renderTrophyCase(statistics),
     records: renderRecords(statistics),
     trends: renderTrends(statistics),
     activity: renderActivity(statistics),
@@ -329,7 +325,7 @@ export async function run(
         asOfInstant: options.asOfInstant,
       }),
     );
-    write(io.stdout, `Rendered 6 cards as of ${result.asOf}.`);
+    write(io.stdout, `Rendered ${CARD_NAMES.length} cards as of ${result.asOf}.`);
     return 0;
   } catch (error) {
     const code = error instanceof RenderCommandError
