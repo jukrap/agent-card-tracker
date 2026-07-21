@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { CARD_NAMES, CARD_VIEW_BOXES } from '../src/card-catalog.mjs';
+import { ACHIEVEMENT_CATALOG, ACHIEVEMENT_CATEGORIES } from '../src/domain/achievements.mjs';
 import { eachDay } from '../src/domain/calendar.mjs';
 import { computeStatistics } from '../src/domain/statistics.mjs';
 import { PUBLIC_HANDLE } from '../src/product.mjs';
@@ -98,6 +99,46 @@ test('rank achievements show four representatives and the full twenty-node ladde
   ]) {
     assert.match(achievements, new RegExp(label, 'u'));
   }
+});
+
+test('representative achievement badges reserve padding for current and longest labels', () => {
+  const current = renderAll().achievements;
+  const currentBadges = [...current.matchAll(
+    /<rect class="representative-badge [^"]+" x="([0-9.]+)" y="146" width="([0-9.]+)" height="36"/gu,
+  )].map((match) => ({ x: Number(match[1]), width: Number(match[2]) }));
+
+  assert.equal(currentBadges.length, 4);
+  assert.equal(currentBadges[0].x, 16);
+  assert.equal(new Set(currentBadges.map(({ width }) => width)).size > 1, true);
+  for (let index = 1; index < currentBadges.length; index += 1) {
+    const previous = currentBadges[index - 1];
+    assert.equal(
+      Math.round((currentBadges[index].x - previous.x - previous.width) * 100) / 100,
+      6,
+    );
+  }
+  assert.equal(
+    Math.round((currentBadges.at(-1).x + currentBadges.at(-1).width) * 100) / 100,
+    400,
+  );
+  assert.match(
+    current,
+    /<text class="badge-meta"[^>]*font-size="6\.5"[^>]*letter-spacing="\.1"[^>]*>◆ CONSISTENCY<\/text>/u,
+  );
+
+  const longestRepresentatives = ACHIEVEMENT_CATEGORIES.map((category) => ({
+    ...ACHIEVEMENT_CATALOG.filter((entry) => entry.category === category).at(-1),
+    state: 'unlocked',
+  }));
+  const longest = renderAchievements({
+    ...statisticsFixture(),
+    achievementRepresentatives: longestRepresentatives,
+  });
+  assert.match(
+    longest,
+    /<text class="badge-label"[^>]*textLength="[0-9.]+" lengthAdjust="spacingAndGlyphs">Transcendent Trillion<\/text>/u,
+  );
+  assert.equal(validateSvgDocument(longest, { filePath: 'achievements.svg' }), true);
 });
 
 test('trophy case renders all four categories and sixteen icon-bearing badge states', () => {

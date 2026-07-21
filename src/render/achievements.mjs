@@ -9,7 +9,78 @@ import {
   formatCompactNumber,
 } from './svg.mjs';
 
-const BADGE_X = Object.freeze([16, 112, 208, 304]);
+const BADGE_ROW_X = 16;
+const BADGE_ROW_WIDTH = 384;
+const BADGE_GAP = 6;
+const BADGE_MIN_WIDTH = 78;
+const BADGE_TEXT_OFFSET = 27;
+const BADGE_RIGHT_PADDING = 7;
+const BADGE_LABEL_SIZE = 7;
+const BADGE_META_SIZE = 6.5;
+
+function roundLayout(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function characterWidth(character) {
+  if (character === ' ') return 0.32;
+  if ('MW@%'.includes(character)) return 0.82;
+  if ('I1il.,:;!|'.includes(character)) return 0.32;
+  if (character === '-') return 0.4;
+  return 0.56;
+}
+
+function estimatedTextWidth(value, fontSize, { bold = false } = {}) {
+  const units = [...value].reduce((total, character) => total + characterWidth(character), 0);
+  return roundLayout(units * fontSize * (bold ? 1.04 : 1));
+}
+
+function fittedTextAttributes(value, maxWidth, fontSize, options) {
+  if (estimatedTextWidth(value, fontSize, options) <= maxWidth) {
+    return '';
+  }
+  return ` textLength="${roundLayout(maxWidth)}" lengthAdjust="spacingAndGlyphs"`;
+}
+
+function representativeBadgeWidth(entry) {
+  const meta = `${entry.state === 'unlocked' ? '◆' : entry.state === 'locked' ? '◇' : '—'} ${entry.category.toUpperCase()}`;
+  const contentWidth = Math.max(
+    estimatedTextWidth(entry.label, BADGE_LABEL_SIZE, { bold: true }),
+    estimatedTextWidth(meta, BADGE_META_SIZE),
+  );
+  return Math.max(
+    BADGE_MIN_WIDTH,
+    Math.ceil(BADGE_TEXT_OFFSET + contentWidth + BADGE_RIGHT_PADDING),
+  );
+}
+
+function representativeBadgeLayouts(entries) {
+  const contentWidth = BADGE_ROW_WIDTH - (BADGE_GAP * (entries.length - 1));
+  const preferred = entries.map(representativeBadgeWidth);
+  const preferredTotal = preferred.reduce((total, width) => total + width, 0);
+  const minimumTotal = BADGE_MIN_WIDTH * entries.length;
+  const widths = preferredTotal <= contentWidth
+    ? preferred.map((width) => width + ((contentWidth - preferredTotal) / entries.length))
+    : (() => {
+      const availableGrowth = contentWidth - minimumTotal;
+      const requestedGrowth = preferred
+        .map((width) => width - BADGE_MIN_WIDTH)
+        .reduce((total, width) => total + width, 0);
+      return preferred.map((width) => (
+        BADGE_MIN_WIDTH + (((width - BADGE_MIN_WIDTH) / requestedGrowth) * availableGrowth)
+      ));
+    })();
+
+  let x = BADGE_ROW_X;
+  return widths.map((width, index) => {
+    const roundedWidth = index === widths.length - 1
+      ? roundLayout((BADGE_ROW_X + BADGE_ROW_WIDTH) - x)
+      : roundLayout(width);
+    const layout = Object.freeze({ x: roundLayout(x), width: roundedWidth });
+    x += roundedWidth + BADGE_GAP;
+    return layout;
+  });
+}
 
 function presentation(rank) {
   if (rank.status === 'unranked') {
@@ -49,14 +120,23 @@ function rankNodes(currentRank) {
   });
 }
 
-function representativeBadge(entry, x) {
+function representativeBadge(entry, { x, width }) {
   const stateClass = `seal-${entry.state}`;
   const marker = entry.state === 'unlocked' ? '◆' : entry.state === 'locked' ? '◇' : '—';
+  const meta = `${marker} ${entry.category.toUpperCase()}`;
+  const textWidth = width - BADGE_TEXT_OFFSET - BADGE_RIGHT_PADDING;
+  const labelFit = fittedTextAttributes(
+    entry.label,
+    textWidth,
+    BADGE_LABEL_SIZE,
+    { bold: true },
+  );
+  const metaFit = fittedTextAttributes(meta, textWidth, BADGE_META_SIZE);
   return [
-    `<rect class="representative-badge ${stateClass}" x="${x}" y="148" width="88" height="32" rx="5"/>`,
-    `<g class="achievement-state-${entry.state}">${renderAchievementIcon(entry.iconId, { x: x + 5, y: 153, size: 18 })}</g>`,
-    `<text class="badge-label" x="${x + 27}" y="162">${escapeXml(entry.label)}</text>`,
-    `<text class="meta" x="${x + 27}" y="174">${marker} ${escapeXml(entry.category.toUpperCase())}</text>`,
+    `<rect class="representative-badge ${stateClass}" x="${x}" y="146" width="${width}" height="36" rx="5"/>`,
+    `<g class="achievement-state-${entry.state}">${renderAchievementIcon(entry.iconId, { x: x + 5, y: 155, size: 18 })}</g>`,
+    `<text class="badge-label" x="${x + BADGE_TEXT_OFFSET}" y="160"${labelFit}>${escapeXml(entry.label)}</text>`,
+    `<text class="badge-meta" x="${x + BADGE_TEXT_OFFSET}" y="174" fill="var(--muted)" font-family="system-ui,sans-serif" font-size="6.5" letter-spacing=".1"${metaFit}>${escapeXml(meta)}</text>`,
   ].join('\n');
 }
 
@@ -73,6 +153,7 @@ export function renderAchievements(statistics, {
   const crest = statistics.rank.status === 'ranked'
     ? renderCrest(statistics.rank.current.rank, { x: 16, y: 55, size: 64 })
     : renderUnrankedCrest({ x: 16, y: 55, size: 64 });
+  const badgeLayouts = representativeBadgeLayouts(statistics.achievementRepresentatives);
   const body = [
     renderContainedPrestige({ width: 416, height: 190 }),
     `<text class="heading" x="16" y="27">CODEX RENOWN · ${escapeXml(identity)}</text>`,
@@ -88,7 +169,7 @@ export function renderAchievements(statistics, {
     ...rankNodes(rank.currentRank),
     '<line class="divider" x1="16" y1="138" x2="400" y2="138"/>',
     ...statistics.achievementRepresentatives.map((entry, index) => (
-      representativeBadge(entry, BADGE_X[index])
+      representativeBadge(entry, badgeLayouts[index])
     )),
   ].join('\n');
 
