@@ -3,6 +3,8 @@ import { statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
+import { PRODUCT_NAME } from '../product.mjs';
+
 export const DEFAULT_PROFILE_TIMEOUT_MS = 15_000;
 export const MAX_PROFILE_RESPONSE_BYTES = 1024 * 1024;
 export const CODEX_APP_SERVER_ARGS = Object.freeze([
@@ -582,8 +584,8 @@ export function createCodexAppServerRunner({
         method: 'initialize',
         params: {
           clientInfo: {
-            name: 'agent_card_tracker',
-            title: 'Agent Card Tracker',
+            name: 'codex_renown',
+            title: PRODUCT_NAME,
             version: '0.1.0',
           },
           capabilities: {

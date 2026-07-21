@@ -13,6 +13,13 @@ import test from 'node:test';
 
 import { SaxesParser } from 'saxes';
 
+import {
+  CARD_ARTIFACT_PATHS,
+  CARD_NAMES,
+  CARD_VIEW_BOXES,
+  THEME_NAMES,
+  cardFilename,
+} from '../src/card-catalog.mjs';
 import { eachDay } from '../src/domain/calendar.mjs';
 import { computeStatistics } from '../src/domain/statistics.mjs';
 import { renderCards, run as runRenderCommand } from '../src/commands/render.mjs';
@@ -22,6 +29,7 @@ import { renderCompact } from '../src/render/compact.mjs';
 import { renderOverview } from '../src/render/overview.mjs';
 import { renderRecords } from '../src/render/records.mjs';
 import { renderTrends } from '../src/render/trends.mjs';
+import { renderTrophyCase } from '../src/render/trophy-case.mjs';
 import {
   CARD_STYLE,
   formatCompactNumber,
@@ -30,23 +38,6 @@ import {
 } from '../src/render/svg.mjs';
 
 const AS_OF = '2026-07-21';
-const CARD_NAMES = Object.freeze([
-  'overview',
-  'achievements',
-  'records',
-  'trends',
-  'activity',
-  'compact',
-]);
-const CARD_VIEW_BOXES = Object.freeze({
-  overview: '0 0 846 210',
-  achievements: '0 0 416 190',
-  records: '0 0 416 190',
-  trends: '0 0 416 190',
-  activity: '0 0 416 190',
-  compact: '0 0 416 96',
-});
-
 function profileStatistics(lifetimeTotalTokens = 19_300_000_000) {
   const dates = eachDay('2026-06-01', AS_OF);
   const days = dates.map((date, index) => ({
@@ -80,6 +71,7 @@ function renderAll(statistics = profileStatistics()) {
   return {
     overview: renderOverview(statistics),
     achievements: renderAchievements(statistics),
+    'trophy-case': renderTrophyCase(statistics),
     records: renderRecords(statistics),
     trends: renderTrends(statistics),
     activity: renderActivity(statistics),
@@ -201,7 +193,7 @@ function profileCandidate() {
   };
 }
 
-test('all six cards are accessible deterministic SVGs within fixed canvases', () => {
+test('all seven cards are accessible deterministic SVGs within fixed canvases', () => {
   const cards = renderAll();
   for (const name of CARD_NAMES) {
     assertSafeCard(cards[name], CARD_VIEW_BOXES[name]);
@@ -209,7 +201,7 @@ test('all six cards are accessible deterministic SVGs within fixed canvases', ()
   }
   assert.equal((cards.activity.match(/class="heat-cell /g) ?? []).length, 371);
   assert.equal((cards.achievements.match(/class="rank-node/g) ?? []).length, 20);
-  assert.equal((cards.achievements.match(/class="seal-/g) ?? []).length, 4);
+  assert.equal((cards.achievements.match(/class="representative-badge /g) ?? []).length, 4);
 });
 
 test('overview and compact lead with lifetime tokens and Rank XV Mythic', () => {
@@ -223,7 +215,7 @@ test('overview and compact lead with lifetime tokens and Rank XV Mythic', () => 
   assert.match(overview, /LAST 7 DAYS/);
   assert.match(overview, /LAST 30 DAYS/);
   assert.match(overview, /ACTIVE DAYS/);
-  assert.match(compact, /CODEX · RANK XV MYTHIC/);
+  assert.match(compact, /RANK XV · MYTHIC/);
   assert.match(compact, /19\.3B TOKENS/);
   assert.doesNotMatch(overview + compact, /Claude|Complete|Mixed/);
 });
@@ -232,10 +224,10 @@ test('achievements and records expose rank track, seals, and complete windows', 
   const { achievements, records } = renderAll();
 
   assert.match(achievements, /15 \/ 20 ranks unlocked/);
-  assert.match(achievements, /Billion Club/);
-  assert.match(achievements, /10B Realm/);
-  assert.match(achievements, /100 Active Days/);
-  assert.match(achievements, /Billion Day/);
+  assert.match(achievements, /Mythic Realm/);
+  assert.match(achievements, /Heavy Day/);
+  assert.match(achievements, /Monthbound/);
+  assert.match(achievements, /Trailblazer/);
   assert.match(achievements, /seal-unlocked/);
   assert.match(achievements, /seal-locked/);
 
@@ -314,7 +306,7 @@ test('overview keeps a safe-integer lifetime readable at max rank', () => {
   assert.match(overview, /MAX RANK/);
 });
 
-test('renderCards atomically writes all six schema v2 cards', async (t) => {
+test('renderCards atomically writes all 35 themed schema v2 cards', async (t) => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const candidate = profileCandidate();
@@ -330,10 +322,15 @@ test('renderCards atomically writes all six schema v2 cards', async (t) => {
     asOf: AS_OF,
     asOfInstant: '2026-07-21T12:00:00.000Z',
   });
-  assert.deepEqual(Object.keys(result.cardPaths), CARD_NAMES);
-  for (const name of CARD_NAMES) {
-    const contents = await readFile(path.join(cwd, 'cards', `${name}.svg`), 'utf8');
-    assertSafeCard(contents, CARD_VIEW_BOXES[name]);
+  assert.deepEqual(Object.keys(result.cardPaths), CARD_ARTIFACT_PATHS);
+  for (const theme of THEME_NAMES) {
+    for (const name of CARD_NAMES) {
+      const contents = await readFile(
+        path.join(cwd, 'cards', cardFilename(name, theme)),
+        'utf8',
+      );
+      assertSafeCard(contents, CARD_VIEW_BOXES[name]);
+    }
   }
 });
 
@@ -341,8 +338,12 @@ test('validation failure preserves every existing card byte', async (t) => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-atomic-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   await mkdir(path.join(cwd, 'cards'), { recursive: true });
-  await Promise.all(CARD_NAMES.map((name) => (
-    writeFile(path.join(cwd, 'cards', `${name}.svg`), `old-${name}\n`, 'utf8')
+  await Promise.all(CARD_ARTIFACT_PATHS.map((artifactPath) => (
+    writeFile(
+      path.join(cwd, 'cards', path.basename(artifactPath)),
+      `old-${artifactPath}\n`,
+      'utf8',
+    )
   )));
 
   let calls = 0;
@@ -361,10 +362,10 @@ test('validation failure preserves every existing card byte', async (t) => {
   );
 
   assert.equal(calls, 3);
-  for (const name of CARD_NAMES) {
+  for (const artifactPath of CARD_ARTIFACT_PATHS) {
     assert.equal(
-      await readFile(path.join(cwd, 'cards', `${name}.svg`), 'utf8'),
-      `old-${name}\n`,
+      await readFile(path.join(cwd, 'cards', path.basename(artifactPath)), 'utf8'),
+      `old-${artifactPath}\n`,
     );
   }
 });
@@ -382,7 +383,7 @@ test('empty public data renders valid Unranked and unknown cards', async (t) => 
   assertSafeCard(overview, CARD_VIEW_BOXES.overview);
 });
 
-test('render CLI and determinism check report six cards', async (t) => {
+test('render CLI and determinism check report 35 cards', async (t) => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-cli-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const stdout = captureStream();
@@ -401,7 +402,7 @@ test('render CLI and determinism check report six cards', async (t) => {
     ),
     0,
   );
-  assert.match(stdout.text(), /Rendered 6 cards as of 2026-07-21/);
+  assert.match(stdout.text(), /Rendered 35 cards as of 2026-07-21/);
 
   const valid = spawnSync(
     process.execPath,
@@ -409,5 +410,5 @@ test('render CLI and determinism check report six cards', async (t) => {
     { cwd: process.cwd(), encoding: 'utf8' },
   );
   assert.equal(valid.status, 0, valid.stderr);
-  assert.match(valid.stdout, /Deterministic SVG OK \(6 cards, as-of 2026-07-21\)/);
+  assert.match(valid.stdout, /Deterministic SVG OK \(35 cards, as-of 2026-07-21\)/);
 });

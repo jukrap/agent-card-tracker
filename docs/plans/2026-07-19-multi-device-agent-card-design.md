@@ -1,5 +1,8 @@
 > **Superseded:** The current product is Codex-only, uses public schema v2, and renders six RPG usage cards. This document remains historical context.
 
+> [!IMPORTANT]
+> Superseded on 2026-07-22 by [Codex Renown design](2026-07-21-codex-renown-design.md) and [implementation plan](2026-07-22-codex-renown-implementation.md). Retained only as historical context; do not use it as the current product or provider contract.
+
 # Multi-device AI usage card design
 
 ## Purpose

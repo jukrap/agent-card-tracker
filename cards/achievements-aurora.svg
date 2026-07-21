@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="190" viewBox="0 0 416 190" role="img" aria-labelledby="codex-renown-achievements-title codex-renown-achievements-desc">
+<title id="codex-renown-achievements-title">Codex Renown rank achievements for @jukrap</title>
+<desc id="codex-renown-achievements-desc">Current crest, twenty-rank lifetime ladder, and four representative personal milestones as of 2026-07-22.</desc>
+<style>:root{--bg:#f7fffd;--surface:#ecfdf5;--border:#a7f3d0;--text:#0f2f2a;--muted:#45635d;--accent:#047857;--accent-strong:#065f46;--accent-soft:#d1fae5;--common:#57606a;--uncommon:#1a7f37;--rare:#0969da;--epic:#8250df;--legendary:#9a6700;--on-rarity:#ffffff;--zero:#dff7ef;--unknown:#45635d;--heat-1:#99f6e4;--heat-2:#5eead4;--heat-3:#14b8a6;--heat-4:#047857}
+@media (prefers-color-scheme: dark){:root{--bg:#071a18;--surface:#0d2522;--border:#285e57;--text:#eafff9;--muted:#a7d4cc;--accent:#5eead4;--accent-strong:#99f6e4;--accent-soft:#123e39;--common:#8c959f;--uncommon:#3fb950;--rare:#58a6ff;--epic:#bc8cff;--legendary:#d29922;--on-rarity:#0d1117;--zero:#16332f;--unknown:#a7d4cc;--heat-1:#134e4a;--heat-2:#0f766e;--heat-3:#14b8a6;--heat-4:#5eead4}}
+.card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
+.heading{fill:var(--text);font-family:system-ui,sans-serif;font-size:14px;font-weight:700}
+.subheading{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px}
+.label{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px;font-weight:700;letter-spacing:.3px}
+.value{fill:var(--text);font-family:system-ui,sans-serif;font-size:17px;font-weight:700}
+.small-value{fill:var(--text);font-family:system-ui,sans-serif;font-size:11px;font-weight:700}
+.hero{fill:var(--text);font-family:system-ui,sans-serif;font-size:38px;font-weight:800;letter-spacing:-1.2px}
+.rank-title{fill:var(--text);font-family:system-ui,sans-serif;font-size:22px;font-weight:800;letter-spacing:.4px}
+.rank-roman{fill:var(--on-rarity);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:22px;font-weight:800}
+.rarity-label{fill:var(--on-rarity);font-family:system-ui,sans-serif;font-size:8px;font-weight:700}
+.exact{fill:var(--muted);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:9px}
+.meta{fill:var(--muted);font-family:system-ui,sans-serif;font-size:8px}
+.divider{stroke:var(--border);stroke-width:1}
+.panel{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.progress-track{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.progress-fill{fill:var(--accent)}
+.trend-bar{fill:var(--accent)}
+.state-zero{fill:var(--zero)}
+.state-partial{fill:var(--accent);stroke:var(--legendary);stroke-width:1;stroke-dasharray:2 2}
+.state-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.state-future{fill:none;stroke:var(--border);stroke-width:1}
+.heat-cell{stroke:var(--border);stroke-width:.5}
+.level-1{fill:var(--heat-1)}
+.level-2{fill:var(--heat-2)}
+.level-3{fill:var(--heat-3)}
+.level-4{fill:var(--heat-4)}
+.coverage-partial{stroke:var(--legendary);stroke-width:1;stroke-dasharray:1 1}
+.coverage-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.rarity-common{fill:var(--common)}
+.rarity-uncommon{fill:var(--uncommon)}
+.rarity-rare{fill:var(--rare)}
+.rarity-epic{fill:var(--epic)}
+.rarity-legendary{fill:var(--legendary)}
+.rank-node{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.rank-node-unlocked{fill:var(--accent);stroke:var(--accent);stroke-width:1}
+.rank-node-current{fill:var(--bg);stroke:var(--epic);stroke-width:2}
+.seal-unlocked{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
+.seal-locked{fill:none;stroke:var(--border);stroke-width:1}
+.seal-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.crest-rarity-common{--rarity:var(--common)}
+.crest-rarity-uncommon{--rarity:var(--uncommon)}
+.crest-rarity-rare{--rarity:var(--rare)}
+.crest-rarity-epic{--rarity:var(--epic)}
+.crest-rarity-legendary{--rarity:var(--legendary)}
+.crest-frame{fill:var(--surface);stroke:var(--rarity);stroke-width:2;stroke-linejoin:round}
+.crest-pip{fill:var(--rarity);stroke:var(--bg);stroke-width:1}
+.glyph-line{fill:none;stroke:var(--rarity);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.glyph-fill{fill:var(--rarity)}
+.glyph-cut{fill:var(--surface)}
+.glyph-faint{opacity:.6}
+.icon-line{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-fill{fill:var(--accent)}
+.prestige-corner{fill:none;stroke:var(--border);stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.badge-label{fill:var(--text);font-family:system-ui,sans-serif;font-size:7px;font-weight:700}
+.crest-frame-unranked{fill:var(--surface);stroke:var(--unknown);stroke-width:2;stroke-dasharray:3 3}
+.unranked-glyph{fill:none;stroke:var(--unknown);stroke-width:2;stroke-linecap:round}
+.achievement-state-locked{opacity:.55}
+.achievement-state-unknown{opacity:.55}</style>
+<rect class="card-bg" x="0.5" y="0.5" width="415" height="189" rx="6"/>
+<g class="contained-prestige"><path class="prestige-corner" d="M8 28V8H28"/><path class="prestige-corner" d="M388 8H408V28"/><path class="prestige-corner" d="M28 182H8V162"/><path class="prestige-corner" d="M388 182H408V162"/></g>
+<text class="heading" x="16" y="27">CODEX RENOWN · @jukrap</text>
+<text class="subheading" x="16" y="43">RANK ACHIEVEMENTS · 15 / 20 ranks unlocked</text>
+<g class="crest crest-rarity-epic" transform="translate(16 55) scale(0.888889)"><path class="crest-frame crest-frame-epic crest-frame-epic-diamond" d="M36 2 64 20 57 55 36 68 15 55 8 20Z"/><g class="rank-glyph rank-glyph-mythic-eye" transform="translate(22 18) scale(1.166667)"><path class="glyph-line" d="M2 12C5 7 8 5 12 5S19 7 22 12C19 17 16 19 12 19S5 17 2 12Z"/><circle class="glyph-fill" cx="12" cy="12" r="4"/><circle class="glyph-cut" cx="12" cy="12" r="1.5"/></g><circle class="crest-pip" cx="28" cy="64" r="2.5"/><circle class="crest-pip" cx="36" cy="64" r="2.5"/><circle class="crest-pip" cx="44" cy="64" r="2.5"/></g>
+<text class="label" x="98" y="63">CURRENT TOKEN RANK</text>
+<text class="value" x="98" y="87">RANK XV · MYTHIC</text>
+<rect class="progress-track" x="98" y="98" width="302" height="8" rx="4"/>
+<rect class="progress-fill" x="98" y="98" width="188.33" height="8" rx="4"/>
+<text class="meta" x="98" y="116">62% to ASCENDANT · 25B</text>
+<rect class="rank-node-unlocked" x="101" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="116.1" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="131.2" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="146.3" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="161.4" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="176.5" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="191.6" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="206.7" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="221.8" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="236.9" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="252" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="267.1" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="282.2" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-unlocked" x="297.3" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node-current" x="312.4" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node" x="327.5" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node" x="342.6" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node" x="357.7" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node" x="372.8" y="119" width="8" height="8" rx="2"/>
+<rect class="rank-node" x="387.9" y="119" width="8" height="8" rx="2"/>
+<line class="divider" x1="16" y1="138" x2="400" y2="138"/>
+<rect class="representative-badge seal-unlocked" x="16" y="148" width="88" height="32" rx="5"/>
+<g class="achievement-state-unlocked"><g class="achievement-icon achievement-icon-mythic-star" transform="translate(21 153) scale(0.75)"><polygon class="icon-line" points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9"/><circle class="icon-fill" cx="12" cy="12" r="3"/></g></g>
+<text class="badge-label" x="43" y="162">Mythic Realm</text>
+<text class="meta" x="43" y="174">◆ RENOWN</text>
+<rect class="representative-badge seal-unlocked" x="112" y="148" width="88" height="32" rx="5"/>
+<g class="achievement-state-unlocked"><g class="achievement-icon achievement-icon-calendar-shield" transform="translate(117 153) scale(0.75)"><rect class="icon-line" x="3" y="4" width="18" height="16" rx="2"/><path class="icon-line" d="M3 9H21M7 2V6M17 2V6M12 11 17 13V16C17 18 15 20 12 21 9 20 7 18 7 16V13Z"/></g></g>
+<text class="badge-label" x="139" y="162">Seven-Day Siege</text>
+<text class="meta" x="139" y="174">◆ MOMENTUM</text>
+<rect class="representative-badge seal-unlocked" x="208" y="148" width="88" height="32" rx="5"/>
+<g class="achievement-state-unlocked"><g class="achievement-icon achievement-icon-chain" transform="translate(213 153) scale(0.75)"><path class="icon-line" d="M9 15 7 17C4 20 0 16 3 13L7 9C10 6 14 10 11 13L10 14M15 9 17 7C20 4 24 8 21 11L17 15C14 18 10 14 13 11L14 10"/></g></g>
+<text class="badge-label" x="235" y="162">Monthbound</text>
+<text class="meta" x="235" y="174">◆ CONSISTENCY</text>
+<rect class="representative-badge seal-unlocked" x="304" y="148" width="88" height="32" rx="5"/>
+<g class="achievement-state-unlocked"><g class="achievement-icon achievement-icon-calendar-check" transform="translate(309 153) scale(0.75)"><rect class="icon-line" x="3" y="4" width="18" height="17" rx="2"/><path class="icon-line" d="M3 9H21M7 2V6M17 2V6M7 15 10 18 17 12"/></g></g>
+<text class="badge-label" x="331" y="162">Active Centurion</text>
+<text class="meta" x="331" y="174">◆ JOURNEY</text>
+</svg>

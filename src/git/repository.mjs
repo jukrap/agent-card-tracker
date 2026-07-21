@@ -5,7 +5,9 @@ import * as defaultFileSystem from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-export const TARGET_REPOSITORY = 'jukrap/agent-card-tracker';
+import { TARGET_REPOSITORY } from '../product.mjs';
+
+export { TARGET_REPOSITORY };
 export const DEFAULT_GIT_TIMEOUT_MS = 30_000;
 export const DEFAULT_GIT_MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 export const DEFAULT_SYNC_LOCK_STALE_MS = 30 * 60 * 1_000;
@@ -640,6 +642,54 @@ async function releaseLock(lockPath, lockValue, fileSystem) {
   }
 }
 
+async function resolveRepositoryLockPath(cwd, fileSystem) {
+  const dotGitPath = path.join(path.resolve(cwd), '.git');
+  let stat;
+  try {
+    stat = await fileSystem.lstat(dotGitPath);
+  } catch {
+    throw repositoryError('SYNC_LOCK_FAILED');
+  }
+
+  if (stat.isSymbolicLink()) {
+    throw repositoryError('SYNC_LOCK_FAILED');
+  }
+  if (stat.isDirectory()) {
+    return path.join(dotGitPath, 'agent-card-sync.lock');
+  }
+  if (!stat.isFile()) {
+    throw repositoryError('SYNC_LOCK_FAILED');
+  }
+
+  let marker;
+  try {
+    marker = await fileSystem.readFile(dotGitPath, 'utf8');
+  } catch {
+    throw repositoryError('SYNC_LOCK_FAILED');
+  }
+  if (Buffer.byteLength(marker, 'utf8') > MAX_LOCK_BYTES) {
+    throw repositoryError('SYNC_LOCK_FAILED');
+  }
+  const match = /^gitdir: ([^\u0000\r\n]+)\r?\n?$/u.exec(marker);
+  if (!match) {
+    throw repositoryError('SYNC_LOCK_FAILED');
+  }
+
+  const gitDirectory = path.resolve(path.dirname(dotGitPath), match[1]);
+  try {
+    const gitDirectoryStat = await fileSystem.lstat(gitDirectory);
+    if (gitDirectoryStat.isSymbolicLink() || !gitDirectoryStat.isDirectory()) {
+      throw repositoryError('SYNC_LOCK_FAILED');
+    }
+  } catch (error) {
+    if (error instanceof GitRepositoryError) {
+      throw error;
+    }
+    throw repositoryError('SYNC_LOCK_FAILED');
+  }
+  return path.join(gitDirectory, 'agent-card-sync.lock');
+}
+
 export async function withRepositoryLock(
   {
     cwd = process.cwd(),
@@ -655,7 +705,7 @@ export async function withRepositoryLock(
     || !assertPositiveSafeInteger(staleAfterMs)) {
     throw repositoryError('GIT_INVALID_ARGUMENT');
   }
-  const lockPath = path.join(path.resolve(cwd), '.git', 'agent-card-sync.lock');
+  const lockPath = await resolveRepositoryLockPath(cwd, fileSystem);
   const createdAt = lockInstant(now);
   const lockValue = lockContents(createdAt, randomUUID());
   await acquireLock({

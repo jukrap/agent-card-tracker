@@ -1,4 +1,4 @@
-# Security policy
+# Codex Renown security policy
 
 ## Supported scope
 
@@ -8,7 +8,7 @@ The supported deployment is the repository's documented flow: one private local 
 
 ## Reporting a vulnerability
 
-Use GitHub private vulnerability reporting when it is enabled: open the repository's **Security** tab and choose **Report a vulnerability**, or visit [the private report form](https://github.com/jukrap/agent-card-tracker/security/advisories/new). This creates a private draft security advisory for coordinated disclosure.
+Use GitHub private vulnerability reporting when it is enabled: open the repository's **Security** tab and choose **Report a vulnerability**, or visit [the private report form](https://github.com/jukrap/codex-renown/security/advisories/new). This creates a private draft security advisory for coordinated disclosure.
 
 If the private form is unavailable, open a public issue asking the maintainer for a private contact channel, but include no vulnerability details, proof of concept, path, token, account information, or aggregate data in that issue. Do not report a secret by pasting the secret itself.
 
@@ -40,6 +40,8 @@ Availability or schema changes in the experimental Codex App Server method, inac
 Raw logs remain on each computer. Collection reduces them in memory to an intentionally public aggregate: opaque device ID, writer-key hash, timestamps/timezone, sanitized status, daily token categories/totals, optional session counts, and coverage. A profile candidate contains only sanitized provider calendar-date totals, optional lifetime total, and coverage.
 
 The validator is designed to reject raw prompts and responses, project/file paths, session IDs, hostname, username, account identity, email, credentials, unknown fields, secret-shaped text, active SVG elements, and external SVG resources. The repository never needs the original log files or an authentication token to render cards.
+
+Card publication is limited to an exact allowlist of 35 flat SVG paths: seven card types across five static themes. Nested, unlisted, active, externally linked, or oversized SVG files fail repository validation before publication.
 
 Public aggregates are not anonymous in the statistical sense. Repository history may reveal token volume, active dates, timezone, collection cadence, session counts, and stale-device events. Users must decide whether that metadata is acceptable before publishing. Removing a file from the latest commit does not remove it from Git history or existing clones.
 

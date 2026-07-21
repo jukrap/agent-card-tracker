@@ -1,3 +1,5 @@
+import { CARD_THEMES } from './themes.mjs';
+
 const XML_REPLACEMENTS = Object.freeze({
   '&': '&amp;',
   '<': '&lt;',
@@ -14,9 +16,17 @@ const NUMBER_UNITS = Object.freeze([
   { threshold: 1_000, suffix: 'K' },
 ]);
 
-export const CARD_STYLE = `
-:root{--bg:#ffffff;--surface:#f6f8fa;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#0969da;--accent-strong:#0550ae;--accent-soft:#ddf4ff;--common:#57606a;--uncommon:#1a7f37;--rare:#0969da;--epic:#8250df;--legendary:#9a6700;--on-rarity:#ffffff;--zero:#eaeef2;--unknown:#57606a;--heat-1:#b6e3ff;--heat-2:#54aeff;--heat-3:#218bff;--heat-4:#0969da}
-@media (prefers-color-scheme: dark){:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8c959f;--accent:#58a6ff;--accent-strong:#79c0ff;--accent-soft:#1f3b57;--common:#8c959f;--uncommon:#3fb950;--rare:#58a6ff;--epic:#bc8cff;--legendary:#d29922;--on-rarity:#0d1117;--zero:#21262d;--unknown:#8c959f;--heat-1:#0e4429;--heat-2:#006d32;--heat-3:#26a641;--heat-4:#39d353}}
+const CSS_THEME_KEYS = Object.freeze([
+  ['bg', '--bg'], ['surface', '--surface'], ['border', '--border'],
+  ['text', '--text'], ['muted', '--muted'], ['accent', '--accent'],
+  ['accentStrong', '--accent-strong'], ['accentSoft', '--accent-soft'],
+  ['common', '--common'], ['uncommon', '--uncommon'], ['rare', '--rare'],
+  ['epic', '--epic'], ['legendary', '--legendary'], ['onRarity', '--on-rarity'],
+  ['zero', '--zero'], ['unknown', '--unknown'], ['heat1', '--heat-1'],
+  ['heat2', '--heat-2'], ['heat3', '--heat-3'], ['heat4', '--heat-4'],
+]);
+
+const BASE_CARD_STYLE = `
 .card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
 .heading{fill:var(--text);font-family:system-ui,sans-serif;font-size:14px;font-weight:700}
 .subheading{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px}
@@ -56,7 +66,44 @@ export const CARD_STYLE = `
 .seal-unlocked{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
 .seal-locked{fill:none;stroke:var(--border);stroke-width:1}
 .seal-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.crest-rarity-common{--rarity:var(--common)}
+.crest-rarity-uncommon{--rarity:var(--uncommon)}
+.crest-rarity-rare{--rarity:var(--rare)}
+.crest-rarity-epic{--rarity:var(--epic)}
+.crest-rarity-legendary{--rarity:var(--legendary)}
+.crest-frame{fill:var(--surface);stroke:var(--rarity);stroke-width:2;stroke-linejoin:round}
+.crest-pip{fill:var(--rarity);stroke:var(--bg);stroke-width:1}
+.glyph-line{fill:none;stroke:var(--rarity);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.glyph-fill{fill:var(--rarity)}
+.glyph-cut{fill:var(--surface)}
+.glyph-faint{opacity:.6}
+.icon-line{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-fill{fill:var(--accent)}
+.prestige-corner{fill:none;stroke:var(--border);stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.badge-label{fill:var(--text);font-family:system-ui,sans-serif;font-size:7px;font-weight:700}
+.crest-frame-unranked{fill:var(--surface);stroke:var(--unknown);stroke-width:2;stroke-dasharray:3 3}
+.unranked-glyph{fill:none;stroke:var(--unknown);stroke-width:2;stroke-linecap:round}
+.achievement-state-locked{opacity:.55}
+.achievement-state-unknown{opacity:.55}
 `.trim();
+
+function themeDeclarations(tokens) {
+  return CSS_THEME_KEYS.map(([key, variable]) => `${variable}:${tokens[key]}`).join(';');
+}
+
+export function cardStyle(themeName = 'github') {
+  if (typeof themeName !== 'string' || !Object.hasOwn(CARD_THEMES, themeName)) {
+    throw new TypeError('card theme is unknown');
+  }
+  const theme = CARD_THEMES[themeName];
+  return [
+    `:root{${themeDeclarations(theme.light)}}`,
+    `@media (prefers-color-scheme: dark){:root{${themeDeclarations(theme.dark)}}}`,
+    BASE_CARD_STYLE,
+  ].join('\n');
+}
+
+export const CARD_STYLE = cardStyle();
 
 export function escapeXml(value) {
   return String(value).replace(/[&<>"']/g, (character) => XML_REPLACEMENTS[character]);
@@ -175,6 +222,7 @@ export function cardDocument({
   title,
   description,
   body,
+  theme = 'github',
 }) {
   if (!/^[a-z][a-z0-9-]*$/.test(id)) {
     throw new TypeError('card id must be a fixed lowercase identifier');
@@ -189,7 +237,7 @@ export function cardDocument({
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="${titleId} ${descriptionId}">`,
     `<title id="${titleId}">${escapeXml(title)}</title>`,
     `<desc id="${descriptionId}">${escapeXml(description)}</desc>`,
-    `<style>${CARD_STYLE}</style>`,
+    `<style>${cardStyle(theme)}</style>`,
     `<rect class="card-bg" x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="6"/>`,
     body,
     '</svg>',

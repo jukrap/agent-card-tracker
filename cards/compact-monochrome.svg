@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="96" viewBox="0 0 416 96" role="img" aria-labelledby="codex-renown-compact-title codex-renown-compact-desc">
+<title id="codex-renown-compact-title">Codex Renown compact badge for @jukrap</title>
+<desc id="codex-renown-compact-desc">Compact lifetime token total, rank crest, and next-rank progress as of 2026-07-22.</desc>
+<style>:root{--bg:#ffffff;--surface:#f4f4f5;--border:#d4d4d8;--text:#18181b;--muted:#52525b;--accent:#3f3f46;--accent-strong:#27272a;--accent-soft:#e4e4e7;--common:#57606a;--uncommon:#1a7f37;--rare:#0969da;--epic:#8250df;--legendary:#9a6700;--on-rarity:#ffffff;--zero:#eeeeef;--unknown:#52525b;--heat-1:#d4d4d8;--heat-2:#a1a1aa;--heat-3:#71717a;--heat-4:#3f3f46}
+@media (prefers-color-scheme: dark){:root{--bg:#09090b;--surface:#18181b;--border:#3f3f46;--text:#fafafa;--muted:#a1a1aa;--accent:#d4d4d8;--accent-strong:#f4f4f5;--accent-soft:#27272a;--common:#8c959f;--uncommon:#3fb950;--rare:#58a6ff;--epic:#bc8cff;--legendary:#d29922;--on-rarity:#0d1117;--zero:#202023;--unknown:#a1a1aa;--heat-1:#3f3f46;--heat-2:#52525b;--heat-3:#a1a1aa;--heat-4:#d4d4d8}}
+.card-bg{fill:var(--bg);stroke:var(--border);stroke-width:1}
+.heading{fill:var(--text);font-family:system-ui,sans-serif;font-size:14px;font-weight:700}
+.subheading{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px}
+.label{fill:var(--muted);font-family:system-ui,sans-serif;font-size:9px;font-weight:700;letter-spacing:.3px}
+.value{fill:var(--text);font-family:system-ui,sans-serif;font-size:17px;font-weight:700}
+.small-value{fill:var(--text);font-family:system-ui,sans-serif;font-size:11px;font-weight:700}
+.hero{fill:var(--text);font-family:system-ui,sans-serif;font-size:38px;font-weight:800;letter-spacing:-1.2px}
+.rank-title{fill:var(--text);font-family:system-ui,sans-serif;font-size:22px;font-weight:800;letter-spacing:.4px}
+.rank-roman{fill:var(--on-rarity);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:22px;font-weight:800}
+.rarity-label{fill:var(--on-rarity);font-family:system-ui,sans-serif;font-size:8px;font-weight:700}
+.exact{fill:var(--muted);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:9px}
+.meta{fill:var(--muted);font-family:system-ui,sans-serif;font-size:8px}
+.divider{stroke:var(--border);stroke-width:1}
+.panel{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.progress-track{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.progress-fill{fill:var(--accent)}
+.trend-bar{fill:var(--accent)}
+.state-zero{fill:var(--zero)}
+.state-partial{fill:var(--accent);stroke:var(--legendary);stroke-width:1;stroke-dasharray:2 2}
+.state-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.state-future{fill:none;stroke:var(--border);stroke-width:1}
+.heat-cell{stroke:var(--border);stroke-width:.5}
+.level-1{fill:var(--heat-1)}
+.level-2{fill:var(--heat-2)}
+.level-3{fill:var(--heat-3)}
+.level-4{fill:var(--heat-4)}
+.coverage-partial{stroke:var(--legendary);stroke-width:1;stroke-dasharray:1 1}
+.coverage-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.rarity-common{fill:var(--common)}
+.rarity-uncommon{fill:var(--uncommon)}
+.rarity-rare{fill:var(--rare)}
+.rarity-epic{fill:var(--epic)}
+.rarity-legendary{fill:var(--legendary)}
+.rank-node{fill:var(--surface);stroke:var(--border);stroke-width:1}
+.rank-node-unlocked{fill:var(--accent);stroke:var(--accent);stroke-width:1}
+.rank-node-current{fill:var(--bg);stroke:var(--epic);stroke-width:2}
+.seal-unlocked{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1}
+.seal-locked{fill:none;stroke:var(--border);stroke-width:1}
+.seal-unknown{fill:none;stroke:var(--unknown);stroke-width:1;stroke-dasharray:2 2}
+.crest-rarity-common{--rarity:var(--common)}
+.crest-rarity-uncommon{--rarity:var(--uncommon)}
+.crest-rarity-rare{--rarity:var(--rare)}
+.crest-rarity-epic{--rarity:var(--epic)}
+.crest-rarity-legendary{--rarity:var(--legendary)}
+.crest-frame{fill:var(--surface);stroke:var(--rarity);stroke-width:2;stroke-linejoin:round}
+.crest-pip{fill:var(--rarity);stroke:var(--bg);stroke-width:1}
+.glyph-line{fill:none;stroke:var(--rarity);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.glyph-fill{fill:var(--rarity)}
+.glyph-cut{fill:var(--surface)}
+.glyph-faint{opacity:.6}
+.icon-line{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon-fill{fill:var(--accent)}
+.prestige-corner{fill:none;stroke:var(--border);stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.badge-label{fill:var(--text);font-family:system-ui,sans-serif;font-size:7px;font-weight:700}
+.crest-frame-unranked{fill:var(--surface);stroke:var(--unknown);stroke-width:2;stroke-dasharray:3 3}
+.unranked-glyph{fill:none;stroke:var(--unknown);stroke-width:2;stroke-linecap:round}
+.achievement-state-locked{opacity:.55}
+.achievement-state-unknown{opacity:.55}</style>
+<rect class="card-bg" x="0.5" y="0.5" width="415" height="95" rx="6"/>
+<g class="contained-prestige"><path class="prestige-corner" d="M6 20V6H20"/><path class="prestige-corner" d="M396 6H410V20"/><path class="prestige-corner" d="M20 90H6V76"/><path class="prestige-corner" d="M396 90H410V76"/></g>
+<g class="crest crest-rarity-epic" transform="translate(12 12) scale(0.888889)"><path class="crest-frame crest-frame-epic crest-frame-epic-diamond" d="M36 2 64 20 57 55 36 68 15 55 8 20Z"/><g class="rank-glyph rank-glyph-mythic-eye" transform="translate(22 18) scale(1.166667)"><path class="glyph-line" d="M2 12C5 7 8 5 12 5S19 7 22 12C19 17 16 19 12 19S5 17 2 12Z"/><circle class="glyph-fill" cx="12" cy="12" r="4"/><circle class="glyph-cut" cx="12" cy="12" r="1.5"/></g><circle class="crest-pip" cx="28" cy="64" r="2.5"/><circle class="crest-pip" cx="36" cy="64" r="2.5"/><circle class="crest-pip" cx="44" cy="64" r="2.5"/></g>
+<text class="label" x="88" y="20">CODEX RENOWN · @jukrap</text>
+<text class="small-value" x="88" y="39">RANK XV · MYTHIC</text>
+<text class="rank-title" x="88" y="63">19.4B TOKENS</text>
+<rect class="progress-track" x="88" y="70" width="312" height="6" rx="3"/>
+<rect class="progress-fill" x="88" y="70" width="194.57" height="6" rx="3"/>
+<text class="meta" x="88" y="88">62% to ASCENDANT · 25B</text>
+<text class="meta" x="400" y="88" text-anchor="end">2026-07-22</text>
+</svg>

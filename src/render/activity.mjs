@@ -1,3 +1,5 @@
+import { PUBLIC_HANDLE } from '../product.mjs';
+import { renderContainedPrestige } from './prestige.mjs';
 import {
   cardDocument,
   coverageLabel,
@@ -19,7 +21,10 @@ function metricBlock(label, metric, x, detail = '') {
   ].join('\n');
 }
 
-export function renderActivity(statistics) {
+export function renderActivity(statistics, {
+  theme = 'github',
+  identity = PUBLIC_HANDLE,
+} = {}) {
   if (!Array.isArray(statistics.heatmap.cells) || statistics.heatmap.cells.length !== 371) {
     throw new TypeError('activity heatmap must contain exactly 371 cells');
   }
@@ -59,8 +64,9 @@ export function renderActivity(statistics) {
     : statistics.activity.peak.date.slice(5);
 
   const body = [
-    '<text class="heading" x="16" y="27">Codex Activity</text>',
-    `<text class="subheading" x="16" y="43">53 weeks · through ${escapeXml(statistics.asOf)}${empty ? ' · No observed usage yet' : hasPartial ? ' · partial coverage' : ' · Monday start'}</text>`,
+    renderContainedPrestige({ width: 416, height: 190 }),
+    `<text class="heading" x="16" y="27">CODEX RENOWN · ${escapeXml(identity)}</text>`,
+    `<text class="subheading" x="16" y="43">ACTIVITY · 53 weeks through ${escapeXml(statistics.asOf)}${empty ? ' · No observed usage yet' : hasPartial ? ' · partial coverage' : ' · Monday start'}</text>`,
     ...weekdayLabels,
     ...cells,
     `<text class="meta" x="31" y="117">${escapeXml(statistics.heatmap.startDate)}</text>`,
@@ -73,10 +79,11 @@ export function renderActivity(statistics) {
   ].join('\n');
 
   return cardDocument({
-    id: 'codex-activity',
+    id: 'codex-renown-activity',
     width: 416,
     height: 190,
-    title: 'Codex activity',
+    theme,
+    title: `Codex Renown activity for ${identity}`,
     description: `A 53 by 7 Codex activity heatmap with active days, streaks, and peak usage through ${statistics.asOf}. Unknown days are outlined and partial observations are dashed.`,
     body,
   });

@@ -1,4 +1,6 @@
-# macOS and Linux scheduled sync
+# Codex Renown macOS and Linux scheduled sync
+
+Existing Agent Card Tracker installations must complete the [migration runbook](migration-codex-renown.md) before changing scheduler paths.
 
 Both examples run the same `npm run sync` command from a dedicated clone. Use `launchd` on macOS and a user `cron` entry on Linux. Run the scheduler as the user whose local Codex logs, ChatGPT sign-in, and Git credentials should be used.
 
@@ -7,8 +9,8 @@ Both examples run the same `npm run sync` command from a dedicated clone. Use `l
 Install Git, Node.js 24 or newer, and npm. Choose an absolute operational path, then initialize this computer with the same IANA timezone used on every device:
 
 ```sh
-git clone https://github.com/jukrap/agent-card-tracker.git /absolute/path/to/agent-card-tracker
-cd /absolute/path/to/agent-card-tracker
+git clone https://github.com/jukrap/codex-renown.git /absolute/path/to/codex-renown
+cd /absolute/path/to/codex-renown
 npm ci
 npm run setup -- --timezone Asia/Seoul
 npm run sync
@@ -27,7 +29,7 @@ If these commands point into a shell-only version manager, install a stable Node
 
 ## macOS: launchd
 
-Create `io.github.jukrap.agent-card-tracker.plist` under your user LaunchAgents directory. Replace every `/absolute/...` placeholder with a literal path from this computer:
+Create `io.github.jukrap.codex-renown.plist` under your user LaunchAgents directory. Replace every `/absolute/...` placeholder with a literal path from this computer:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -35,7 +37,7 @@ Create `io.github.jukrap.agent-card-tracker.plist` under your user LaunchAgents 
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>io.github.jukrap.agent-card-tracker</string>
+  <string>io.github.jukrap.codex-renown</string>
 
   <key>ProgramArguments</key>
   <array>
@@ -45,7 +47,7 @@ Create `io.github.jukrap.agent-card-tracker.plist` under your user LaunchAgents 
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/absolute/path/to/agent-card-tracker</string>
+  <string>/absolute/path/to/codex-renown</string>
 
   <key>EnvironmentVariables</key>
   <dict>
@@ -72,21 +74,21 @@ This `ProgramArguments` array is the non-shell form of `npm run sync`; `WorkingD
 Protect and load the file:
 
 ```sh
-chmod 600 "$HOME/Library/LaunchAgents/io.github.jukrap.agent-card-tracker.plist"
-launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/io.github.jukrap.agent-card-tracker.plist"
-launchctl kickstart -k "gui/$(id -u)/io.github.jukrap.agent-card-tracker"
+chmod 600 "$HOME/Library/LaunchAgents/io.github.jukrap.codex-renown.plist"
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/io.github.jukrap.codex-renown.plist"
+launchctl kickstart -k "gui/$(id -u)/io.github.jukrap.codex-renown"
 ```
 
 Inspect status with:
 
 ```sh
-launchctl print "gui/$(id -u)/io.github.jukrap.agent-card-tracker"
+launchctl print "gui/$(id -u)/io.github.jukrap.codex-renown"
 ```
 
 Before editing or removing the job, unload it with:
 
 ```sh
-launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/io.github.jukrap.agent-card-tracker.plist"
+launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/io.github.jukrap.codex-renown.plist"
 ```
 
 ## Linux: cron
@@ -95,7 +97,7 @@ Edit the current user's crontab with `crontab -e`. Use literal absolute paths. A
 
 ```cron
 PATH=/absolute/path/to/node-bin:/usr/local/bin:/usr/bin:/bin
-27 1 * * * cd /absolute/path/to/agent-card-tracker && npm run sync
+27 1 * * * cd /absolute/path/to/codex-renown && npm run sync
 ```
 
 The `cd` establishes the required working directory. The explicit environment `PATH` makes npm and node available without sourcing an interactive shell. The application lock rejects overlap; if the previous run can last a long time, also use the scheduler's own non-overlap facility where available.
@@ -108,6 +110,8 @@ Git authentication must work without a prompt for the scheduler's user. Prefer a
 
 For account-wide Codex totals, install a recent Codex CLI and complete its ChatGPT sign-in as the same user that owns the launchd job or crontab. Background jobs often have a smaller `PATH`; add the CLI directory to the private scheduler environment or set the non-secret `AGENT_CARD_CODEX_BIN` environment variable to the executable's absolute path.
 
+A successful run reports `account profile updated` when account-wide usage is available and `device fallback` when it publishes only local Codex aggregates.
+
 Do not copy CLI authentication files or place credentials in a plist, crontab, repository file, shell history, wrapper, or log. If the CLI is missing, signed in only with an API key, or does not support App Server account usage, sync still publishes local Codex aggregates and rendering uses the all-device local Codex fallback. GitHub Actions neither starts the App Server nor receives local CLI authentication state.
 
 ## Verify and recover
@@ -117,12 +121,12 @@ After installing either schedule, trigger it once and verify:
 1. the job exits successfully under the intended user and `HOME`;
 2. only this device's sanitized data path changes;
 3. the commit reaches `origin/main` or sync reports no change;
-4. the **Render usage cards** workflow completes.
+4. the **Render Codex Renown cards** workflow completes.
 
 Manual verification uses the same context:
 
 ```sh
-cd /absolute/path/to/agent-card-tracker
+cd /absolute/path/to/codex-renown
 npm run sync
 npm run validate
 ```
@@ -132,14 +136,14 @@ npm run validate
 - On Git authentication failure, repair the scheduled user's credential and rerun. A recoverable local commit is preserved; never force-push.
 - On a device/profile ownership collision, stop duplicate writers, give the duplicate computer a fresh setup, and resolve any overlapping raw logs before retrying.
 - On `REMOTE_UPDATE_REQUIRES_RESTART`, unload/disable the scheduler, update the dedicated clone from `origin/main` without force-pushing, run `npm ci --ignore-scripts` and `npm run validate`, then launch a fresh sync. If one verified publication commit was preserved, rebase only that commit and abort on any conflict.
-- On stale cards, run sync, manually dispatch **Render usage cards**, or use `npm run publish-cards -- --as-of YYYY-MM-DD` as documented in the README.
+- On stale cards, run sync, manually dispatch **Render Codex Renown cards**, or use `npm run publish-cards -- --as-of YYYY-MM-DD` as documented in the README.
 
 ### SYNC_STALE_LOCK
 
 The lock is fail-closed to avoid deleting a lock that another process replaced or reacquired after inspection. Do not remove it merely because its timestamp looks old.
 
 1. Stop and disable the scheduler before inspecting the lock. On macOS, use the `launchctl bootout` command above and do not bootstrap the job again yet. On Linux, comment out or remove the exact agent-card crontab entry, save the crontab, and wait for any current run to finish.
-2. List `agent-card`, `npm`, and `node` candidates, then inspect each candidate's command and current working directory. There must be no `sync`, `render`, or `publish-cards` process whose working directory is `/absolute/path/to/agent-card-tracker`.
+2. List `codex-renown`, `agent-card`, `npm`, and `node` candidates, then inspect each candidate's command and current working directory. There must be no `sync`, `render`, or `publish-cards` process whose working directory is `/absolute/path/to/codex-renown`.
 
    ```sh
    pgrep -af 'agent-card|npm|node'
@@ -150,13 +154,13 @@ The lock is fail-closed to avoid deleting a lock that another process replaced o
 3. Inspect the exact lock file without editing it:
 
    ```sh
-   cat -- '/absolute/path/to/agent-card-tracker/.git/agent-card-sync.lock'
+   cat -- '/absolute/path/to/codex-renown/.git/agent-card-sync.lock'
    ```
 
 4. Only after the process check is clear, delete that one file:
 
    ```sh
-   rm -- '/absolute/path/to/agent-card-tracker/.git/agent-card-sync.lock'
+   rm -- '/absolute/path/to/codex-renown/.git/agent-card-sync.lock'
    ```
 
 5. Keep the scheduler disabled, rerun the original `npm run sync`, `npm run render -- --as-of YYYY-MM-DD`, or `npm run publish-cards -- --as-of YYYY-MM-DD` command manually, and restore the scheduler only after it finishes.

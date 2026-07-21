@@ -1,3 +1,5 @@
+import { PUBLIC_HANDLE } from '../product.mjs';
+import { renderContainedPrestige } from './prestige.mjs';
 import {
   cardDocument,
   escapeXml,
@@ -38,20 +40,25 @@ function recordBlock(statistics, definition) {
   ].join('\n');
 }
 
-export function renderRecords(statistics) {
+export function renderRecords(statistics, {
+  theme = 'github',
+  identity = PUBLIC_HANDLE,
+} = {}) {
   const body = [
-    '<text class="heading" x="16" y="27">Codex Personal Records</text>',
-    `<text class="subheading" x="16" y="43">Best complete account-calendar windows · through ${escapeXml(statistics.asOf)}</text>`,
+    renderContainedPrestige({ width: 416, height: 190 }),
+    `<text class="heading" x="16" y="27">CODEX RENOWN · ${escapeXml(identity)}</text>`,
+    `<text class="subheading" x="16" y="43">PERSONAL RECORDS · complete windows through ${escapeXml(statistics.asOf)}</text>`,
     '<line class="divider" x1="208" y1="55" x2="208" y2="179"/>',
     '<line class="divider" x1="16" y1="119" x2="400" y2="119"/>',
     ...RECORDS.map((definition) => recordBlock(statistics, definition)),
   ].join('\n');
 
   return cardDocument({
-    id: 'codex-personal-records',
+    id: 'codex-renown-records',
     width: 416,
     height: 190,
-    title: 'Codex personal records',
+    theme,
+    title: `Codex Renown personal records for ${identity}`,
     description: `Peak day, best seven-day and thirty-day windows, and best complete calendar month through ${statistics.asOf}.`,
     body,
   });

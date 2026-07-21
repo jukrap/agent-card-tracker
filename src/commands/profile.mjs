@@ -9,6 +9,7 @@ import {
 } from '../collectors/codex-profile.mjs';
 import { SCHEMA_VERSION, validateProfileCandidate } from '../domain/schema.mjs';
 import { writeJsonAtomic } from '../lib/atomic-file.mjs';
+import { CLI_NAME } from '../product.mjs';
 
 const DEVICE_ID_PATTERN = /^device-[0-9a-f]{32}$/;
 const WRITER_KEY_PATTERN = /^[0-9a-f]{64}$/;
@@ -16,7 +17,7 @@ const WRITER_KEY_PATTERN = /^[0-9a-f]{64}$/;
 const HELP = `Collect the experimental Codex account profile
 
 Usage:
-  agent-card profile
+  ${CLI_NAME} profile
 
 Requirements:
   Install a recent Codex CLI and sign in with ChatGPT before running this command.

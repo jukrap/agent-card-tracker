@@ -86,6 +86,29 @@ test('standalone render CLI는 겹친 실행을 거부하고 완료 후 공용 l
   await assertMissing(lockPath);
 });
 
+test('standalone render CLI는 linked worktree의 gitdir lock을 사용한다', async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-worktree-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const cwd = path.join(root, 'linked');
+  const gitDirectory = path.join(root, 'main.git', 'worktrees', 'linked');
+  await mkdir(cwd, { recursive: true });
+  await mkdir(gitDirectory, { recursive: true });
+  await writeFile(
+    path.join(cwd, '.git'),
+    `gitdir: ${path.relative(cwd, gitDirectory)}\n`,
+    'utf8',
+  );
+
+  const io = { stdout: captureStream(), stderr: captureStream() };
+  assert.equal(
+    await runRenderCommand(['--as-of', AS_OF], io, { cwd }),
+    0,
+    io.stderr.text(),
+  );
+  await assertMissing(path.join(gitDirectory, 'agent-card-sync.lock'));
+  assert.match(io.stdout.text(), /Rendered 35 cards/);
+});
+
 test('stale repository lock은 SYNC_STALE_LOCK으로 fail closed하고 원본을 보존한다', async (t) => {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'agent-card-render-stale-lock-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));

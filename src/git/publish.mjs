@@ -2,6 +2,7 @@ import * as defaultFileSystem from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
+import { CARD_ARTIFACT_PATHS } from '../card-catalog.mjs';
 import {
   GitRepositoryError,
   TARGET_REPOSITORY,
@@ -23,14 +24,8 @@ const UNSAFE_ATTRIBUTES = Object.freeze([
   'working-tree-encoding',
   'ident',
 ]);
-const SAFE_REMOTE_CARD_PATHS = new Set([
-  'cards/achievements.svg',
-  'cards/activity.svg',
-  'cards/compact.svg',
-  'cards/overview.svg',
-  'cards/records.svg',
-  'cards/trends.svg',
-]);
+const SAFE_REMOTE_CARD_PATHS = new Set(CARD_ARTIFACT_PATHS);
+
 const SAFE_REMOTE_DATA_PATH_PATTERN = /^data\/(?:devices|profiles)\/device-[0-9a-f]{32}\.json$/u;
 const ERROR_MESSAGES = Object.freeze({
   BUILD_FAILED: 'Public artifacts could not be prepared',

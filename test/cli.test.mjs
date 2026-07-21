@@ -14,6 +14,9 @@ test('help lists every public command', () => {
   });
 
   assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /^codex-renown -/u);
+  assert.match(result.stdout, /Compatibility alias: agent-card/u);
+  assert.doesNotMatch(result.stdout, /^agent-card -/u);
   for (const command of [
     'setup',
     'collect',
@@ -35,5 +38,5 @@ test('unknown commands fail with usage status 2', () => {
 
   assert.equal(result.status, 2);
   assert.match(result.stderr, /Unknown command: not-a-command/);
-  assert.match(result.stderr, /--help/);
+  assert.match(result.stderr, /codex-renown --help/);
 });
