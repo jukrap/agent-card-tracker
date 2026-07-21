@@ -49,23 +49,23 @@
 <text class="label" x="830" y="27" text-anchor="end">ACCOUNT-WIDE CODEX</text>
 <line class="divider" x1="16" y1="54" x2="830" y2="54"/>
 <text class="label" x="16" y="72">ALL-TIME CODEX USAGE</text>
-<text class="hero" x="16" y="111">19.3B TOKENS PROCESSED</text>
-<text class="exact" x="16" y="132">19.3 billion · 19,312,231,461 account total</text>
+<text class="hero" x="16" y="111">19.4B TOKENS PROCESSED</text>
+<text class="exact" x="16" y="132">19.4 billion · 19,354,310,202 account total</text>
 <line class="divider" x1="510" y1="64" x2="510" y2="145"/>
 <text class="label" x="532" y="72">TOKEN RANK</text>
 <rect class="rarity-epic" x="532" y="82" width="8" height="24" rx="2"/>
 <text class="rank-title" x="551" y="103">RANK XV · MYTHIC</text>
 <rect class="progress-track" x="532" y="118" width="298" height="8" rx="4"/>
-<rect class="progress-fill" x="532" y="118" width="185" height="8" rx="4"/>
+<rect class="progress-fill" x="532" y="118" width="185.84" height="8" rx="4"/>
 <text class="meta" x="532" y="143">62% to Rank XVI · ASCENDANT · 25B</text>
 <line class="divider" x1="16" y1="156" x2="830" y2="156"/>
 <line class="divider" x1="204" y1="166" x2="204" y2="200"/>
 <line class="divider" x1="408" y1="166" x2="408" y2="200"/>
 <line class="divider" x1="612" y1="166" x2="612" y2="200"/>
 <text class="label" x="16" y="174">TODAY SO FAR</text>
-<text class="value" x="16" y="199">33.2M</text>
+<text class="value" x="16" y="199">75.2M</text>
 <text class="label" x="220" y="174">LAST 7 DAYS</text>
-<text class="value" x="220" y="199">5.41B</text>
+<text class="value" x="220" y="199">5.45B</text>
 <text class="label" x="424" y="174">LAST 30 DAYS</text>
 <text class="value" x="424" y="199">10.7B</text>
 <text class="label" x="628" y="174">ACTIVE DAYS</text>

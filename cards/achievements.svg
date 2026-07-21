@@ -53,7 +53,7 @@
 <text class="value" x="116" y="87">RANK XV · MYTHIC</text>
 <text class="meta" x="400" y="87" text-anchor="end">15 / 20</text>
 <rect class="progress-track" x="116" y="99" width="284" height="8" rx="4"/>
-<rect class="progress-fill" x="116" y="99" width="176.31" height="8" rx="4"/>
+<rect class="progress-fill" x="116" y="99" width="177.11" height="8" rx="4"/>
 <text class="meta" x="116" y="117">62% to ASCENDANT · 25B</text>
 <rect class="rank-node-unlocked" x="119" y="121" width="8" height="8" rx="2"/>
 <rect class="rank-node-unlocked" x="133.2" y="121" width="8" height="8" rx="2"/>

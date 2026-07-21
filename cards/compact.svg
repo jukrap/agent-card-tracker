@@ -47,9 +47,9 @@
 <rect class="rarity-epic" x="16" y="16" width="62" height="64" rx="6"/>
 <text class="rank-roman" x="47" y="54" text-anchor="middle">XV</text>
 <text class="label" x="94" y="25">CODEX · RANK XV MYTHIC</text>
-<text class="rank-title" x="94" y="52">19.3B TOKENS</text>
+<text class="rank-title" x="94" y="52">19.4B TOKENS</text>
 <rect class="progress-track" x="94" y="63" width="304" height="7" rx="3"/>
-<rect class="progress-fill" x="94" y="63" width="188.73" height="7" rx="3"/>
+<rect class="progress-fill" x="94" y="63" width="189.58" height="7" rx="3"/>
 <text class="meta" x="94" y="84">62% to ASCENDANT · 25B</text>
 <text class="meta" x="400" y="84" text-anchor="end">Updated 2026-07-21</text>
 </svg>
