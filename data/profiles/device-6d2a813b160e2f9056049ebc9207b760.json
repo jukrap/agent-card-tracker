@@ -1,8 +1,8 @@
 {
-  "collectedAt": "2026-07-20T16:31:01.302Z",
+  "collectedAt": "2026-07-21T10:06:07.647Z",
   "coverage": {
-    "bucketCount": 126,
-    "endDate": "2026-07-20",
+    "bucketCount": 127,
+    "endDate": "2026-07-21",
     "startDate": "2026-02-16"
   },
   "daily": [
@@ -508,13 +508,17 @@
     },
     {
       "date": "2026-07-20",
-      "totalTokens": 461707939
+      "totalTokens": 1818227315
+    },
+    {
+      "date": "2026-07-21",
+      "totalTokens": 33152104
     }
   ],
   "dateBasis": "provider-calendar-date",
   "deviceId": "device-6d2a813b160e2f9056049ebc9207b760",
   "kind": "codex-profile",
-  "lifetimeTotalTokens": 17922559981,
+  "lifetimeTotalTokens": 19312231461,
   "schemaVersion": 1,
   "writerKeyHash": "47cd594495ddc37c2c09eace93acdf6d1a6938d89a079a7834197347c9420b24"
 }
