@@ -1,6 +1,6 @@
 # Codex Renown design
 
-Status: Design-complete draft awaiting final user approval. Product identity, public copy, iconography, achievement surfaces and catalog, contained rarity treatment, and rename compatibility scope are approved section by section. No implementation is authorized yet.
+Status: Final design approved for implementation on 2026-07-22. Product identity, public copy, iconography, achievement surfaces and catalog, contained rarity treatment, theme family, and rename compatibility scope are approved.
 
 Last updated: 2026-07-21
 
@@ -67,6 +67,20 @@ The primary surface remains a set of static SVG images embedded in a GitHub prof
 - Geometry: small-radius, border-first, technical, and flat.
 - Typography: system UI plus monospace for exact token values and compact technical metadata.
 - Color: GitHub-neutral surfaces with one rarity accent at a time.
+
+## Approved theme family
+
+The canonical seven URLs use the GitHub theme. Four optional theme families are published as flat, deterministic filename variants so GitHub profile READMEs can select them without a server or query-string endpoint:
+
+| Theme | Intent | Filename example |
+| --- | --- | --- |
+| GitHub | Canonical neutral Primer-adjacent palette | `overview.svg` |
+| Midnight | Blue-indigo technical palette | `overview-midnight.svg` |
+| Aurora | Teal-cyan activity palette | `overview-aurora.svg` |
+| Ember | Amber-orange high-energy palette | `overview-ember.svg` |
+| Monochrome | Low-chroma black, white, and slate palette | `overview-monochrome.svg` |
+
+Each theme has light and dark color-scheme tokens inside the static SVG. Theme selection may change surfaces, charts, and activity colors, but never rank rarity semantics, achievement state semantics, layout, text, dimensions, or data. The renderer publishes seven canonical files plus 28 optional variants, for 35 static SVG artifacts total. No gradient, image, font, animation, network resource, query endpoint, or additional validator directory is introduced.
 
 ## Approved rank crest system
 
@@ -174,14 +188,14 @@ The six existing card filenames remain stable and `trophy-case.svg` is added as 
 
 ## Design decision status
 
-No section-level design questions remain. The complete design now requires one final user approval before implementation planning may begin.
+No section-level design questions remain. The user granted final approval on 2026-07-22 and requested implementation, Git/PR/merge completion, and multiple static theme choices.
 
 ## Non-goals
 
 - No percentile, global ranking, competitive leaderboard, or productivity claim.
 - No prompt, response, project, session identity, or private account metadata publication.
 - No hosted image service, custom server, dynamic endpoint, or paid infrastructure.
-- No implementation work until the complete design receives final user approval and a separate execution plan is accepted.
+- Implementation follows the separate execution plan and preserves every compatibility and security boundary in this design.
 
 ## Reference evidence
 
@@ -193,4 +207,4 @@ No section-level design questions remain. The complete design now requires one f
 
 ## Resume point
 
-Request final approval of the complete design. If approved, produce a separate implementation plan and migration runbook; do not implement or rename the repository/folder in this documentation-only session unless the user explicitly expands the scope.
+Execute `docs/plans/2026-07-22-codex-renown-implementation.md` in the isolated `feat/codex-renown` worktree, then complete review, PR, merge, repository rename, and the local-folder migration runbook.
