@@ -14,6 +14,19 @@ function tokens({
   heat3,
   heat4,
 }) {
+  const red = Number.parseInt(bg.slice(1, 3), 16);
+  const green = Number.parseInt(bg.slice(3, 5), 16);
+  const blue = Number.parseInt(bg.slice(5, 7), 16);
+  const dark = ((red * 299) + (green * 587) + (blue * 114)) < 128_000;
+  const rarity = dark
+    ? {
+      common: '#8c959f', uncommon: '#3fb950', rare: '#58a6ff',
+      epic: '#bc8cff', legendary: '#d29922', onRarity: '#0d1117',
+    }
+    : {
+      common: '#57606a', uncommon: '#1a7f37', rare: '#0969da',
+      epic: '#8250df', legendary: '#9a6700', onRarity: '#ffffff',
+    };
   return Object.freeze({
     bg,
     surface,
@@ -29,6 +42,7 @@ function tokens({
     heat2,
     heat3,
     heat4,
+    ...rarity,
   });
 }
 

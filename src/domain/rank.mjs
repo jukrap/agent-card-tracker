@@ -1,29 +1,32 @@
 export const TOKEN_RANKS = Object.freeze([
-  { rank: 1, roman: 'I', title: 'Novice', threshold: 0 },
-  { rank: 2, roman: 'II', title: 'Initiate', threshold: 10_000 },
-  { rank: 3, roman: 'III', title: 'Apprentice', threshold: 50_000 },
-  { rank: 4, roman: 'IV', title: 'Adept', threshold: 100_000 },
-  { rank: 5, roman: 'V', title: 'Scout', threshold: 500_000 },
-  { rank: 6, roman: 'VI', title: 'Adventurer', threshold: 1_000_000 },
-  { rank: 7, roman: 'VII', title: 'Knight', threshold: 5_000_000 },
-  { rank: 8, roman: 'VIII', title: 'Veteran', threshold: 10_000_000 },
-  { rank: 9, roman: 'IX', title: 'Elite', threshold: 50_000_000 },
-  { rank: 10, roman: 'X', title: 'Champion', threshold: 100_000_000 },
-  { rank: 11, roman: 'XI', title: 'Hero', threshold: 500_000_000 },
-  { rank: 12, roman: 'XII', title: 'Warlord', threshold: 1_000_000_000 },
-  { rank: 13, roman: 'XIII', title: 'Overlord', threshold: 2_500_000_000 },
-  { rank: 14, roman: 'XIV', title: 'Paragon', threshold: 5_000_000_000 },
-  { rank: 15, roman: 'XV', title: 'Mythic', threshold: 10_000_000_000 },
-  { rank: 16, roman: 'XVI', title: 'Ascendant', threshold: 25_000_000_000 },
-  { rank: 17, roman: 'XVII', title: 'Immortal', threshold: 50_000_000_000 },
-  { rank: 18, roman: 'XVIII', title: 'Sovereign', threshold: 100_000_000_000 },
-  { rank: 19, roman: 'XIX', title: 'Eternal', threshold: 250_000_000_000 },
-  { rank: 20, roman: 'XX', title: 'Transcendent', threshold: 1_000_000_000_000 },
+  { rank: 1, roman: 'I', title: 'Novice', threshold: 0, glyphId: 'first-spark' },
+  { rank: 2, roman: 'II', title: 'Initiate', threshold: 10_000, glyphId: 'rising-chevron' },
+  { rank: 3, roman: 'III', title: 'Apprentice', threshold: 50_000, glyphId: 'open-codex' },
+  { rank: 4, roman: 'IV', title: 'Adept', threshold: 100_000, glyphId: 'wayfinder' },
+  { rank: 5, roman: 'V', title: 'Scout', threshold: 500_000, glyphId: 'signal-pennant' },
+  { rank: 6, roman: 'VI', title: 'Adventurer', threshold: 1_000_000, glyphId: 'expedition-mark' },
+  { rank: 7, roman: 'VII', title: 'Knight', threshold: 5_000_000, glyphId: 'code-helm' },
+  { rank: 8, roman: 'VIII', title: 'Veteran', threshold: 10_000_000, glyphId: 'veteran-shield' },
+  { rank: 9, roman: 'IX', title: 'Elite', threshold: 50_000_000, glyphId: 'elite-gem' },
+  { rank: 10, roman: 'X', title: 'Champion', threshold: 100_000_000, glyphId: 'champion-laurel' },
+  { rank: 11, roman: 'XI', title: 'Hero', threshold: 500_000_000, glyphId: 'hero-star' },
+  { rank: 12, roman: 'XII', title: 'Warlord', threshold: 1_000_000_000, glyphId: 'crossed-blades' },
+  { rank: 13, roman: 'XIII', title: 'Overlord', threshold: 2_500_000_000, glyphId: 'overlord-tower' },
+  { rank: 14, roman: 'XIV', title: 'Paragon', threshold: 5_000_000_000, glyphId: 'paragon-prism' },
+  { rank: 15, roman: 'XV', title: 'Mythic', threshold: 10_000_000_000, glyphId: 'mythic-eye' },
+  { rank: 16, roman: 'XVI', title: 'Ascendant', threshold: 25_000_000_000, glyphId: 'winged-star' },
+  { rank: 17, roman: 'XVII', title: 'Immortal', threshold: 50_000_000_000, glyphId: 'immortal-halo' },
+  { rank: 18, roman: 'XVIII', title: 'Sovereign', threshold: 100_000_000_000, glyphId: 'sovereign-crown' },
+  { rank: 19, roman: 'XIX', title: 'Eternal', threshold: 250_000_000_000, glyphId: 'eternal-loop' },
+  { rank: 20, roman: 'XX', title: 'Transcendent', threshold: 1_000_000_000_000, glyphId: 'transcendent-sun' },
 ].map((entry) => Object.freeze(entry)));
 
 const COVERAGE_STATES = new Set(['complete', 'partial', 'unknown']);
 
-function rarityForRank(rank) {
+export function rarityForRank(rank) {
+  if (!Number.isInteger(rank) || rank < 1 || rank > TOKEN_RANKS.length) {
+    throw new TypeError('rank must be 1 through 20');
+  }
   if (rank <= 4) {
     return 'common';
   }
