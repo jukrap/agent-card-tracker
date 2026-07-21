@@ -1,17 +1,17 @@
 {
   "collectorVersion": "0.1.0",
   "deviceId": "device-6d2a813b160e2f9056049ebc9207b760",
-  "generatedAt": "2026-07-21T11:55:45.105Z",
+  "generatedAt": "2026-07-21T21:38:54.382Z",
   "schemaVersion": 2,
   "sources": {
     "codex": {
       "coverage": {
         "sessions": {
-          "endDate": "2026-07-21",
+          "endDate": "2026-07-22",
           "startDate": "2026-02-17"
         },
         "totals": {
-          "endDate": "2026-07-21",
+          "endDate": "2026-07-22",
           "startDate": "2026-02-17"
         }
       },
@@ -323,16 +323,25 @@
           "totalTokens": 1075719605
         },
         {
-          "cacheReadTokens": 238349568,
+          "cacheReadTokens": 400105216,
           "cacheWriteTokens": 0,
           "date": "2026-07-21",
-          "inputTokens": 8796560,
-          "outputTokens": 557411,
-          "sessions": 13,
-          "totalTokens": 247703539
+          "inputTokens": 14895891,
+          "outputTokens": 906321,
+          "sessions": 15,
+          "totalTokens": 415907428
+        },
+        {
+          "cacheReadTokens": 54537472,
+          "cacheWriteTokens": 0,
+          "date": "2026-07-22",
+          "inputTokens": 1511747,
+          "outputTokens": 162712,
+          "sessions": 4,
+          "totalTokens": 56211931
         }
       ],
-      "lastSuccessfulAt": "2026-07-21T11:55:45.105Z",
+      "lastSuccessfulAt": "2026-07-21T21:38:54.382Z",
       "status": "ok"
     }
   },
