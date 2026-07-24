@@ -69,25 +69,25 @@
 <text class="label" x="830" y="27" text-anchor="end">ACCOUNT-WIDE CODEX</text>
 <line class="divider" x1="16" y1="54" x2="830" y2="54"/>
 <text class="label" x="16" y="72">ALL-TIME CODEX USAGE</text>
-<text class="hero" x="16" y="111">19.6B TOKENS PROCESSED</text>
-<text class="exact" x="16" y="132">19.6 billion · 19,580,569,827 account total</text>
+<text class="hero" x="16" y="111">23.4B TOKENS PROCESSED</text>
+<text class="exact" x="16" y="132">23.4 billion · 23,443,914,504 account total</text>
 <line class="divider" x1="510" y1="64" x2="510" y2="145"/>
 <text class="label" x="532" y="72">TOKEN RENOWN</text>
 <text class="rank-title" x="532" y="101">RANK XV · MYTHIC</text>
 <rect class="progress-track" x="532" y="115" width="196" height="8" rx="4"/>
-<rect class="progress-fill" x="532" y="115" width="125.19" height="8" rx="4"/>
-<text class="meta" x="532" y="140">64% to Rank XVI · ASCENDANT · 25B</text>
+<rect class="progress-fill" x="532" y="115" width="175.67" height="8" rx="4"/>
+<text class="meta" x="532" y="140">90% to Rank XVI · ASCENDANT · 25B</text>
 <g class="crest crest-rarity-epic" transform="translate(750 64) scale(1)"><path class="crest-frame crest-frame-epic crest-frame-epic-diamond" d="M36 2 64 20 57 55 36 68 15 55 8 20Z"/><g class="rank-glyph rank-glyph-mythic-eye" transform="translate(22 18) scale(1.166667)"><path class="glyph-line" d="M2 12C5 7 8 5 12 5S19 7 22 12C19 17 16 19 12 19S5 17 2 12Z"/><circle class="glyph-fill" cx="12" cy="12" r="4"/><circle class="glyph-cut" cx="12" cy="12" r="1.5"/></g><circle class="crest-pip" cx="28" cy="64" r="2.5"/><circle class="crest-pip" cx="36" cy="64" r="2.5"/><circle class="crest-pip" cx="44" cy="64" r="2.5"/></g>
 <line class="divider" x1="16" y1="156" x2="830" y2="156"/>
 <line class="divider" x1="204" y1="166" x2="204" y2="200"/>
 <line class="divider" x1="408" y1="166" x2="408" y2="200"/>
 <line class="divider" x1="612" y1="166" x2="612" y2="200"/>
 <text class="label" x="16" y="174">TODAY SO FAR</text>
-<text class="value" x="16" y="199">—</text>
+<text class="value" x="16" y="199">196M</text>
 <text class="label" x="220" y="174">LAST 7 DAYS</text>
-<text class="value" x="220" y="199">≥4.02B</text>
+<text class="value" x="220" y="199">7.88B</text>
 <text class="label" x="424" y="174">LAST 30 DAYS</text>
-<text class="value" x="424" y="199">≥10.6B</text>
+<text class="value" x="424" y="199">14.4B</text>
 <text class="label" x="628" y="174">ACTIVE DAYS</text>
-<text class="value" x="628" y="199">≥127</text>
+<text class="value" x="628" y="199">130</text>
 </svg>
